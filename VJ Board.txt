@@ -1,0 +1,68 @@
+PUSH 2 VJ BOARD  --  64 sacred geometry recipes
+================================================
+
+Select the VJ track on Push. All 64 pads are now geometry recipes.
+Tap a pad: its geometry BUILDS out from the centre (1 bar), melting out of whatever was
+there before, then reaction diffusion GROWS out of its lines and slowly dissolves it
+(over 4 bars). Tap the next pad and the new geometry builds out of the old one.
+
+ROWS (bottom to top) = the sacred family
+   row 1  Flower of Life
+   row 2  Metatron's Cube
+   row 3  Sri Yantra
+   row 4  Golden angle (Fibonacci)
+   row 5  Tesseract
+   row 6  Chladni (sound patterns)
+   row 7  Quasicrystal
+   row 8  Mandala
+
+COLUMNS (left to right) = how it is constructed
+   1  the pure form
+   2  six-fold symmetry
+   3  seed of life: the form + 6 copies around it
+   4  twelve-fold, close up
+   5  flower of forms: 1 + 6 + 12 copies
+   6  two eight-fold wheels turning against each other
+   7  golden-ratio nest, five deep
+   8  three-fold
+
+THE 8 KNOBS ABOVE THE SCREEN = LIGHTING EFFECTS (after you've tapped a VJ pad;
+they go back to Live as soon as you play a note on another track)
+   1 Brightness         the lamps' master level
+   2 EFFECT             turn to step: wash > glow > pulse > chase > sparkle > sweep > hit
+   3 Effect speed       on the beat grid: x1/4  x1/2  x1  x2  x4
+   4 Spread             how the effect spreads across the room
+   5 Beat punch         how hard the music pumps the lamps
+   6 Fade               how long the colour hangs on: 1/4, 1/2, 1, 2, 4 or 8 beats (follows the tempo)
+   7 Vibrance
+   8 Smoothing
+   (The Light Desk at localhost:7020 shows the values moving.)
+   BPM SYNC: every effect runs on the Digitakt's MIDI clock (Ableton's tempo). If a speed would
+   flash faster than the Flicker Guard allows at the current tempo, it halves -- still on the
+   grid -- until it's safe. At 140 BPM with the Guard at 0.5: pulse lands every 2 bars, chase
+   runs a full sweep every 2 bars. At Guard 2: pulse every 2 beats, chase every bar.
+
+COLOURS: every note -- the VJ pads themselves AND what you play on 1 MIDI -- colours the geometry and the lamps by its
+step in the key (F minor now): 1 red 2 orange 3 yellow 4 green 5 blue 6 indigo 7 violet,
+the 1 an octave up = rainbow. The key is set in TouchDesigner (/project1/vj, Key + Scale)
+and on the Light Desk.
+
+WHY NOT PUSH'S BUTTONS: in Live mode every Push button also does something in Live
+(the ones under the screen even change the selected track, which would knock you off
+the VJ track). So the looks and transitions live on knobs 5 and 6 instead.
+
+IN TOUCHDESIGNER  (/project1/vj)
+   Recipe / Family / Construction, Build time (bars), Diffuse + Diffuse time (bars),
+   Build spin / scale, Look (clean/ASCII/8-bit/outline/superflat/mirror), Transition, plus the older decks (your geometry show, your mix, ...) on
+   the Deck menu.  Takeover: 1 = VJ board on the projector, 0 = your own comp1/comp2 mix.
+   Rebuild: Hue Rig/build_vj.py
+
+ABLETON (press Cmd+S in Ableton to keep it)
+   Settings > Tempo & MIDI: Output "Online IAC Driver (Bus 1)" Track ON, Input Track OFF
+   1 MIDI        your Digitone track
+   Note Colours  MIDI From 1-MIDI (Post Mixer) -> IAC ch 1, Monitor In
+   VJ            MIDI track, no devices, MIDI To IAC ch 16 -- select it on Push for the 64 recipes
+   Don't select Note Colours on Push (it's just a pipe). Don't use Solo while performing.
+
+SAFETY: everything ends in the flicker-safe pass set by the hub's Flicker Guard
+(now 0.5 flashes/s). Nothing on the wall can flash faster than that.

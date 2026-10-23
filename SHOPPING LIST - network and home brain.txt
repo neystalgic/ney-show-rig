@@ -1,0 +1,70 @@
+SHOPPING LIST -- network, Zephyrus render node, Raspberry Pi home brain
+=====================================================================
+
+How it connects
+
+  Router --(short cable)-- Zephyrus       renders the visuals, runs track analysis
+     |
+     +--(long Cat6 cable)-- Mac           music, hub, lights, projector
+     |
+     +--(short cable)-- Raspberry Pi      home brain: Siri, schedules, Home Assistant
+
+  (Optional: put a 5-port switch at the Mac end of the long cable if the Pi should
+  live near the Mac -- then the Mac, the Pi and future gear share the one cable.)
+
+
+1. LONG FLAT CAT6 ETHERNET CABLE  (router -> Mac)                   ~$15-30
+   Measure the route along the walls (not straight across) and add a couple of
+   metres. Cat6 is full speed up to 100 m. Flat cables tuck under rugs and trim.
+   https://www.amazon.com/s?k=flat+cat6+ethernet+cable+50+ft
+
+2. USB-C HUB WITH GIGABIT ETHERNET  (for the Mac)                   ~$30-60
+   Look for: Gigabit (1 Gbps) Ethernet, USB-C power pass-through, a couple of
+   USB-A ports. Bonus: frees ports for the Push / Osmo capture.
+   https://www.amazon.com/s?k=usb+c+hub+gigabit+ethernet+power+delivery
+   (Anker example: https://ca.anker.com/products/a83s1)
+
+3-6. THE HOME SERVER -- Raspberry Pi 5, 8 GB, built for a home cloud
+   For a home cloud (music, samples, projects, content) the Pi needs a real SSD --
+   microSD cards are slow and wear out under 24/7 use.
+   Raspberry Pi 5, 8 GB board ........................................ $125
+     https://www.raspberrypi.com/products/raspberry-pi-5/
+   Official 27W USB-C power supply ................................... ~$12
+     https://www.raspberrypi.com/products/27w-power-supply/
+   Active Cooler ..................................................... ~$5
+     https://www.raspberrypi.com/products/active-cooler/
+   M.2 HAT+ (holds a small NVMe SSD on top of the Pi) ................ from $12
+     https://www.raspberrypi.com/products/m2-hat-plus/
+   NVMe SSD, size 2230 or 2242, 1-2 TB (check current prices)
+     https://www.amazon.com/s?k=2242+nvme+ssd+1tb
+   Optional: a case that fits the Pi + M.2 HAT+ (search "Pi 5 case M.2 HAT")
+   Optional, for big sample/content libraries: a USB 3 external SSD or HDD (2-4 TB)
+
+   BACKUPS: a home cloud is not a backup on its own. Keep a second copy of anything
+   irreplaceable (an external drive on the Mac or Zephyrus, or a cloud backup).
+
+   (Cheaper alternatives, for reference: a used mini PC ~$60-120; Pi 5 4 GB build
+   ~$110-120; CanaKit 8 GB kit $249.95; Home Assistant Green ~$199.)
+
+7. SHORT ETHERNET CABLE  (router -> Pi, and router -> Zephyrus if needed)  ~$8
+   https://www.amazon.com/s?k=cat6+ethernet+cable+3+ft+2+pack
+
+8. OPTIONAL: 5-PORT GIGABIT SWITCH  (only if the Pi lives near the Mac)  ~$15-20
+   e.g. TP-Link TL-SG105
+   https://www.amazon.com/s?k=tp-link+tl-sg105
+
+
+FREE SOFTWARE (when the parts arrive)
+   TouchDesigner for the Zephyrus:   https://derivative.ca/download
+   NDI Tools (network video):        https://ndi.video/tools/
+   Home Assistant for the Pi 5:      https://www.home-assistant.io/installation/raspberrypi
+
+ORDER OF SET-UP
+   1. Cable + hub: Mac and Zephyrus on the network; measure the real delay.
+   2. Zephyrus: TouchDesigner + network video (NDI); move the visuals over.
+   3. Siri Shortcuts on the Mac (free, any time).
+   4. The Pi: Raspberry Pi OS on the SSD + Docker, then Home Assistant (Hue, hub,
+      Siri), file sync / home cloud for music and projects, and a music server.
+
+(Prices are rough. Amazon links are searches, so you can pick a well-reviewed
+listing that ships to you.)

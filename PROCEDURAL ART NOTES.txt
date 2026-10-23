@@ -1,0 +1,94 @@
+PROCEDURAL ART FOR THE VISUALIZER -- what's built, how to play with it, what to add next
+====================================================================================
+
+WHAT CHANGED
+  The music now picks the visual. With the gear playing (and no Push pad touched for
+  20 seconds), the hub moves to the next visual every phrase (8 bars, desk > Audio >
+  "Auto: new pattern every") and on every drop:
+     flower > warp > golden > truchet > metatron > quasicrystal > contours > yantra >
+     life > attractor > chladni > mandala > harmonograph > tesseract > voronoi >
+     reaction > kaleido > ...      (a new one every 2 bars by default)
+  Breakdowns switch to the slow, organic ones (warp, contours, reaction, attractor);
+  right after a drop it shows everything blended. Touch a pad and that pad's geometry
+  takes over for 20 seconds, as before. Every bar the picture also turns 45 degrees,
+  and each phrase gets a new size / line weight.
+  Audio reactive everywhere: the kick pumps the size, the loudness drives the glow,
+  the snare lifts it, the hats make the lines shimmer, the drop bursts it outwards.
+
+THE SIX PROCEDURAL PIECES (new, in /project1, built by sync_geometry())
+  proc_warp       DOMAIN WARPING (Inigo Quilez). Noise evaluated at a point that has
+                  been pushed around by more noise: f(p + fbm(p + fbm(p))). Gives smoke,
+                  marble, liquid. The kick pushes the warp further.
+  proc_attractor  STRANGE ATTRACTOR (Peter de Jong map, catalogued by Paul Bourke):
+                  x' = sin(a y) - cos(b x),  y' = sin(c x) - cos(d y).
+                  Every pixel is run through the map; it glows where its orbit passes
+                  close to a moving point (an "orbit trap"). a, b, c, d drift slowly;
+                  the kick nudges them.
+  proc_truchet    TRUCHET TILES (Sebastien Truchet, 1704). Each square holds two quarter
+                  circles, flipped one way or the other -- the arcs always join into
+                  endless winding paths. Tiles re-flip on the beat, so the paths
+                  re-route in time with the music.
+  proc_contours   CONTOUR LINES of moving noise -- a living topographic map (the same
+                  idea as a flow field's streamlines). The kick packs in more lines.
+  proc_mandala    SIGNED DISTANCE FIELDS with POLAR REPETITION (Inigo Quilez): one slice
+                  of circles and rings, repeated round the centre (8 or 12 slices,
+                  alternating every 16 beats). A ring ripples outward on every beat.
+  proc_voronoi    VORONOI / WORLEY CELLS: every point belongs to its nearest moving seed;
+                  the borders glow. The seeds dance and jump on the kick.
+
+  proc_harmonograph  HARMONOGRAPH (the 19th-century pendulum drawing machine): two
+                  decaying swings per axis whose frequency ratios are musical
+                  intervals -- 2:3 a fifth, 3:4 a fourth, 4:5 a major third... a new
+                  interval every 8 bars. The kick swells it; the hats thicken the line.
+  proc_quasicrystal  QUASICRYSTAL: plane waves in 5 (or 7) directions added up -- order
+                  that never repeats, with the five-fold symmetry of Penrose tilings.
+                  The waves step with the beat; the kick adds more bands.
+  proc_life       CELLULAR AUTOMATON (Brian's Brain, Brian Silverman): each cell is on,
+                  dying or off; an off cell turns on with exactly two neighbours on. It
+                  never settles -- gliders stream across. One generation per 8th note,
+                  the kick seeds new cells, a fresh start every 16 bars. (Inside: 'sim'
+                  is fed back into itself through 'fb'; 'glsl1' draws it.)
+  TRAILS on the finished picture (geo_show > Show page > Trails, 0 = off): every
+  frame keeps a fading echo that drifts outward and turns slowly; the kick throws
+  it further and a drop bursts it.
+
+  Each one has the same controls as the sacred geometry (Scale, Rotate, Spin, Line
+  Width, Glow, Build, Colour A/B on its "Sacred" page) and takes the room's two
+  colours. Inside each: a 'shader' DAT (the GLSL code), 'glsl1' (GLSL TOP), 'out1'.
+
+PLAYING WITH THEM IN THE TEXTPORT
+  Look at one on its own:            op('/project1/proc_warp').openViewer()
+  Make it bigger / turn it:          op('/project1/proc_mandala').par.Spin = 20
+  Rebuild all six from scratch:      build_procedural(rebuild=True); sync_geometry()
+  What everything is following:      geo_check()      (also saved as td_check.txt)
+  Edit the look live: open a piece's 'shader' DAT and change numbers -- e.g. in
+  proc_truchet change  7.0  (tiles across) or  0.86  (how many tiles flip each beat).
+  The values each shader gets every frame:
+     uT  = time, beats, kick, loudness          uS  = scale, rotate, glow, line width
+     uCa = colour A + hats                      uCb = colour B + snare
+     uX  = build, drop, how bright the sound is
+  (When build_hue_hub_td.py is updated, the shader code is refreshed from it -- copy a
+  piece you've edited to a new name first if you want to keep your version.)
+
+MORE PROCEDURAL METHODS THAT FIT THIS SET-UP (ideas for next)
+  (Feedback trails, a cellular automaton, a harmonograph and the quasicrystal --
+  the five-fold cousin of Penrose tilings -- are built now; see above.)
+  Curl-noise particles  thousands of GPU particles pushed along the curl of a noise
+                     field (Robert Bridson's curl noise): swirling smoke without
+                     clumping. TouchDesigner's Particles GPU / POPs can do it.
+  L-systems / space colonisation  branching plants and lightning that grow on a build
+                     and burst on a drop.
+  Fourier epicycles  a drawing traced by chains of rotating circles -- could draw a
+                     logo or the outline of a sacred figure on the beat.
+  True Penrose tilings (kites and darts, de Bruijn's method) with the rhombs lighting up.
+  Diffusion-limited aggregation  coral-like growth that could build over a breakdown.
+  Raymarched 3D SDFs  the mandala idea in 3D: Menger sponges, gyroids, infinite
+                     repeated temples, flown through on the beat.
+
+SOURCES
+  Domain warping            https://iquilezles.org/articles/warp
+  SDF repetition            https://iquilezles.org/articles/sdfrepetition
+  de Jong attractors        https://paulbourke.net/fractals/peterdejong/
+  Truchet tiles / patterns  The Book of Shaders, chapter 9 (thebookofshaders.com/09)
+  Noise / fbm               The Book of Shaders, chapter 13 (thebookofshaders.com/13)
+  GLSL TOP in TouchDesigner https://derivative.ca/UserGuide/Write_a_GLSL_TOP

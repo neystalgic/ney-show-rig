@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Light Desk</title>
+<style>
+:root{
+  --bg:#0d0e12; --panel:#15171d; --panel2:#1c1f27; --line:#2a2e39; --text:#e9e9ee; --dim:#9aa0ad; --faint:#646a78;
+  --accent:#ffb347; --accent2:#7c5cff; --ok:#3ddc84; --warn:#ffcc33; --bad:#ff4d4d; --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;-webkit-user-select:none;user-select:none}
+button,select,input{font:inherit;color:inherit}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer}
+button:hover{border-color:#3a4050}
+button.on{background:var(--accent);color:#1a1205;border-color:var(--accent);font-weight:600}
+button.danger.on{background:var(--bad);border-color:var(--bad);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;background:var(--bg);z-index:5}
+h1{font-size:16px;margin:0 8px 0 0;letter-spacing:.3px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--dim);font-size:12px;white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--faint);display:inline-block}
+.chip.ok i{background:var(--ok)} .chip.warn i{background:var(--warn)} .chip.bad i{background:var(--bad)}
+.clock{font-variant-numeric:tabular-nums;color:var(--text)}
+.spacer{flex:1}
+.big{padding:8px 12px;font-weight:600;min-width:62px}
+#blackout.on{background:var(--bad);border-color:var(--bad);color:#fff}
+nav{display:flex;gap:6px;padding:8px 14px 0}
+nav button{border-radius:8px 8px 0 0;border-bottom:none;background:transparent;color:var(--dim)}
+nav button.sel{background:var(--panel);color:var(--text)}
+main{padding:0 14px 14px}
+.tab{display:none;background:var(--panel);border:1px solid var(--line);border-radius:0 var(--r) var(--r) var(--r);padding:12px}
+.tab.sel{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--dim);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.card h2 .spacer{flex:1}
+.hint{color:var(--faint);font-size:12px}
+/* room */
+#room{position:relative;width:100%;aspect-ratio:16/9;min-height:260px;background:radial-gradient(ellipse at 50% 120%,#1b1e27 0%,#0f1015 70%);border:1px solid var(--line);border-radius:8px;overflow:hidden;touch-action:none}
+#room .floor{position:absolute;left:0;right:0;bottom:0;height:8%;background:linear-gradient(#16181f,#121319);border-top:1px solid #23262f}
+.lamp{position:absolute;transform:translate(-50%,50%);display:flex;flex-direction:column-reverse;align-items:center;gap:3px;cursor:pointer}
+.lamp.across{flex-direction:row}
+.seg{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.12);box-shadow:0 0 22px 4px var(--glow,transparent);transition:box-shadow .05s}
+.lamp.multi .seg{border-radius:7px;width:30px;height:26px}
+.lamp.across.multi .seg{width:26px;height:30px}
+.seg.sel{border-color:#fff;outline:2px solid var(--accent);outline-offset:2px}
+.lamp .name{position:absolute;top:100%;margin-top:4px;font-size:12px;color:var(--text);white-space:nowrap;pointer-events:auto;max-width:170px;overflow:hidden;text-overflow:ellipsis;left:50%;transform:translateX(-50%);background:rgba(13,14,18,.75);padding:1px 5px;border-radius:5px}
+.lamp .name.atleft{left:0;transform:none}
+.lamp .name.atright{left:auto;right:0;transform:none}
+#room.setup .lamp{cursor:grab}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.sw{width:30px;height:30px;border-radius:7px;border:2px solid rgba(255,255,255,.15);cursor:pointer;padding:0}
+.sw:hover{border-color:#fff}
+input[type=color]{width:38px;height:30px;padding:0;border:1px solid var(--line);border-radius:7px;background:none}
+/* looks */
+#looks{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.pad{position:relative;border-radius:9px;padding:10px 9px 9px;background:#20232c;border:1px solid var(--line);cursor:pointer;min-height:66px;text-align:left}
+.pad .nm{font-weight:600;font-size:13px}
+.pad .mo{font-size:11px;color:var(--dim)}
+.pad .strip{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:7px}
+.pad .strip span{flex:1}
+.pad.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.pad.editing{border-style:dashed;border-color:var(--accent2)}
+.pad.editing .mo::after{content:" \00b7  editing";color:#b9a6ff}
+.pad.active .nm::before{content:"\25CF ";color:var(--accent)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.row label{color:var(--dim);font-size:12px;min-width:74px}
+.meters{display:grid;grid-template-columns:70px 1fr;gap:4px 8px;align-items:center;margin:8px 0;font-size:12px;color:var(--dim)}
+.meter{height:10px;border-radius:5px;background:#0d0f13;overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;width:0;background:var(--accent);transition:width .06s linear}
+.mini-room{position:relative;height:170px;background:#0d0f13;border:1px solid var(--line);border-radius:8px;margin:6px 0 10px}
+.mini-room .dot{position:absolute;width:26px;height:26px;border-radius:50%;transform:translate(-50%,50%);background:#222;font-size:11px;font-weight:700;color:#000;display:flex;align-items:center;justify-content:center;transition:background .04s linear}
+.ordbadge{font-size:10px;font-weight:700;background:var(--accent);color:#000;border-radius:8px;padding:0 5px;line-height:15px}
+.meter.k i{background:#ff6b4a}.meter.s i{background:#fff}.meter.h i{background:#4cc9f0}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chips button{padding:5px 9px;font-size:12px}
+input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:#2d313c;flex:1;min-width:110px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--text);border:3px solid var(--accent)}
+select{background:#101217;border:1px solid var(--line);border-radius:7px;padding:6px 8px;color:var(--text)}
+input[type=text],input[type=number]{background:#101217;border:1px solid var(--line);border-radius:7px;padding:6px 8px;min-width:0}
+.val{font-variant-numeric:tabular-nums;color:var(--dim);font-size:12px;min-width:46px;text-align:right}
+/* live faders */
+#live{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:2px 28px}
+#live .row{display:grid;grid-template-columns:128px minmax(80px,1fr) 64px;align-items:center;gap:10px;margin:5px 0}
+#live .row label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);font-size:13px}
+#live .row .val{font-size:13px;color:var(--text)}
+.seg.psel{outline:2px dashed #3ad1ff;outline-offset:3px}
+.pushmap td{font-size:12px;padding:4px 6px;vertical-align:top}
+.pushmap td:first-child{color:var(--accent);white-space:nowrap}
+/* songs */
+#timeline{position:relative;overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:#101217;margin-top:8px}
+#bars{position:relative;height:66px}
+.bar{position:absolute;top:0;height:20px;border-left:1px solid #1d2028;font-size:10px;color:var(--faint);padding:3px 4px;cursor:pointer}
+.bar:hover{background:#1b1e26;color:var(--text)}
+.bar.four{border-left-color:#3a3f4b;color:var(--dim)}
+#bars{background-image:repeating-linear-gradient(90deg,#1d2028 0 1px,transparent 1px 46px);border-top:20px solid #14161c;box-sizing:content-box}
+#bars .bar{top:-20px}
+.sec{position:absolute;top:10px;height:46px;border-radius:7px;padding:4px 7px;font-size:12px;font-weight:600;color:#fff;text-shadow:0 1px 3px #000,0 0 2px #000;overflow:hidden;white-space:nowrap;cursor:pointer;border:2px solid transparent}
+.sec.sel{border-color:#fff}
+.sec small{display:block;font-weight:400;opacity:.75}
+#playhead{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 8px #fff;display:none}
+table{border-collapse:collapse;width:100%}
+td,th{padding:6px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+th{color:var(--dim);font-weight:500;font-size:12px}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#22252f;border:1px solid var(--line);padding:8px 14px;border-radius:999px;display:none;z-index:9}
+
+#padgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.ppad{aspect-ratio:1;border-radius:8px;border:2px solid rgba(255,255,255,.08);display:flex;align-items:flex-end;justify-content:center;font-size:10px;font-weight:600;color:#fff;text-shadow:0 1px 2px #000,0 0 2px #000;padding:3px;cursor:pointer;touch-action:none;text-align:center;line-height:1.1}
+.ppad.held{border-color:#fff;box-shadow:0 0 14px 2px rgba(255,255,255,.6)}
+#padlive .row{display:grid;grid-template-columns:110px minmax(80px,1fr) 60px;align-items:center;gap:10px;margin:5px 0}
+#padlive label{color:var(--text);font-size:13px}
+
+#cal-sliders .row{display:grid;grid-template-columns:150px minmax(80px,1fr) 52px;align-items:center;gap:10px;margin:4px 0}
+#cal-sliders h3{font-size:12px;color:var(--dim);margin:8px 0 2px;text-transform:uppercase;letter-spacing:1px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Light Desk</h1>
+  <span class="chip" id="c-bridge"><i></i><span>Lights</span></span>
+  <span class="chip" id="c-feed"><i></i><span>TouchDesigner</span></span>
+  <span class="chip"><span class="clock" id="c-clock">--</span></span>
+  <span class="chip warn" id="c-guard" style="display:none"><i></i>Guard softening</span>
+  <span class="chip" id="c-push"><i></i><span>Push 2</span></span>
+  <span class="spacer"></span>
+  <button class="big" id="movie" title="Movie mode: the lamps follow the film on the projector (Setup > Movie mode)">Movie</button>
+  <button class="big" id="hold" title="Freeze all motion">Hold</button>
+  <button class="big" id="hit" title="A single white hit (flicker protection still applies)">Hit</button>
+  <button class="big" id="tap" title="Tap tempo (when there is no Ableton beat)">Tap</button>
+  <button class="big danger" id="blackout">Blackout</button>
+</header>
+<nav>
+  <button class="sel" data-tab="show">Show</button>
+  <button data-tab="pads">Pads</button>
+  <button data-tab="audio">Audio</button>
+  <button data-tab="songs">Songs</button>
+  <button data-tab="setup">Setup</button>
+</nav>
+<main>
+<section class="tab sel" id="tab-show">
+  <div class="grid">
+    <div class="card">
+      <h2>Room <span class="spacer"></span><span class="hint" id="paint-target"></span></h2>
+      <div id="room"><div class="floor"></div></div>
+      <div class="toolbar">
+        <button id="sel-all">Select all</button>
+        <button id="sel-none">None</button>
+        <span class="hint" id="sel-count">Tap a lamp or zone, then a colour</span>
+      </div>
+      <div class="toolbar" id="swatches"></div>
+      <div class="toolbar">
+        <input type="color" id="custom" value="#ff7a00" title="Any colour">
+        <button id="paint-custom">Paint this colour</button>
+        <span class="hint">Gradient:</span>
+        <input type="color" id="g1" value="#ff1e14"><input type="color" id="g2" value="#8a3cff">
+        <button id="paint-grad">Spread over selection</button>
+      </div>
+      <div class="toolbar" id="harmony-bar">
+        <span class="hint">Sacred colours from</span>
+        <input type="color" id="harm-base" value="#ff2a00" title="The colour the harmony starts from">
+        <span id="harm-buttons" style="display:inline-flex;gap:5px;flex-wrap:wrap"></span>
+      </div>
+      <div class="hint" id="harm-help">Paints the selected zones (or every zone) in room order with colours chosen by sacred numbers.</div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Looks <span class="spacer"></span>
+          <button id="look-new" title="Copy the look you're editing">New copy</button>
+        </h2>
+        <div id="looks"></div>
+        <div class="hint" style="margin-top:6px">Tap a look to play it. Long-press (or right-click) a look to edit it without playing it.</div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>Editing: <span id="edit-name" style="color:var(--text);text-transform:none;letter-spacing:0"></span>
+          <span class="spacer"></span>
+          <button id="look-left" title="Move earlier">&#9664;</button><button id="look-right" title="Move later">&#9654;</button>
+          <button id="look-del" class="danger">Delete</button>
+        </h2>
+        <div class="row"><label>Name</label><input type="text" id="look-name" style="flex:1"></div>
+        <div class="row"><label>Motion</label><div class="chips" id="motions"></div></div>
+        <div class="row"><label>Sacred geometry</label><div class="chips" id="geomotions"></div></div>
+        <div class="row"><label>Speed</label><div class="chips" id="speeds"></div></div>
+        <div class="row"><label>Movement</label><input type="range" id="lk-depth" min="0" max="1" step="0.01"><span class="val" id="v-depth"></span></div>
+        <div class="row"><label>Together</label><input type="range" id="lk-together" min="0" max="1" step="0.01"><span class="val" id="v-together"></span></div>
+        <div class="row"><label>Brightness</label><input type="range" id="lk-level" min="0" max="1" step="0.01"><span class="val" id="v-level"></span></div>
+        <div class="row"><label>Wall hits</label><input type="range" id="lk-pichits" min="0" max="1" step="0.01"><span class="val" id="v-pichits"></span></div>
+        <div class="hint" id="motion-help"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h2>Live</h2>
+    <div id="live"></div>
+  </div>
+</section>
+
+<section class="tab" id="tab-pads">
+  <div class="grid">
+    <div class="card">
+      <h2>Pads <span class="spacer"></span>
+        <span class="chips" id="padmode"><button data-m="play" class="on">Play</button><button data-m="geo">Geometry</button></span>
+        <button id="patterns" title="Off: rows 1-7 are just their colour (each row still picks the sacred geometry). On: rows play wash / glow / hit / pulse / chase / sparkle / sweep">Patterns: off</button>
+        <button id="latch" class="on" title="On: the last pad you pushed keeps playing after you let go, until you push another pad">Latch: on</button>
+        <button id="pads-panic">All pads off</button></h2>
+      <div id="padgrid"></div>
+      <div class="hint" style="margin-top:8px" id="pad-hint"></div>
+    </div>
+    <div class="card">
+      <h2>How the pads play</h2>
+      <div id="padlive"></div>
+      <table class="pushmap" style="margin-top:8px">
+        <tr><td>How hard you hit</td><td>how bright it starts</td></tr>
+        <tr><td>Pressure</td><td>press harder while holding = a little brighter and fuller. Resting a finger does nothing; the <b>Pressure</b> slider sets how much the rest counts (0 = off)</td></tr>
+        <tr><td>Touch strip</td><td>bends the colour of everything you're playing (up to a quarter turn of the colour wheel)</td></tr>
+        <tr><td>Knobs (PLAY mode)</td><td>1 Master, 2 Colour, 3 Vibrance, 4 Pad level, 5 Attack, 6 Release, 7 Pad speed, 8 Spread</td></tr>
+        <tr><td>Layers</td><td>hold several pads: the newest plays on top; let go and the others fade out by Release (the last one stays if Latch is on)</td></tr>
+        <tr><td>Latch</td><td>on: the last pad you pushed keeps playing after you let go, until you push another pad (hits play over it). <b>All pads off</b> here or <b>Delete</b> on Push 2 clears it</td></tr>
+        <tr><td>Geometry pads</td><td>press <b>Scale</b> on Push 2: columns are forms (golden, flower, yantra, metatron, chladni, spiral, cube, tesseract), rows are colour harmonies; pressure grows the shape, the touch strip spins it (and the visuals in TouchDesigner)</td></tr>
+        <tr><td>Safety</td><td>however fast you play, no lamp flashes more often than the Flicker Guard allows</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="tab" id="tab-audio">
+  <div class="grid">
+    <div class="card">
+      <h2>The gear plays the lights <span class="spacer"></span><button id="au-on">On</button></h2>
+      <div class="row"><label>Hearing</label><span id="au-status" class="hint">-</span></div>
+      <div class="row"><label>Section</label><span id="au-section" style="font-weight:600;color:var(--accent);min-width:90px">-</span><span id="au-drops" class="hint"></span></div>
+      <div class="meters" id="au-meters"></div>
+      <div id="au-live"></div>
+      <div class="hint" style="margin-top:6px">The music drives the brightness; the look, your pads and Ableton give the colours.
+      Kick: the room punches to full and settles back. Snare: its lamps flip to the room's accent colour. Hats: one lamp at a time shimmers.
+      Breathe: how much the room between hits follows the loudness. Colour moves: the colours step round the room every bar (a one-colour room goes two-tone).
+      Drops: when the kick drops out the room goes low and pale; when it comes back, full brightness and colour, and the visuals burst.
+      Sound colour (off by default): bassy = warmer, bright = cooler. No white strobes; everything still goes through the Flicker Guard.</div>
+      <h2 style="margin-top:14px">The show <span class="spacer"></span><button id="ap-style">Programmed</button></h2>
+      <div class="mini-room" id="au-room" title="Your lamps where they are in the room (desk > Setup), live. Numbers = your order."></div>
+      <div class="row"><label>Now playing</label><span id="ap-now" class="hint">-</span></div>
+      <div class="row"><label>Visuals change every</label><select id="ap-visbars"><option value="1">bar</option><option value="2">2 bars</option><option value="4">4 bars</option><option value="8">8 bars (a phrase)</option></select><span class="hint">and on every drop</span></div>
+      <div id="ap-prog">
+        <div class="row"><label>Cue</label><select id="ap-cue"></select></div>
+        <div class="hint">Programmed: like a lighting operator on the beat grid. The lamps move together or in clean steps, in two colours
+        (from your look / pads) held for a whole phrase; Auto changes the cue every phrase and on drops; breakdowns go slow and soft.
+        It starts once the hub has locked onto the tempo (a few seconds of music) -- until then it plays Reactive.</div>
+      </div>
+      <div id="ap-react">
+      <div class="row"><label>Kick</label><select id="ap-kick"></select></div>
+      <div class="row"><label>Snare</label><select id="ap-snare"></select></div>
+      <div class="row"><label>Ripples start at</label><select id="ap-origin"></select></div>
+      <div class="row"><label>Auto: new pattern every</label><select id="ap-phrase"><option value="2">2 bars</option><option value="4">4 bars</option><option value="8">8 bars (a phrase)</option><option value="16">16 bars</option></select></div>
+      <div class="hint">Ripples, waves, bounces and spins use where your lamps are (Setup &gt; Move lamps); chases and colour moves use your order
+      (Setup &gt; Set the order). "Ripple travel" sets how long a hit takes to cross the room. When the hub has locked onto the tempo,
+      the kicks land on the beat grid -- sent early so the bulbs light ON the beat. Each lamp still flashes no more than the Flicker Guard allows.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Who does what</h2>
+      <div id="au-voices"></div>
+      <h2 style="margin-top:12px">Input</h2>
+      <div class="row"><label>Sound card</label><input type="text" id="au-in" style="width:150px" title="Part of the input's name"><label style="min-width:auto">inputs</label><input type="text" id="au-ch" style="width:60px" title="Which inputs, e.g. 1,2"></div>
+      <div class="row"><label>Sensitivity</label><input type="range" id="au-sens" min="0.4" max="2.5" step="0.05"><span class="val" id="au-sens-v"></span></div>
+      <h2 style="margin-top:12px">Digitakt MIDI (exact timing) <span class="spacer"></span><button id="tr-on">On</button></h2>
+      <div class="row"><label>MIDI in</label><input type="text" id="tr-port" style="width:150px" title="Part of the MIDI input's name (the Scarlett)"><span id="tr-status" class="hint"></span></div>
+      <div class="row"><label>Kick channel</label><input type="text" id="tr-kick" style="width:40px"><label style="min-width:auto">snare</label><input type="text" id="tr-snare" style="width:40px"><label style="min-width:auto">hats</label><input type="text" id="tr-hats" style="width:60px" title="one or more, e.g. 3,4"></div>
+      <div class="row"><label>Notes arriving</label><span id="tr-seen" class="hint">-</span></div>
+      <div class="row"><label>Tempo</label><button id="gc-on">Follow the music's tempo</button><span id="gc-status" class="hint"></span></div>
+      <div class="hint">Optional -- the sound alone runs the show. Any MIDI channel notes arrive on is listed above: put it in kick / snare / hats and those
+      lights hit exactly on the Digitakt's steps (the sound is still used for anything without notes). If the Digitakt sends MIDI clock
+      (Settings &gt; MIDI config &gt; Sync: clock send), the lights' beat follows the gear's tempo.</div>
+    </div>
+  </div>
+</section>
+
+<section class="tab" id="tab-songs">
+  <div class="row">
+    <label>Song</label><select id="song-sel"></select>
+    <button id="song-new">New song</button>
+    <input type="text" id="song-name" placeholder="Song name" style="width:180px">
+    <label style="min-width:auto">Length (bars)</label><input type="number" id="song-len" min="1" max="999" style="width:70px">
+    <button id="song-loop">Loop</button>
+    <span class="spacer"></span>
+    <button id="song-del" class="danger">Delete song</button>
+  </div>
+  <div class="row">
+    <button class="big" id="song-start">Start at next bar</button>
+    <button id="song-now">Start now</button>
+    <button id="song-next">Next section</button>
+    <button id="song-stop">Stop</button>
+    <span class="chip"><span class="clock" id="song-pos">not playing</span></span>
+  </div>
+  <div id="timeline"><div id="bars"></div><div id="playhead"></div></div>
+  <div class="hint" style="margin:6px 0 10px">Tap a bar number to add a section there. Tap a section to change it.</div>
+  <div class="card" id="sec-edit" style="display:none">
+    <h2>Section at bar <span id="sec-bar"></span><span class="spacer"></span><button id="sec-del" class="danger">Remove</button></h2>
+    <div class="row"><label>Look</label><select id="sec-look"></select>
+      <label style="min-width:auto">Label</label><input type="text" id="sec-label" placeholder="intro, build, drop..." style="width:160px">
+      <label style="min-width:auto">Bar</label><input type="number" id="sec-barin" min="1" style="width:70px">
+      <label style="min-width:auto">Fade (beats)</label><input type="number" id="sec-fade" min="0" max="64" step="0.5" style="width:70px">
+    </div>
+  </div>
+</section>
+
+<section class="tab" id="tab-setup">
+  <div class="grid">
+    <div class="card">
+      <h2>Lamp places</h2>
+      <div class="hint">Drag the lamps in the Room (Show tab, with "Move lamps" on) to where they really are, as the audience sees them. Chases and sweeps run left to right in that order; the picture is sampled where each zone sits.</div>
+      <div class="row"><button id="setup-move">Move lamps: off</button><button id="setup-order">Set the order</button><button id="setup-order-reset">Order: left to right</button></div>
+      <div class="hint">Set the order: tap the lamps in the Room one after another, in the order chases should run (1, 2, 3...).</div>
+      <table id="lamp-table"></table>
+    </div>
+    <div class="card">
+      <h2>Movie mode <span class="spacer"></span><button id="mv-on">Off</button></h2>
+      <div class="row"><label>Status</label><span id="mv-status" class="hint">off</span></div>
+      <div class="row"><label>Picture from</label><select id="mv-src"><option value="capture">Capture card (PS5 / PC through an HDMI splitter)</option><option value="screen">This Mac's screen</option><option value="camera">A camera pointed at the screen</option></select></div>
+      <div id="mv-live"></div>
+      <div class="hint">While Movie mode is on, the lamps take the colours of the picture around where they sit (left lamps the left of the
+      picture, and so on), instead of the look, pads and music -- like an ambilight, with no sync box. Turn it off and the show comes back.
+      The Flicker Guard still protects you from strobing scenes.<br>
+      Capture card: HDMI splitter -> projector + a USB capture card into this Mac; on the PS5 turn off Settings &gt; System &gt; HDMI &gt; Enable HDCP
+      (games only -- Netflix and other video apps won't play with it off).
+      This Mac's screen: macOS asks once to allow Screen Recording for TouchDesigner (protected streaming video shows black).
+      Camera: any webcam aimed at the projection; trim its view in TouchDesigner (movie_in &gt; camera_crop) and keep the lamps from shining on the screen.</div>
+    </div>
+    <div class="card">
+      <h2>Clock and lights</h2>
+      <div class="row"><label>Beat from</label><span id="setup-clock" class="hint"></span></div>
+      <div class="row"><button id="downbeat">Now is beat 1</button><span class="hint">press on a downbeat to line up bars</span></div>
+      <div class="row"><label>Lights</label><span id="setup-bridge" class="hint"></span></div>
+      <div class="row"><button id="connect">Connect lights again</button></div>
+      <div class="hint" style="margin-top:10px">Phone: start the hub with <b>--phone</b> and open the address it prints. Gradient lamps showing only one zone? Run <b>python3 hue_stream.py scan</b> in Terminal.</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h2>Ableton plays the lights (IAC Driver) <span class="spacer"></span><button id="iac-on">On</button></h2>
+    <div class="row"><label>Status</label><span id="iac-status" class="hint">-</span></div>
+    <div class="row"><label>Notes become</label><select id="iac-map"><option value="pads">the same pads as User mode (note number = pad)</option><option value="wheel">colours by pitch (C red, E green, G blue...), octave picks the geometry</option></select></div>
+    <div class="row"><label>IAC bus name</label><input type="text" id="iac-port" style="width:200px" title="Part of the IAC bus name to listen to"></div>
+    <div class="row"><label style="min-width:auto"><input type="checkbox" id="iac-looks"> Program change N plays look N (put one on a clip: a scene launch changes the look)</label></div>
+    <div class="row"><label style="min-width:auto"><input type="checkbox" id="iac-mpe"> MPE pressure per note (Expressive Chords, MPE instruments)</label></div>
+    <div class="hint">Keep Push 2 in Live mode (scenes, clips, Expressive Chords) and send Live's MIDI here:
+    <b>1.</b> Mac: Audio MIDI Setup &gt; Window &gt; Show MIDI Studio &gt; double-click IAC Driver &gt; tick "Device is online".
+    <b>2.</b> Live: Settings &gt; Link, Tempo &amp; MIDI &gt; Output "IAC Driver": Track on.
+    <b>3.</b> A MIDI track: MIDI From = the track you play, MIDI To = IAC Driver, Monitor = In (clips on it work too).
+    Every note goes through the same pad data as User mode: colour, geometry, latch and flicker protection. User mode still works.</div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h2>Push 2 (press User on Push 2)</h2>
+    <table class="pushmap">
+      <tr><td>Session button</td><td>LOOKS mode: top 6 pad rows = your looks (playing one white), bottom 2 rows = song sections</td></tr>
+      <tr><td>Note button</td><td>PLAY mode: all 64 pads are colours x effects you play live, with velocity, pressure and the touch strip (see the Pads tab)</td></tr>
+      <tr><td>Scale button</td><td>GEOMETRY mode: columns = golden, flower, yantra, metatron, chladni, spiral, cube, tesseract; rows (bottom to top) = white light, golden, triad, hexad, opposite, warm, cool, fibonacci. Pressure grows the shape, the touch strip spins it. The buttons below the screen set the playing look to these forms.</td></tr>
+      <tr><td>Layout button</td><td>PAINT mode: top 6 rows = every lamp and zone (bright = selected, tap to select; Select = all / none), bottom 2 rows = 16 colours: tap to paint the selected zones (none selected = all)</td></tr>
+      <tr><td>Buttons below the screen</td><td>pattern: still, breathe, pulse, chase, wave, sparkle, drift, rainbow</td></tr>
+      <tr><td>Buttons above the screen</td><td>speed: 4 bars, 2 bars, 1 bar, 2 beats, 1 beat, 1/2 beat, then picture, wall hits on/off</td></tr>
+      <tr><td>Knobs 1-8</td><td>Master, Colour, Vibrance, Brightness, Movement, Together, Speed, Smoothing. In PAINT mode Colour / Vibrance / Brightness change the selected zones' paint; in LOOKS mode Colour / Vibrance turn the whole room live</td></tr>
+      <tr><td>Delete button</td><td>all pads off, including the latched one (the last pad you pushed stays on until you push another pad)</td></tr>
+      <tr><td>Big knobs</td><td>Master knob = Master, Tempo knob = Look fade, Swing knob = Flicker Guard</td></tr>
+      <tr><td>Other buttons</td><td>Left / Right arrows = previous / next look, New = copy the playing look, Tap Tempo = tap, Metronome = hold, Mute = blackout, Accent = hit, Play = start / stop the song, Record = now is beat 1</td></tr>
+    </table>
+    <div class="hint" style="margin-top:6px">Push 2 changes the look that is playing, and they're saved. Zones selected on Push show a dashed blue outline in the Room.</div>
+  </div>
+  <div class="card" style="margin-top:12px" id="calcard">
+    <h2>Colour match <span class="spacer"></span><button id="cal-stop">Stop test</button></h2>
+    <div class="hint">Tap a test colour: every lamp and every Push pad show it, and the big swatch shows what you should be seeing.
+    Start with <b>white</b>: if the lamps look too blue, green or pink, turn that channel down under Lamps; same for the Push under Push 2.
+    Then check the other colours.</div>
+    <div class="toolbar" id="cal-tests"></div>
+    <div class="grid" style="margin-top:8px">
+      <div><div id="cal-swatch" style="height:110px;border-radius:10px;border:1px solid var(--line);background:#000"></div>
+        <div class="row" style="margin-top:8px"><label style="min-width:auto"><input type="checkbox" id="cal-proof"> Show colours as the bulbs can really show them (desk + Push)</label></div></div>
+      <div id="cal-sliders"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h2>Timing: lamps, Push and TouchDesigner together <span class="spacer"></span><button id="sync-test">Sync test</button></h2>
+    <div class="hint">The bulbs show a colour a little after it's sent (the bridge passes it on over Zigbee 25 times a second).
+    Push and TouchDesigner wait <b>Lamp delay</b> so all three change together. Press <b>Sync test</b>: lamps, every Push pad
+    and the TouchDesigner visuals swap between red and blue once a second. Move Lamp delay until they swap at the same moment.</div>
+    <div class="row" style="margin-top:8px"><label>Lamp delay</label><input type="range" id="lamp-delay" min="0" max="250" step="5"><span class="val" id="lamp-delay-v"></span></div>
+    <div class="row"><label style="min-width:auto"><input type="checkbox" id="held-white"> Light held Push pads white (off = a held pad keeps its true colour)</label></div>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === 'class') e.className = v; else if (k === 'style') e.style.cssText = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v); } for (const k of kids) e.append(k); return e; };
+let orderMode = false, orderSeq = [];
+let S = null, L = null, editing = null, selected = new Set(), moveMode = false, curSong = null, selSec = -1;
+const SWATCHES = [['red','#ff0000'],['orange','#ff6100'],['yellow','#ffd900'],['green','#00ff0d'],['blue','#004dff'],['indigo','#4700ff'],['violet','#b300ff'],['pink','#ff5a9e'],['magenta','#ff00d4'],['teal','#19d2c8'],['warm white','#ffbf73'],['white','#ffffff'],['off','#000000']];
+const MOTION_HELP = {still:'Exactly the colours you painted.', breathe:'Brightness rises and falls. Together = all at once.', pulse:'A hit on every cycle, fading out.', chase:'A bright spot runs across the room, left to right.', wave:'Waves spread out from the middle of the room.', sparkle:'Random zones flare, twice per cycle.', drift:'Your colours slide from lamp to lamp across the room.', rainbow:'Red, orange, yellow, green, blue, indigo, violet: spread, together, then sweeping.', picture:'Each zone copies the projection where it sits. Movement = how much.',
+  golden:'Golden angle (phyllotaxis): one zone lights per cycle, chosen by the golden ratio, each 137.5° further round the colour wheel. Together = how long each seed glows.',
+  flower:'Flower of Life: the centre breathes, and the ring around it breathes in six petals, one after another.',
+  yantra:'Sri Yantra: upward triangles in your colours and downward triangles in their opposites interlock and trade places; the bindu (centre) pulses.',
+  metatron:"Metatron's Cube: a point of light travels the cube's lines through the room.",
+  chladni:'Chladni plate: the zones on the vibrating parts of a sound plate glow; a new mode every 4 cycles. The same modes drive the chladni visual in TouchDesigner.',
+  spiral:'A golden spiral turns through the room. Together = how wide the arms are.',
+  tetrahedron:'A tetrahedron rotates through the room; its corners light the zones they pass (front corners brighter).',
+  cube:'A cube rotates through the room; its corners light the zones they pass.',
+  tesseract:'A tesseract (4D cube) turns through the room; its 16 corners light the zones they pass.'};
+const HARMONY_HELP = {golden:'each colour 137.5° (the golden angle) round the wheel from the last', triad:'three colours, a third of the wheel apart', hexad:'six colours, a sixth of the wheel apart', opposite:'your colour and its opposite, alternating', analogous:'close neighbours of your colour', fibonacci:'shades of one colour, each 1/φ of the last'};
+const LIVE = [['master','Master',0,1,0.01,v=>Math.round(v*100)+'%'],['speed','Speed',0.25,4,0.01,v=>'x'+v.toFixed(2)],['smooth','Smoothing',0,1,0.01,v=>v.toFixed(2)],['fade','Look fade',0,10,0.1,v=>v.toFixed(1)+' s'],['tint','Colour',-180,180,1,v=>Math.round(v)+'°'],['sat','Vibrance',0,1.5,0.01,v=>Math.round(v*100)+'%'],['depth','Movement',0,2,0.01,v=>'x'+v.toFixed(2)],['guard','Flicker Guard',0.5,3,0.1,v=>v.toFixed(1)+'/s'],['tempo','Tempo (no Ableton)',40,240,0.5,v=>v.toFixed(1)]];
+
+async function api(cmd){ try{ const r = await fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cmd)}); const j = await r.json(); if(!j.ok) toast(j.error); return j.result; }catch(e){ toast('Hub not reachable'); } }
+async function loadState(){ S = await (await fetch('/api/state')).json(); if(!editing || !S.looks.find(l=>l.id===editing)) editing = S.active; renderAll(); }
+function toast(t){ const e=$('#toast'); e.textContent=t; e.style.display='block'; clearTimeout(e._t); e._t=setTimeout(()=>e.style.display='none',2500); }
+function look(id){ return S.looks.find(l=>l.id===id); }
+const RAINBOW_COLS = ['#ff0000','#ff6100','#ffd900','#00ff0d','#004dff','#4700ff','#b300ff'];
+function lookColours(lk){ if(lk.motion==='rainbow') return RAINBOW_COLS; if(lk.motion==='picture') return ['#3a3f4b','#6b7280','#3a3f4b']; return S.segs.slice().sort((a,b)=>a.u-b.u).map(s=>lookCol(lk,s.key)); }
+function lookGradient(lk){ const c=lookColours(lk); return 'linear-gradient(90deg,'+c.map((x,i)=>x+' '+Math.round(i/c.length*100)+'% '+Math.round((i+1)/c.length*100)+'%').join(',')+')'; }
+function lookCol(lk, key){ return (lk.canvas && lk.canvas[key]) || lk.fill || '#ffffff'; }
+
+// ---------- room ----------
+function displayPlaces(){
+  // lamps that sit on the same spot are drawn side by side, so every one stays readable
+  const out = [];
+  S.rig.forEach((lp, li) => {
+    let [u, v] = lp.place, n = 0;
+    while (n < 12 && out.some(p => Math.abs(p[0]-u) < 0.11 && Math.abs(p[1]-v) < 0.16)) {
+      n++; u = lp.place[0] + (n % 2 ? 1 : -1) * Math.ceil(n/2) * 0.12;
+      if (u > 1) u -= 0.24 * Math.ceil(n/2); if (u < 0) u += 0.24 * Math.ceil(n/2);
+    }
+    out.push([Math.min(1,Math.max(0,u)), v]);
+  });
+  return out;
+}
+function unclutterLabels(){
+  const placed = [];
+  document.querySelectorAll('#room .lamp .name').forEach(nm => {
+    nm.style.marginTop = '4px'; let r = nm.getBoundingClientRect(), k = 0;
+    while (k < 5 && placed.some(p => r.left < p.right && r.right > p.left && r.top < p.bottom && r.bottom > p.top)) {
+      k++; nm.style.marginTop = (4 + k*15) + 'px'; r = nm.getBoundingClientRect();
+    }
+    placed.push(r);
+  });
+}
+function renderRoom(){
+  const room = $('#room'); room.querySelectorAll('.lamp').forEach(n=>n.remove());
+  room.classList.toggle('setup', moveMode);
+  const disp = displayPlaces();
+  S.rig.forEach((lp, li) => {
+    const multi = lp.segs.length > 1;
+    const d = el('div', {class:'lamp' + (multi?' multi':'') + (lp.axis==='across'?' across':''), 'data-lamp':li});
+    const pl = moveMode ? lp.place : disp[li];
+    d.style.left = (pl[0]*84+8)+'%'; d.style.bottom = (pl[1]*62+22)+'%';
+    lp.segs.forEach((key,si) => {
+      const s = el('div',{class:'seg'+(selected.has(key)?' sel':''),'data-key':key,title:lp.name+(multi?' zone '+(si+1):'')});
+      s.addEventListener('pointerdown', ev => { if(moveMode) return; ev.stopPropagation(); if(orderMode){ orderPick(lp); return; } toggleSel([key], ev.shiftKey||ev.metaKey); });
+      d.append(s);
+    });
+    const nm = el('div',{class:'name'+(pl[0]<0.12?' atleft':pl[0]>0.88?' atright':''),title:lp.name}, lp.name + (multi?' ('+lp.segs.length+')':''));
+    nm.addEventListener('pointerdown', ev => { if(moveMode) return; ev.stopPropagation(); if(orderMode){ orderPick(lp); return; } toggleSel(lp.segs, ev.shiftKey||ev.metaKey); });
+    d.append(nm);
+    const on = orderMode ? (orderSeq.indexOf(lp.key)+1 || null) : (lp.order!==null && lp.order!==undefined ? lp.order+1 : null);
+    if(on) d.append(el('div',{class:'ordbadge'}, String(on)));
+    d.addEventListener('pointerdown', ev => { if(!moveMode) return; startDrag(ev, d, lp); });
+    room.append(d);
+  });
+  requestAnimationFrame(unclutterLabels);
+  paintPreview();
+  $('#sel-count').textContent = selected.size ? selected.size+' zone'+(selected.size>1?'s':'')+' selected' : 'Tap a lamp or zone, then a colour';
+  const lk = look(editing); $('#paint-target').textContent = lk ? 'painting "'+lk.name+'"' : '';
+}
+function toggleSel(keys, add){
+  const allIn = keys.every(k=>selected.has(k));
+  if(!add){ selected = new Set(allIn && selected.size===keys.length ? [] : keys); }
+  else keys.forEach(k => allIn ? selected.delete(k) : selected.add(k));
+  renderRoom();
+}
+function startDrag(ev, d, lp){
+  const room = $('#room').getBoundingClientRect(); d.setPointerCapture(ev.pointerId);
+  const move = e => { const u = Math.min(1,Math.max(0,((e.clientX-room.left)/room.width*100-8)/84)); const v = Math.min(1,Math.max(0,((room.bottom-e.clientY)/room.height*100-22)/62)); lp.place=[u,v]; d.style.left=(u*84+8)+'%'; d.style.bottom=(v*62+22)+'%'; };
+  const up = async () => { d.removeEventListener('pointermove',move); d.removeEventListener('pointerup',up); await api({op:'lamp',key:lp.key,place:lp.place}); loadState(); };
+  d.addEventListener('pointermove',move); d.addEventListener('pointerup',up);
+}
+let liveCols = {};
+function paintPreview(){
+  document.querySelectorAll('#room .seg').forEach(s => {
+    const seg = S.segs.find(x=>x.key===s.dataset.key); const c = seg && liveCols[seg.ch] || '#000000';
+    s.style.background = c; s.style.setProperty('--glow', c+'aa');
+  });
+}
+
+// ---------- paint ----------
+function renderSwatches(){
+  const w = $('#swatches'); w.innerHTML='';
+  SWATCHES.forEach(([n,c]) => w.append(el('button',{class:'sw',title:n,style:'background:'+c,onclick:()=>paint(c)})));
+}
+async function paint(color, colors){
+  if(!selected.size){ toast('Select lamps or zones first'); return; }
+  const keys = orderedSelection();
+  const cmd = colors ? {op:'paint',look:editing,keys,colors} : {op:'paint',look:editing,keys,color};
+  await api(cmd); const lk = look(editing); keys.forEach((k,i)=> lk.canvas[k] = colors?colors[i]:color); renderLooks();
+}
+function orderedSelection(){ return S.segs.filter(s=>selected.has(s.key)).sort((a,b)=> a.u-b.u || b.v-a.v).map(s=>s.key); }
+function hex2rgb(h){ return [1,3,5].map(i=>parseInt(h.substr(i,2),16)/255); }
+function rgb2hex(c){ return '#'+c.map(v=>Math.round(Math.max(0,Math.min(1,v))*255).toString(16).padStart(2,'0')).join(''); }
+function rgb2hsv([r,g,b]){ const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; let h=0; if(d){ if(mx===r) h=((g-b)/d)%6; else if(mx===g) h=(b-r)/d+2; else h=(r-g)/d+4; h/=6; if(h<0) h+=1; } return [h, mx?d/mx:0, mx]; }
+function hsv2rgb([h,s,v]){ const i=Math.floor(h*6), f=h*6-i, p=v*(1-s), q=v*(1-f*s), t=v*(1-(1-f)*s); return [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][((i%6)+6)%6]; }
+function wheelMix(a,b,t){ const A=rgb2hsv(hex2rgb(a)), B=rgb2hsv(hex2rgb(b)); if(A[1]<.02||A[2]<.02) A[0]=B[0]; if(B[1]<.02||B[2]<.02) B[0]=A[0]; let dh=((B[0]-A[0]+1.5)%1)-.5; return rgb2hex(hsv2rgb([(A[0]+dh*t+1)%1, A[1]+(B[1]-A[1])*t, A[2]+(B[2]-A[2])*t])); }
+
+// ---------- looks ----------
+function renderLooks(){
+  const g = $('#looks'); g.innerHTML='';
+  S.looks.forEach(lk => {
+    const strip = el('div',{class:'strip'}); lookColours(lk).forEach(c=>strip.append(el('span',{style:'background:'+c})));
+    const p = el('div',{class:'pad'+(lk.id===L?.active?' active':'')+(lk.id===editing?' editing':'')}, el('div',{class:'nm'},lk.name), el('div',{class:'mo'},lk.motion+' · '+speedLabel(lk.speed)), strip);
+    let timer=null, long=false;
+    p.addEventListener('pointerdown',()=>{ long=false; timer=setTimeout(()=>{ long=true; editing=lk.id; renderAll(); },450); });
+    p.addEventListener('pointerup',()=>{ clearTimeout(timer); if(!long){ editing=lk.id; api({op:'go',look:lk.id}); if(L) L.active=lk.id; renderAll(); } });
+    p.addEventListener('pointerleave',()=>clearTimeout(timer));
+    p.addEventListener('contextmenu',e=>{ e.preventDefault(); clearTimeout(timer); long=true; editing=lk.id; renderAll(); });
+    g.append(p);
+  });
+}
+function speedLabel(v){ const s = S.speeds.find(x=>Math.abs(x.value-v)<1e-6); return s ? s.label : v+'/beat'; }
+function renderEditor(){
+  const lk = look(editing); if(!lk) return;
+  $('#edit-name').textContent = lk.name; if(document.activeElement!==$('#look-name')) $('#look-name').value = lk.name;
+  const m = $('#motions'); m.innerHTML='';
+  const gm = $('#geomotions'); gm.innerHTML='';
+  const forms = S.geo_forms || [];
+  S.motions.forEach(x => (forms.includes(x)?gm:m).append(el('button',{class:lk.motion===x?'on':'',onclick:()=>saveLook({motion:x})},x)));
+  const sp = $('#speeds'); sp.innerHTML='';
+  S.speeds.forEach(x => sp.append(el('button',{class:Math.abs(lk.speed-x.value)<1e-6?'on':'',onclick:()=>saveLook({speed:x.value})},x.label)));
+  for(const k of ['depth','together','level','pichits']){ const i=$('#lk-'+k); if(document.activeElement!==i) i.value = lk[k] ?? 0; $('#v-'+k).textContent = Math.round((lk[k]??0)*100)+'%'; }
+  $('#motion-help').textContent = MOTION_HELP[lk.motion] || '';
+  $('#look-del').classList.remove('on'); $('#look-del').textContent='Delete';
+}
+let saveTimer=null;
+function saveLook(changes, now=true){
+  const lk = look(editing); Object.assign(lk, changes); renderLooks(); renderEditor();
+  clearTimeout(saveTimer); const send=()=>api({op:'look.save',look:lk}); if(now) send(); else saveTimer=setTimeout(send,120);
+}
+['depth','together','level','pichits'].forEach(k => $('#lk-'+k).addEventListener('input', e => { saveLook({[k]:parseFloat(e.target.value)}, false); }));
+$('#look-name').addEventListener('change', e => saveLook({name:e.target.value.trim()||'Look'}));
+$('#look-new').onclick = async () => { const id = await api({op:'look.duplicate',id:editing}); if(id){ editing=id; await loadState(); toast('Copied. Paint away.'); } };
+$('#look-del').onclick = async e => { const b=e.currentTarget; if(!b.classList.contains('on')){ b.classList.add('on'); b.textContent='Sure? Tap again'; setTimeout(()=>{b.classList.remove('on'); b.textContent='Delete';},3000); return; } await api({op:'look.delete',id:editing}); editing=null; loadState(); };
+$('#look-left').onclick = () => moveLook(-1); $('#look-right').onclick = () => moveLook(1);
+async function moveLook(d){ const i=S.looks.findIndex(l=>l.id===editing); await api({op:'look.move',id:editing,to:i+d}); loadState(); }
+
+
+// ---------- pads (same layout as Push 2 PLAY mode) ----------
+const PAD_COLS = [['red','#ff0000'],['orange','#ff4f00'],['yellow','#ffd100'],['green','#00ff1f'],['cyan','#00e0ff'],['blue','#0040ff'],['violet','#8a00ff'],['pink','#ff2999']];
+const PAD_ROWS = ['wash','glow','hit','pulse','chase','sparkle','sweep'];
+const PAD_SPECIAL = [['rainbow','linear-gradient(90deg,#f00,#f80,#fd0,#0f1,#04f,#40f,#b0f)'],['fire','linear-gradient(90deg,#f00,#f40,#f80,#fc0)'],['sunset','linear-gradient(90deg,#fc0,#f70,#f13,#b09,#60f)'],['aurora','linear-gradient(90deg,#0f4,#0fb,#09f,#80f)'],['ocean','linear-gradient(90deg,#0ef,#08f,#0fc,#13f)'],['golden','linear-gradient(90deg,#04f,#f80,#0f6,#f0b,#ff0)'],['galaxy','linear-gradient(90deg,#80f,#f0c,#21f,#c5f,#f38)'],['confetti','linear-gradient(135deg,#f0a,#0cf,#fd0,#0f4,#f40)']];
+const ROW_VISUAL = ['flower of life','golden angle',"Metatron's cube",'Chladni','Sri Yantra','reaction-diffusion','tesseract','all blended'];
+let padPatterns = null;
+const ROW_K = [1.0,0.45,0.9,0.7,0.55,0.4,0.8,1.0];
+const PAD_LIVE = [['p_pressure','Pressure',0,1,0.01,v=>Math.round(v*100)+'%'],['p_level','Pad level',0,1.5,0.01,v=>Math.round(v*100)+'%'],['p_attack','Attack',0.005,2,0.005,v=>Math.round(v*1000)+' ms'],['p_release','Release',0.02,4,0.01,v=>v.toFixed(2)+' s'],['p_speed','Pad speed',0.25,4,0.01,v=>'x'+v.toFixed(2)],['p_spread','Spread',0,1,0.01,v=>Math.round(v*100)+'%']];
+function dimHex(h,k){ const c=hex2rgb(h).map(v=>v*k); return rgb2hex(c); }
+let padMode='play', padBuilt=null;
+function buildPadGrid(){
+  const g=$('#padgrid'); g.innerHTML=''; padBuilt=padMode;
+  for(let row=7; row>=0; row--) for(let col=0; col<8; col++){
+    const note = 36 + row*8 + col; let label, bg, send=note;
+    if(padMode==='geo'){
+      const gp = (S.geo_pads||{})[note] || {form:'',row:'',colours:['#444']};
+      label = gp.form+' · '+gp.row; send = note+100;
+      const c = gp.colours; bg = c.length>1 ? 'linear-gradient(135deg,'+c.join(',')+')' : c[0];
+    } else {
+      const pc = S.pad_colours && S.pad_colours[note];
+      if(row===7){ label=PAD_SPECIAL[col][0]; bg=PAD_SPECIAL[col][1]; }
+      else { label=PAD_COLS[col][0]+' '+(padPatterns ? PAD_ROWS[row] : '· '+ROW_VISUAL[row]); bg=pc||PAD_COLS[col][1]; }
+    }
+    const p=el('div',{class:'ppad','data-note':note,style:'background:'+bg},label);
+    const on=e=>{ e.preventDefault(); p.setPointerCapture?.(e.pointerId); api({op:'pad',note:send,vel:110,on:true}); };
+    const off=()=>api({op:'pad',note:send,on:false});
+    p.addEventListener('pointerdown',on); p.addEventListener('pointerup',off); p.addEventListener('pointercancel',off);
+    g.append(p);
+  }
+  $('#pad-hint').innerHTML = padMode==='geo'
+    ? 'The same 64 pads as Push 2 in GEOMETRY mode (press <b>Scale</b> on Push). Columns are sacred forms, rows (bottom to top) are colour harmonies: white light, golden, triad, hexad, opposite, warm, cool, fibonacci. Hold a pad here to try it.'
+    : 'The same 64 pads as Push 2 in PLAY mode (press <b>Note</b> on Push). Hold a pad here to try it. Columns are colours'+(padPatterns?', rows are effects':' (Patterns off: rows 1-7 are just their colour)')+'; the top row is multi-colour (rainbow, fire, sunset, aurora, ocean, golden, galaxy, confetti).<br>Each row picks the sacred geometry the TouchDesigner visuals show, bottom to top: '+ROW_VISUAL.map((v,i)=>'row '+(i+1)+' = '+v).join(', ')+'.<br>Across the pads, left to right, shapes it: smaller to bigger, an extra turn, partly drawn to whole, thin to bold lines (it glides there). The top row blends all the geometry, each one in a different lamp colour.';
+  document.querySelectorAll('#padmode button').forEach(b=>b.classList.toggle('on', b.dataset.m===padMode));
+}
+document.querySelectorAll('#padmode button').forEach(b=>b.onclick=()=>{ api({op:'pads.panic'}); padMode=b.dataset.m; buildPadGrid(); });
+function renderHarmony(){
+  const w=$('#harm-buttons'); if(w.childElementCount) return;
+  (S.harmonies||[]).forEach(k=>w.append(el('button',{title:HARMONY_HELP[k]||'',onclick:async()=>{
+    const keys = selected.size ? [...selected] : null;
+    await api({op:'harmony', look:editing, kind:k, base:$('#harm-base').value, keys});
+    await loadState(); toast(k+' harmony painted'+(keys?' on the selection':' on every zone'));
+  }}, k)));
+}
+function renderPads(){
+  renderHarmony();
+  if(padBuilt!==padMode) buildPadGrid();
+  const w=$('#padlive'); if(w.childElementCount) return;
+  PAD_LIVE.forEach(([k,label,mn,mx,st,fmt])=>{ const i=el('input',{type:'range',min:mn,max:mx,step:st,id:'live-'+k}); const v=el('span',{class:'val',id:'lv-'+k});
+    i.addEventListener('input',()=>{ v.textContent=fmt(parseFloat(i.value)); api({op:'live',key:k,value:parseFloat(i.value)}); });
+    w.append(el('div',{class:'row'}, el('label',{},label), i, v)); });
+}
+$('#pads-panic').onclick = () => api({op:'pads.panic'});
+$('#patterns').onclick = () => { const on=!$('#patterns').classList.contains('on'); api({op:'live',key:'p_patterns',value:on?1:0}); syncLive({p_patterns:on?1:0}); };
+$('#latch').onclick = () => { const on=!$('#latch').classList.contains('on'); api({op:'live',key:'p_latch',value:on?1:0}); syncLive({p_latch:on?1:0}); };
+
+
+// ---------- colour match ----------
+const CAL_TESTS=[['white','#ffffff'],['warm white','#ffbf73'],['red','#ff0000'],['orange','#ff5000'],['yellow','#ffd000'],['green','#00ff20'],['cyan','#00e0ff'],['blue','#0040ff'],['violet','#8a00ff'],['pink','#ff2a9a']];
+const CAL_SLIDERS=[['Lamps',[['vivid','Vividness',0,1],['light_r','Red',0.3,1],['light_g','Green',0.3,1],['light_b','Blue',0.3,1]]],['Push 2',[['push_bright','Brightness',0.2,1],['push_gamma','Brightness curve',1,3],['push_r','Red',0.2,1],['push_g','Green',0.2,1],['push_b','Blue',0.2,1]]]];
+function renderCal(){
+  const t=$('#cal-tests'); if(!t || t.childElementCount) { syncCal(); return; }
+  CAL_TESTS.forEach(([n,c])=>t.append(el('button',{onclick:()=>api({op:'calib.test',color:c}),style:'border-left:14px solid '+c},n)));
+  const w=$('#cal-sliders');
+  CAL_SLIDERS.forEach(([title,list])=>{ w.append(el('h3',{},title)); list.forEach(([k,label,mn,mx])=>{
+    const i=el('input',{type:'range',min:mn,max:mx,step:0.01,id:'cal-'+k}); const v=el('span',{class:'val',id:'calv-'+k});
+    i.addEventListener('input',()=>{ v.textContent=parseFloat(i.value).toFixed(2); api({op:'calib',key:k,value:parseFloat(i.value)}); });
+    w.append(el('div',{class:'row'},el('label',{},label),i,v)); }); });
+  $('#cal-proof').addEventListener('change',e=>api({op:'calib',key:'proof',value:e.target.checked}));
+  $('#cal-stop').onclick=()=>api({op:'calib.test',color:null});
+  $('#lamp-delay').addEventListener('input',e=>{ $('#lamp-delay-v').textContent=e.target.value+' ms'; api({op:'calib',key:'lamp_delay',value:parseFloat(e.target.value)}); });
+  $('#held-white').addEventListener('change',e=>api({op:'calib',key:'held_white',value:e.target.checked}));
+  $('#sync-test').onclick=()=>{ const on=!$('#sync-test').classList.contains('on'); api({op:'sync.test',on}); $('#sync-test').classList.toggle('on',on); $('#sync-test').textContent=on?'Stop sync test':'Sync test'; };
+  syncCal();
+}
+function syncCal(){ const k=S.calibration||{}; CAL_SLIDERS.forEach(([,list])=>list.forEach(([key])=>{ const i=$('#cal-'+key); if(i && document.activeElement!==i && k[key]!==undefined){ i.value=k[key]; $('#calv-'+key).textContent=(+k[key]).toFixed(2); } })); const p=$('#cal-proof'); if(p) p.checked=k.proof!==false;
+  const d=$('#lamp-delay'); if(d && document.activeElement!==d && k.lamp_delay!==undefined){ d.value=k.lamp_delay; $('#lamp-delay-v').textContent=Math.round(k.lamp_delay)+' ms'; }
+  const hw=$('#held-white'); if(hw) hw.checked=!!k.held_white; }
+
+// ---------- live ----------
+function renderLive(){
+  const w = $('#live'); if(w.childElementCount) return;
+  LIVE.forEach(([k,label,mn,mx,st,fmt]) => {
+    const i = el('input',{type:'range',min:mn,max:mx,step:st,id:'live-'+k}); const v = el('span',{class:'val',id:'lv-'+k});
+    i.addEventListener('input',()=>{ v.textContent=fmt(parseFloat(i.value)); api({op:'live',key:k,value:parseFloat(i.value)}); });
+    i.addEventListener('dblclick',()=>{ const d={master:1,speed:1,smooth:.25,fade:2,tint:0,sat:1,depth:1,guard:2,tempo:120}[k]; i.value=d; i.dispatchEvent(new Event('input')); });
+    w.append(el('div',{class:'row'}, el('label',{},label), i, v));
+  });
+}
+// ---------- audio ----------
+const AUDIO_LIVE = [['a_amt','Audio show',0,1,0.01,v=>Math.round(v*100)+'%'],['a_kick','Kick punch',0,1,0.01,v=>Math.round(v*100)+'%'],['a_snare','Snare accent',0,1,0.01,v=>Math.round(v*100)+'%'],['a_hats','Hat shimmer',0,1,0.01,v=>Math.round(v*100)+'%'],['a_follow','Breathe',0,1,0.01,v=>Math.round(v*100)+'%'],['a_drop','Drops',0,1,0.01,v=>Math.round(v*100)+'%'],['a_move','Colour moves',0,1,0.01,v=>Math.round(v*100)+'%'],['a_spread','Ripple travel',0,1,0.01,v=>Math.round(v*100)+'%'],['a_colour','Sound colour',0,1,0.01,v=>Math.round(v*100)+'%']];
+const METERS=[['level','Loudness',''],['low','Lows',''],['synth','Synth',''],['high','Highs',''],['kick','Kick','k'],['snare','Snare','s'],['hats','Hats','h']];
+const ZONE_NAMES=[['all','all lamps'],['odd','every other lamp'],['even','the other half'],['left','left side'],['right','right side'],['centre','the middle'],['edges','the edges']];
+const PICK_DEF={kick:'#ff2d55',snare:'#7c5cff',hats:'#4cc9f0'};
+function renderAudio(){
+  const w=$('#au-live'); if(!w || w.childElementCount) { syncAudio(); return; }
+  AUDIO_LIVE.forEach(([k,label,mn,mx,st,fmt])=>{ const i=el('input',{type:'range',min:mn,max:mx,step:st,id:'live-'+k}); const v=el('span',{class:'val',id:'lv-'+k});
+    i.addEventListener('input',()=>{ v.textContent=fmt(parseFloat(i.value)); api({op:'live',key:k,value:parseFloat(i.value)}); });
+    w.append(el('div',{class:'row'}, el('label',{},label), i, v)); });
+  const m=$('#au-meters'); METERS.forEach(([k,label,c])=>{ m.append(el('span',{},label), el('div',{class:'meter '+c},el('i',{id:'mt-'+k}))); });
+  const vw=$('#au-voices');
+  [['kick','Kick'],['snare','Snare'],['hats','Hats']].forEach(([k,label])=>{
+    const sel=el('select',{id:'vz-'+k}); ZONE_NAMES.forEach(([z,t])=>sel.append(el('option',{value:z},t)));
+    const own=el('select',{id:'vo-'+k}); own.append(el('option',{value:'look'},"the lamp's own colour"), el('option',{value:'accent'},"the room's accent colour"), el('option',{value:'pick'},'this colour:'));
+    const col=el('input',{type:'color',id:'vc-'+k}); col.value=PICK_DEF[k];
+    const send=()=>{ if(own.value==='pick' && col.value==='#000000') col.value=PICK_DEF[k]; const v=Object.assign({}, (S.settings||{}).a_voices||{}); v[k]={color: own.value==='pick'?col.value:own.value, zones: sel.value}; setAudio('a_voices', v); };
+    sel.onchange=send; own.onchange=send; col.oninput=send;
+    vw.append(el('div',{class:'row'}, el('label',{},label), sel, own, col));
+  });
+  const KP={auto:'Auto -- a new one every phrase',pump:'Pump -- all together',ripple:'Ripple out from the centre',implode:'Ripple in to the centre',wave_lr:'Wave left to right',wave_rl:'Wave right to left',wave_up:'Wave bottom to top',bounce:'Bounce -- left-right, right-left',spin:'Spin round the centre',chase:'Chase -- one lamp a kick, in your order'};
+  const SP={auto:'Auto -- a new one every phrase',zones:'Its lamps (Who does what)',burst:'Burst out from the centre',sides:'Left / right swap',chase:'Chase in your order'};
+  Object.entries(KP).forEach(([k,t])=>$('#ap-kick').append(el('option',{value:k},t)));
+  Object.entries(SP).forEach(([k,t])=>$('#ap-snare').append(el('option',{value:k},t)));
+  window.PAT_NAMES={kick:KP,snare:SP};
+  const CU={auto:'Auto -- a new cue every phrase',pulse:'Pulse -- the whole room on every beat',pingpong:'Ping-pong -- left on 1 and 3, right on 2 and 4',chase:'Chase -- a light runs through your order on the 8ths',rings:'Rings -- from the middle out, one ring per 16th',sweep:'Sweep -- a band crosses the room over a bar',columns:'Columns -- left to right in 16th steps, and back',pass:'Pass -- every colour moves on one bulb with each beat',relay:'Relay -- one bulb in colour B, handed bulb to bulb',wipe:'Wipe -- each bar a new colour wipes across, bulb by bulb',mirror:'Mirror -- colours pass outward from the middle',wheel:'Wheel -- the colours turn round the room every 2 bars'};
+  window.CUE_NAMES=Object.assign({breakdown:'Breakdown -- slow and soft'},CU);
+  Object.entries(CU).forEach(([k,t])=>$('#ap-cue').append(el('option',{value:k},t)));
+  $('#ap-cue').onchange=e=>setAudio('a_cue',e.target.value);
+  $('#ap-style').onclick=()=>setAudio('a_style', ((S.settings||{}).a_style||'programmed')==='programmed'?'reactive':'programmed');
+  $('#ap-kick').onchange=e=>setAudio('a_pat',e.target.value); $('#ap-snare').onchange=e=>setAudio('a_spat',e.target.value);
+  $('#ap-origin').onchange=e=>setAudio('a_origin',e.target.value); $('#ap-phrase').onchange=e=>setAudio('a_phrase',parseInt(e.target.value));
+  $('#ap-visbars').onchange=e=>setAudio('a_vis_bars',parseInt(e.target.value));
+  buildMiniRoom();
+  syncAudio();
+}
+function buildMiniRoom(){
+  const r=$('#au-room'); if(!r||!S) return; r.innerHTML='';
+  const o=$('#ap-origin'); if(o){ const keep=o.value; o.innerHTML=''; [['centre','the middle of the room'],['left','the left'],['right','the right']].concat(S.rig.map(l=>[l.key,l.name])).forEach(([k,t])=>o.append(el('option',{value:k},t))); if(keep) o.value=keep; }
+  const ord={}; S.rig.forEach(l=>{ if(l.order!==null && l.order!==undefined) ord[l.key]=l.order+1; });
+  (S.segs||[]).forEach(sg=>{ const lp=S.rig[sg.lamp]; const d=el('div',{class:'dot','data-ch':sg.ch,title:lp?lp.name:sg.key}, (lp && ord[lp.key] && sg.index===0) ? String(ord[lp.key]) : '');
+    d.style.left=(sg.u*86+7)+'%'; d.style.bottom=(sg.v*70+12)+'%'; r.append(d); });
+}
+function paintMiniRoom(cols){
+  const r=$('#au-room'); if(!r||!cols) return;
+  r.querySelectorAll('.dot').forEach(d=>{ const c=cols[d.dataset.ch]; if(c){ d.style.background=c; d.style.boxShadow='0 0 18px '+c; } });
+}
+const MOVIE_LIVE=[['movie_bri','Brightness',0,1.5,0.01,v=>Math.round(v*100)+'%'],['movie_sat','Colour richness',0.5,2,0.01,v=>v.toFixed(2)+'x'],['movie_speed','Follow speed (smoothing)',0.03,1.5,0.01,v=>v.toFixed(2)+' s']];
+function renderMovie(){ const w=$('#mv-live'); if(!w || w.childElementCount) return;
+  MOVIE_LIVE.forEach(([k,label,mn,mx,st,fmt])=>{ const i=el('input',{type:'range',min:mn,max:mx,step:st,id:'live-'+k}); const v=el('span',{class:'val',id:'lv-'+k});
+    i.addEventListener('input',()=>{ v.textContent=fmt(parseFloat(i.value)); api({op:'live',key:k,value:parseFloat(i.value)}); });
+    w.append(el('div',{class:'row'}, el('label',{},label), i, v)); });
+  $('#mv-on').onclick=$('#movie').onclick=()=>setAudio('movie', !((S.settings||{}).movie));
+  $('#mv-src').onchange=e=>setAudio('movie_src', e.target.value); }
+const setAudio=(key,value)=>{ S.settings=S.settings||{}; S.settings[key]=value; api({op:'setting',key,value}); syncAudio(); };
+const DEF_VOICES={kick:{color:'look',zones:'all'},snare:{color:'accent',zones:'odd'},hats:{color:'look',zones:'all'}};
+function syncAudio(){
+  const st=S.settings||{}; if(!$('#au-on')) return;
+  const on=st.audio_on!==false; $('#au-on').classList.toggle('on',on); $('#au-on').textContent=on?'On':'Off';
+  const tr=st.trig_on!==false; $('#tr-on').classList.toggle('on',tr); $('#tr-on').textContent=tr?'On':'Off';
+  const sv=(id,v)=>{ const e=$(id); if(e && document.activeElement!==e) e.value=v; };
+  sv('#au-in', st.audio_in||'Scarlett'); sv('#au-ch', st.audio_ch||'1,2'); sv('#au-sens', st.audio_sens??1); $('#au-sens-v').textContent=(+(st.audio_sens??1)).toFixed(2)+'x';
+  sv('#tr-port', st.trig_port||'Scarlett');
+  const tm=st.trig_map||{}; const chs=v=>Object.keys(tm).filter(c=>tm[c]===v).join(',');
+  sv('#tr-kick', chs('kick')); sv('#tr-snare', chs('snare')); sv('#tr-hats', chs('hats'));
+  const V=Object.assign({}, DEF_VOICES, st.a_voices||{});
+  for(const k of ['kick','snare','hats']){ const d=Object.assign({}, DEF_VOICES[k], V[k]||{}); sv('#vz-'+k, d.zones); const named=(d.color==='look'||d.color==='accent'); sv('#vo-'+k, named?d.color:'pick'); if(!named) sv('#vc-'+k, d.color); $('#vc-'+k).style.visibility = named?'hidden':'visible'; }
+  const gc=st.gear_clock!==false; $('#gc-on').classList.toggle('on',gc);
+  const prog=(st.a_style||'programmed')==='programmed'; $('#ap-style').textContent=prog?'Programmed':'Reactive'; $('#ap-style').classList.toggle('on',prog);
+  $('#ap-prog').style.display=prog?'':'none'; $('#ap-react').style.display=prog?'none':''; sv('#ap-cue', st.a_cue||'auto');
+  sv('#ap-kick', st.a_pat||'auto'); sv('#ap-snare', st.a_spat||'auto'); sv('#ap-origin', st.a_origin||'centre'); sv('#ap-phrase', String(st.a_phrase||8)); sv('#ap-visbars', String(st.a_vis_bars||2));
+  const mv=!!st.movie; $('#mv-on').textContent=mv?'On':'Off'; $('#mv-on').classList.toggle('on',mv); $('#movie').classList.toggle('on',mv); sv('#mv-src', st.movie_src||'capture');
+}
+$('#au-on').onclick=()=>setAudio('audio_on', !((S.settings||{}).audio_on!==false));
+$('#tr-on').onclick=()=>setAudio('trig_on', !((S.settings||{}).trig_on!==false));
+$('#gc-on').onclick=()=>setAudio('gear_clock', !((S.settings||{}).gear_clock!==false));
+$('#au-in').onchange=e=>setAudio('audio_in', e.target.value.trim()||'Scarlett');
+$('#au-ch').onchange=e=>setAudio('audio_ch', e.target.value.trim()||'1,2');
+$('#au-sens').oninput=e=>{ $('#au-sens-v').textContent=(+e.target.value).toFixed(2)+'x'; };
+$('#au-sens').onchange=e=>setAudio('audio_sens', parseFloat(e.target.value));
+$('#tr-port').onchange=e=>setAudio('trig_port', e.target.value.trim()||'Scarlett');
+['kick','snare','hats'].forEach(k=>{ $('#tr-'+k).onchange=()=>{ const m={}; ['kick','snare','hats'].forEach(v=>($('#tr-'+v).value||'').split(',').map(x=>x.trim()).filter(x=>/^\d+$/.test(x)).forEach(c=>m[c]=v)); setAudio('trig_map', m); }; });
+function audioLive(a){
+  if(!a || !$('#au-status')) return;
+  $('#au-status').textContent = a.status + (a.gate<0.05 ? '  (quiet: the show is resting)' : '');
+  $('#tr-status').textContent = a.midi ? 'listening to '+a.midi : 'no MIDI input found yet';
+  METERS.forEach(([k])=>{ const e=$('#mt-'+k); if(e) e.style.width=Math.round(Math.min(1,a[k]||0)*100)+'%'; });
+  if(a.style==='programmed'){ const C=window.CUE_NAMES||{}; $('#ap-now').textContent='Programmed: '+(C[a.cue]||a.cue||'-').split(' -- ')[0]+(a.heard&&a.heard.grid?'  (on the beat grid)':''); }
+  else if(a.pattern){ const N=window.PAT_NAMES||{kick:{},snare:{}}; $('#ap-now').textContent=(((S.settings||{}).a_style||'programmed')==='programmed'?'Reactive until the tempo locks -- ':'')+'kick: '+(N.kick[a.pattern]||a.pattern).split(' -- ')[0]+'   |   snare: '+(N.snare[a.spattern]||a.spattern).split(' -- ')[0]; }
+  const SEC={quiet:'quiet',groove:'groove',breakdown:'breakdown',drop:'DROP'}; $('#au-section').textContent=SEC[a.section]||'-';
+  $('#au-drops').textContent = a.drops ? (a.drops+' drop'+(a.drops>1?'s':'')+' so far') : '';
+  const ns=a.notes||{}; const chs=Object.keys(ns); $('#tr-seen').textContent = chs.length ? chs.map(c=>'ch '+c+' ('+ns[c].n+(ns[c].ago<2?', now':'')+')').join(' . ') : 'none yet (play the Digitakt)';
+  const hd=a.heard; const heardTxt = hd ? ('heard '+hd.bpm+' BPM'+(hd.conf>=0.45?' (locked'+(hd.grid?', lights on the beat grid':'')+')':' (listening...)')) : 'listening for the tempo...';
+  $('#gc-status').textContent = a.clock ? ('gear clock '+a.clock.bpm+' BPM'+(a.clock.running?'':' (stopped)')) : ('no clock -- '+heardTxt);
+}
+
+function syncLive(live){ (typeof MOVIE_LIVE!=='undefined'?MOVIE_LIVE:[]).forEach(([k,,,,,fmt]) => { const i=$('#live-'+k); if(i && document.activeElement!==i && live && live[k]!==undefined){ i.value=live[k]; $('#lv-'+k).textContent=fmt(live[k]); } }); AUDIO_LIVE.forEach(([k,,,,,fmt]) => { const i=$('#live-'+k); if(i && document.activeElement!==i && live && live[k]!==undefined){ i.value=live[k]; $('#lv-'+k).textContent=fmt(live[k]); } });
+  const pb=$('#patterns'); if(pb && live && live.p_patterns!==undefined){ const on=live.p_patterns>=0.5; pb.classList.toggle('on',on); pb.textContent='Patterns: '+(on?'on':'off'); if(padPatterns!==on){ padPatterns=on; if(padBuilt!==null) buildPadGrid(); } }
+  const lb=$('#latch'); if(lb && live && live.p_latch!==undefined){ const on=live.p_latch>=0.5; lb.classList.toggle('on',on); lb.textContent='Latch: '+(on?'on':'off'); } LIVE.concat(typeof PAD_LIVE!=='undefined'?PAD_LIVE:[]).forEach(([k,,,,,fmt]) => { const i=$('#live-'+k); if(i && document.activeElement!==i && live[k]!==undefined){ i.value=live[k]; $('#lv-'+k).textContent=fmt(live[k]); } }); }
+
+// ---------- songs ----------
+function renderSongs(){
+  const sel = $('#song-sel'); sel.innerHTML='';
+  if(!S.songs.length) sel.append(el('option',{value:''},'(no songs yet)'));
+  S.songs.forEach(s => sel.append(el('option',{value:s.id},s.name)));
+  if(!curSong || !S.songs.find(s=>s.id===curSong)) curSong = S.songs[0]?.id || null;
+  sel.value = curSong || '';
+  const s = S.songs.find(x=>x.id===curSong);
+  ['song-name','song-len','song-loop','song-del','song-start','song-now'].forEach(id=>$('#'+id).disabled=!s);
+  $('#song-name').value = s ? s.name : ''; $('#song-len').value = s ? (s.length||32) : '';
+  $('#song-loop').classList.toggle('on', !!(s && s.loop));
+  const bars = $('#bars'); bars.innerHTML=''; $('#sec-edit').style.display='none';
+  if(!s) return;
+  const n = s.length||32, W = 46; bars.style.width = (n*W)+'px';
+  for(let b=1;b<=n;b++){ const d=el('div',{class:'bar'+((b-1)%4===0?' four':''),style:`left:${(b-1)*W}px;width:${W}px`},String(b)); d.onclick=()=>addSection(b); bars.append(d); }
+  const secs = s.sections.slice().sort((a,b)=>a.bar-b.bar);
+  secs.forEach((sec,i) => { const end = i+1<secs.length ? secs[i+1].bar : n+1; const lk=look(sec.look); const c = lk ? lookGradient(lk) : '#888';
+    const d = el('div',{class:'sec'+(i===selSec?' sel':''),style:`left:${(sec.bar-1)*W+2}px;width:${(end-sec.bar)*W-4}px;background:${c}`}, sec.label||(lk?lk.name:'?'), el('small',{},lk?lk.name:'(missing look)'));
+    d.onclick = e => { e.stopPropagation(); selSec=i; renderSongs(); editSection(s, i); }; bars.append(d); });
+  if(selSec>=0 && selSec<secs.length) editSection(s, selSec);
+}
+function songObj(){ return S.songs.find(x=>x.id===curSong); }
+async function saveSong(s){ s.sections.sort((a,b)=>a.bar-b.bar); await api({op:'song.save',song:s}); renderSongs(); }
+function addSection(bar){ const s=songObj(); if(!s) return; if(s.sections.find(x=>x.bar===bar)) return; s.sections.push({bar,look:editing||S.looks[0].id,label:'',fade:1}); s.sections.sort((a,b)=>a.bar-b.bar); selSec=s.sections.findIndex(x=>x.bar===bar); saveSong(s); }
+function editSection(s,i){
+  const sec = s.sections.slice().sort((a,b)=>a.bar-b.bar)[i]; if(!sec) return;
+  $('#sec-edit').style.display='block'; $('#sec-bar').textContent=sec.bar;
+  const ls=$('#sec-look'); ls.innerHTML=''; S.looks.forEach(l=>ls.append(el('option',{value:l.id},l.name))); ls.value=sec.look;
+  $('#sec-label').value=sec.label||''; $('#sec-barin').value=sec.bar; $('#sec-fade').value=sec.fade??1;
+  ls.onchange=()=>{sec.look=ls.value; saveSong(s);}; $('#sec-label').onchange=e=>{sec.label=e.target.value; saveSong(s);};
+  $('#sec-barin').onchange=e=>{sec.bar=Math.max(1,parseInt(e.target.value)||1); saveSong(s);}; $('#sec-fade').onchange=e=>{sec.fade=Math.max(0,parseFloat(e.target.value)||0); saveSong(s);};
+  $('#sec-del').onclick=()=>{ s.sections=s.sections.filter(x=>x!==sec); selSec=-1; saveSong(s); };
+}
+$('#song-sel').onchange = e => { curSong=e.target.value; selSec=-1; renderSongs(); };
+$('#song-new').onclick = async () => { const id = await api({op:'song.save',song:{name:'Song '+(S.songs.length+1),length:32,loop:false,sections:[{bar:1,look:S.looks[0].id,label:'intro',fade:1}]}}); curSong=id; await loadState(); };
+$('#song-name').onchange = e => { const s=songObj(); if(s){ s.name=e.target.value||'Song'; saveSong(s);} };
+$('#song-len').onchange = e => { const s=songObj(); if(s){ s.length=Math.max(1,parseInt(e.target.value)||32); saveSong(s);} };
+$('#song-loop').onclick = () => { const s=songObj(); if(s){ s.loop=!s.loop; saveSong(s);} };
+$('#song-del').onclick = async e => { const b=e.currentTarget; if(!b.classList.contains('on')){ b.classList.add('on'); b.textContent='Sure? Tap again'; setTimeout(()=>{b.classList.remove('on'); b.textContent='Delete song';},3000); return; } await api({op:'song.delete',id:curSong}); curSong=null; loadState(); };
+$('#song-start').onclick = () => api({op:'song.start',id:curSong,when:'next'});
+$('#song-now').onclick = () => api({op:'song.start',id:curSong,when:'now'});
+$('#song-stop').onclick = () => api({op:'song.stop'});
+$('#song-next').onclick = () => { const sg=L&&L.song; if(sg) api({op:'song.jump',section:sg.section+1}); };
+
+// ---------- setup ----------
+function syncIAC(){ const st=S.settings||{}; const on=st.iac_on!==false; const b=$('#iac-on'); b.classList.toggle('on',on); b.textContent=on?'On':'Off';
+  const m=$('#iac-map'); if(document.activeElement!==m) m.value=st.iac_map||'pads'; const p=$('#iac-port'); if(document.activeElement!==p) p.value=st.iac_port||'IAC';
+  $('#iac-looks').checked=st.iac_looks!==false; $('#iac-mpe').checked=st.iac_mpe!==false; }
+const iacSet=(key,value)=>{ S.settings=S.settings||{}; S.settings[key]=value; api({op:'setting',key,value}); syncIAC(); };
+$('#iac-on').onclick=()=>iacSet('iac_on', !((S.settings||{}).iac_on!==false));
+$('#iac-map').onchange=e=>iacSet('iac_map', e.target.value);
+$('#iac-port').onchange=e=>iacSet('iac_port', e.target.value.trim()||'IAC');
+$('#iac-looks').onchange=e=>iacSet('iac_looks', e.target.checked);
+$('#iac-mpe').onchange=e=>iacSet('iac_mpe', e.target.checked);
+function renderSetup(){
+  syncIAC();
+  const t = $('#lamp-table'); t.innerHTML='';
+  t.append(el('tr',{}, el('th',{},'Lamp'), el('th',{},'Zones'), el('th',{},'Zones run'), el('th',{},'Model')));
+  S.rig.forEach(lp => {
+    const ax = el('button',{class:'',onclick:async()=>{ await api({op:'lamp',key:lp.key,axis:lp.axis==='up'?'across':'up'}); loadState(); }}, lp.axis==='up'?'bottom to top':'left to right');
+    ax.disabled = lp.segs.length<2;
+    t.append(el('tr',{}, el('td',{},lp.name), el('td',{}, lp.segs.length + (lp.capable>lp.segs.length?' (can do '+lp.capable+')':'')), el('td',{},ax), el('td',{class:'hint'},lp.product||'')));
+  });
+  $('#setup-move').textContent = 'Move lamps: '+(moveMode?'ON (drag them in the Room)':'off'); $('#setup-move').classList.toggle('on',moveMode);
+}
+$('#setup-order').onclick = () => { orderMode=!orderMode; orderSeq=[]; moveMode=false; selected.clear(); renderSetup(); renderRoom();
+  $('#setup-order').classList.toggle('on',orderMode); $('#setup-order').textContent = orderMode ? 'Setting the order... (tap lamps)' : 'Set the order';
+  if(orderMode){ document.querySelector('nav [data-tab=show]').click(); toast('Tap the lamps in order: 1, 2, 3 ...'); } };
+$('#setup-order-reset').onclick = async () => { await api({op:'lamp.order',keys:[]}); toast('Order: left to right'); loadState(); };
+async function orderPick(lp){
+  if(!orderSeq.includes(lp.key)) orderSeq.push(lp.key);
+  renderRoom();
+  if(orderSeq.length >= S.rig.length){ orderMode=false; await api({op:'lamp.order',keys:orderSeq}); $('#setup-order').classList.remove('on'); $('#setup-order').textContent='Set the order'; toast('Order saved'); loadState(); }
+}
+$('#setup-move').onclick = () => { moveMode=!moveMode; selected.clear(); renderSetup(); renderRoom(); if(moveMode){ document.querySelector('nav [data-tab=show]').click(); toast('Drag the lamps, then turn Move lamps off in Setup'); } };
+$('#downbeat').onclick = () => api({op:'downbeat'});
+$('#connect').onclick = async () => { toast('Connecting...'); const r = await api({op:'connect'}); toast(String(r)); };
+
+// ---------- header buttons ----------
+$('#blackout').onclick = () => api({op:'blackout'});
+$('#hold').onclick = () => api({op:'hold'});
+$('#hit').onclick = () => api({op:'hit'});
+$('#tap').onclick = () => api({op:'tap'});
+$('#sel-all').onclick = () => { selected = new Set(S.segs.map(s=>s.key)); renderRoom(); };
+$('#sel-none').onclick = () => { selected.clear(); renderRoom(); };
+$('#paint-custom').onclick = () => paint($('#custom').value);
+$('#paint-grad').onclick = () => { const keys=orderedSelection(); if(!keys.length){ toast('Select lamps or zones first'); return; } const n=keys.length; paint(null, keys.map((k,i)=>wheelMix($('#g1').value,$('#g2').value,n>1?i/(n-1):0))); };
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => { document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('sel',x===b)); document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('sel',t.id==='tab-'+b.dataset.tab)); });
+document.addEventListener('keydown', e => { if(e.target.tagName==='INPUT') return; if(e.key===' '){ e.preventDefault(); api({op:'hit'}); } if(e.key==='b'||e.key==='B') api({op:'blackout'}); if(e.key==='h'||e.key==='H') api({op:'hold'}); if(e.key==='t'||e.key==='T') api({op:'tap'}); const n=parseInt(e.key); if(n>=1&&n<=9&&S.looks[n-1]){ api({op:'go',look:S.looks[n-1].id}); } });
+
+function renderAll(){ renderMovie(); renderAudio(); buildMiniRoom(); renderRoom(); renderSwatches(); renderLooks(); renderEditor(); renderLive(); renderPads(); syncLive(S.live); renderSongs(); renderSetup(); renderCal(); }
+
+// ---------- live updates from the hub ----------
+let lastRev = null;
+function onLive(d){
+  const prevActive = L && L.active; L = d; liveCols = d.cols; paintPreview();
+  if(d.active !== prevActive){ if(editing === prevActive) editing = d.active; renderLooks(); renderEditor(); renderRoom(); }
+  if(lastRev !== null && d.rev !== lastRev && !document.activeElement?.matches('input[type=text],input[type=number],select')) loadState();
+  lastRev = d.rev;
+  const sw=$('#cal-swatch'); if(sw){ sw.style.background = d.calib_test ? (d.cols[Object.keys(d.cols)[0]]||d.calib_test) : '#000'; }
+  const held = new Set(d.pads||[]); document.querySelectorAll('.ppad').forEach(p => p.classList.toggle('held', held.has(+p.dataset.note + (padMode==='geo'?100:0))));
+  const ps = new Set(d.push_sel||[]); document.querySelectorAll('#room .seg').forEach(s => s.classList.toggle('psel', ps.has(s.dataset.key)));
+  const set = (id, cls, txt) => { const c=$(id); c.className='chip '+cls; c.querySelector('span').textContent=txt; };
+  const b = d.bridge||''; set('#c-bridge', b.startsWith('streaming')?'ok':(b.startsWith('rehearsal')?'warn':'bad'), 'Lights: '+(b.startsWith('streaming')?'on':b.startsWith('rehearsal')?'rehearsal':'not connected'));
+  $('#c-bridge').title = b;
+  set('#c-feed', d.feed?(d.picture?'ok':'warn'):'bad', d.feed?(d.picture?'TD: beat + picture':'TD: beat only'):'TD: not sending');
+  set('#c-push', (d.push||'').startsWith('connected')?'ok':'', 'Push 2: '+d.push);
+  const ia=$('#iac-status'); if(ia) ia.textContent = d.ableton || 'off';
+  audioLive(d.audio); paintMiniRoom(d.cols);
+  if(d.movie){ const ms=$('#mv-status'); if(ms) ms.textContent = d.movie.on ? d.movie.status : 'off'; const mb=$('#movie'); if(mb) mb.classList.toggle('on', !!d.movie.on); }
+  $('#c-clock').textContent = d.clock.tempo.toFixed(1)+' BPM · bar '+d.clock.bar+' · beat '+d.clock.beat;
+  $('#c-guard').style.display = d.guard_active?'inline-flex':'none';
+  $('#blackout').classList.toggle('on', d.blackout); $('#hold').classList.toggle('on', d.hold);
+  $('#setup-clock').textContent = d.clock.source; $('#setup-bridge').textContent = d.bridge;
+  syncLive(d.live);
+  const sg = d.song, ph = $('#playhead');
+  if(sg){ $('#song-pos').textContent = sg.name+' · bar '+sg.bar+' · beat '+Math.floor(sg.beat); if(sg.id===curSong){ ph.style.display='block'; ph.style.left=(Math.max(0,sg.pos)*46)+'px'; } else ph.style.display='none'; }
+  else { $('#song-pos').textContent='not playing'; ph.style.display='none'; }
+  if(d.message) toast(d.message);
+}
+function connectLive(){
+  if(window.EventSource){ const es = new EventSource('/api/stream'); es.onmessage = e => onLive(JSON.parse(e.data)); es.onerror = () => { es.close(); setTimeout(connectLive, 1500); }; }
+  else setInterval(async()=>{ try{ onLive(await (await fetch('/api/live')).json()); }catch(e){} }, 100);
+}
+loadState().then(connectLive);
+setInterval(()=>{ if(document.visibilityState==='visible' && !document.activeElement?.matches('input,select')) fetch('/api/state').then(r=>r.json()).then(s=>{ const changed = JSON.stringify([s.looks,s.songs,s.rig])!==JSON.stringify([S.looks,S.songs,S.rig]); S=s; if(changed) renderAll(); }).catch(()=>{}); }, 3000);
+</script>
+</body>
+</html>

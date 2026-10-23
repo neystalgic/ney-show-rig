@@ -1,0 +1,114 @@
+{
+ "area": "fe8980a3-efca-43f1-a460-1f77b8f9502b",
+ "area_name": "Music area",
+ "lamps": [
+  {
+   "rid": "4649dea0-a790-4601-aac7-c064e168d46d",
+   "name": "Behind Desk",
+   "product": "Hue color lamp",
+   "model": "LCA013",
+   "v1": "6",
+   "gradient_points": 0,
+   "max_segments": 1,
+   "segments": [
+    {
+     "channel": 0,
+     "index": 0,
+     "x": -1.0,
+     "y": 1.0,
+     "z": -0.0
+    }
+   ]
+  },
+  {
+   "rid": "6159caf6-1a04-4e02-9d08-2f83b05f407a",
+   "name": "Floor Shade",
+   "product": "Hue color lamp",
+   "model": "LCA013",
+   "v1": "5",
+   "gradient_points": 0,
+   "max_segments": 1,
+   "segments": [
+    {
+     "channel": 1,
+     "index": 0,
+     "x": 1.0,
+     "y": 0.78135,
+     "z": 0.0
+    }
+   ]
+  },
+  {
+   "rid": "27ef3e8e-281e-4128-b5c1-7cf4c9b11e5d",
+   "name": "Top Lamp",
+   "product": "Hue color lamp",
+   "model": "LCA013",
+   "v1": "4",
+   "gradient_points": 0,
+   "max_segments": 1,
+   "segments": [
+    {
+     "channel": 2,
+     "index": 0,
+     "x": -1.0,
+     "y": 0.07693,
+     "z": 0.0
+    }
+   ]
+  },
+  {
+   "rid": "c5e06eab-2171-4b96-a2c2-730064b15d0b",
+   "name": "Hue Play floor lamp large 1",
+   "product": "Hue Play floor lamp large",
+   "model": "929004320801",
+   "v1": "3",
+   "gradient_points": 5,
+   "max_segments": 10,
+   "segments": [
+    {
+     "channel": 3,
+     "index": 0,
+     "x": 0.8,
+     "y": -0.8,
+     "z": 0.0
+    }
+   ]
+  },
+  {
+   "rid": "32bd2119-37f8-4ed8-9a1a-323eed57a924",
+   "name": "Hue color lamp 1",
+   "product": "Hue color lamp",
+   "model": "LCA005",
+   "v1": "1",
+   "gradient_points": 0,
+   "max_segments": 1,
+   "segments": [
+    {
+     "channel": 4,
+     "index": 0,
+     "x": -0.64278,
+     "y": -0.88668,
+     "z": 0.0
+    }
+   ]
+  },
+  {
+   "rid": "15d961e4-a897-40d4-b829-e5770125bcf5",
+   "name": "Hue color lamp 2",
+   "product": "Hue color lamp",
+   "model": "LCA005",
+   "v1": "2",
+   "gradient_points": 0,
+   "max_segments": 1,
+   "segments": [
+    {
+     "channel": 5,
+     "index": 0,
+     "x": 1.0,
+     "y": 0.12927,
+     "z": 0.0
+    }
+   ]
+  }
+ ]
+}

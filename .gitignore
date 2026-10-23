@@ -1,0 +1,20 @@
+# --- private: never commit (Hue Bridge address + keys) ---
+hue_config.json
+*.key
+.env
+
+# --- changes every few seconds / machine-specific ---
+hub_state.json
+hub_log.txt
+td_check.txt
+td_sync_log.txt
+*.log
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+
+# --- big or throwaway ---
+td_snaps/
+*.new
+*.bak

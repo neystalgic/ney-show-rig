@@ -1,0 +1,33 @@
+SACRED GEOMETRY + MAPPER FX, IN STEP WITH THE ROOM
+==================================================
+Paste each line into the TouchDesigner Textport on its own, starting right
+after "python >>>" (no spaces in front). Wait for each one to print OK lines.
+
+1. The missing sacred geometry (golden angle, Sri Yantra, tesseract) --
+   your flower_of_life, metatrons_cube, chladni and kaleidoscope are kept:
+
+ONLY = ['golden_angle', 'sri_yantra', 'tesseract']; exec(open('/Users/michaelney/Touchdesigner Designs/Sacred Geometry/build_sacred_geometry.py').read())
+
+   (optional, the living pattern: )
+ONLY = ['reaction_diffusion']; exec(open('/Users/michaelney/Touchdesigner Designs/Sacred Geometry/build_sacred_geometry.py').read())
+
+2. The Mapper Pack effects (line sweep, barcode, grid pulse, tunnel, radar,
+   plasma, edge chase, strobe, surface, plus a 3-surface demo):
+
+exec(open('/Users/michaelney/Touchdesigner Designs/Mapper Pack/build_mapper_pack.py').read())
+
+3. The hub side (rebuilds hue_feed with the new Sync page):
+
+exec(open('/Users/michaelney/Touchdesigner Designs/Hue Rig/build_hue_hub_td.py').read())
+
+4. Everything follows the room, and geo_show is built:
+
+sync_geometry()
+
+5. Look at it:
+
+open_show()
+
+Undo step 4:   unsync_geometry()
+After restarting TouchDesigner, run step 3 again before using sync_geometry(),
+open_show() or unsync_geometry().
