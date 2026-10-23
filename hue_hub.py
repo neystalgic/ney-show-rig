@@ -1015,6 +1015,10 @@ class Hub:
                     self.push.poll()
                 if self.ableton:
                     self.ableton.poll()
+                    br = getattr(self.audio, 'brain', None) if self.audio is not None else None
+                    if br is not None:
+                        for root, minor, strength in br.poll():          # chords heard in the mix -> MIDI ch 2
+                            self.ableton.send_heard(root, minor, strength)
             except Exception as e:                       # never let one bad frame stop the show
                 say('frame error: %s: %s' % (type(e).__name__, e))
                 key = '%s: %s' % (type(e).__name__, e)
@@ -1048,6 +1052,8 @@ class Hub:
                         push=self.push.status if self.push else 'off', live=self.live, message=msg,
                         ableton=self.ableton.describe() if self.ableton else 'off',
                         audio=self.audioshow.snapshot(),
+                        brain=(self.audio.brain.snapshot() if self.audio is not None and getattr(self.audio, 'brain', None)
+                               is not None else 'off (install Essentia: Install Audio Brain.command)'),
                         movie=dict(on=bool(self.state['settings'].get('movie')), status=self.movie_status,
                                    src=self.state['settings'].get('movie_src', 'capture')),
                         pads=sorted(n for n, v in self.pads.voices.items() if v.t_off is None),
@@ -1202,7 +1208,7 @@ class Hub:
                 return True
             if op == 'setting':                          # desk > Setup > Ableton
                 k, v = c.get('key'), c.get('value')
-                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, iac_looks=bool, iac_mpe=bool,
+                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, iac_looks=bool, iac_mpe=bool,
                              audio_on=bool, audio_in=str, audio_ch=str, audio_sens=float, trig_on=bool, trig_port=str,
                              trig_map=dict, a_voices=dict, gear_clock=bool, a_pat=str, a_spat=str, a_origin=str,
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,
@@ -1426,7 +1432,7 @@ def lan_ip():
 
 # the hub restarts itself when its code is updated (no more running yesterday's version by mistake)
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
-              'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py']
+              'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py']
 
 
 class Reload(Exception):

@@ -374,6 +374,13 @@ class AudioIn:
         sr = int(d.get('default_samplerate') or 48000)
         self.an = Analyzer(sr=sr)
         self.beat = BeatTracker(sr / float(self.an.hop))
+        self.brain = None                                  # Essentia: chords + key (hub_brain.py), if installed
+        try:
+            import hub_brain
+            if hub_brain.available() and self.settings().get('brain_on', True):
+                self.brain = hub_brain.Brain(sr)
+        except Exception:
+            self.brain = None
         use = [c - 1 for c in chans if 1 <= c <= n_open]
 
         def cb(indata, frames, ti, status):
@@ -385,6 +392,8 @@ class AudioIn:
                         self.peak_acc = pk
                     self.an.sensitivity = float(self.settings().get('audio_sens', 1.0))
                     self.an.feed(x)
+                    if self.brain is not None:
+                        self.brain.feed(x)
                     now = time.time()
                     self.wall_newest = now - (self.an.n / 2.0) / self.an.sr     # the newest frame's centre
                     for t, k, s, sc in self.an.take_hits():
@@ -405,6 +414,12 @@ class AudioIn:
             self.status = 'could not open %s (%s) -- check System Settings > Privacy > Microphone > Terminal' % (d['name'], e)
 
     def close(self):
+        try:
+            if getattr(self, 'brain', None) is not None:
+                self.brain.stop()
+                self.brain = None
+        except Exception:
+            pass
         try:
             if self.stream is not None:
                 self.stream.stop()

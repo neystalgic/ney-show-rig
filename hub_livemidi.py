@@ -35,6 +35,8 @@ WHEEL = [0, 1, 1, 2, 3, 3, 4, 5, 5, 6, 7, 7]      # pitch class -> colour column
 # The VJ track (MIDI channel 16, a Drum Rack) sets the key: notes 68-79 = C ... B, 80-83 = major / minor /
 # dorian / mixolydian (third bank of 16 pads). The rest of channel 16 is the VJ board (TouchDesigner reads it).
 VJ_CH = 15                                          # mido counts channels from 0: 15 = MIDI channel 16
+HEARD_CH = 1                                        # MIDI channel 2: chords the audio brain hears in the mix
+HEARD_HOLD = 6.0                                    # after you play a note, heard chords wait this long
 KEY_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 SCALES = {'major': [0, 2, 4, 5, 7, 9, 11], 'minor': [0, 2, 3, 5, 7, 8, 10],
           'dorian': [0, 2, 3, 5, 7, 9, 10], 'mixolydian': [0, 2, 4, 5, 7, 9, 10]}
@@ -66,6 +68,9 @@ class LiveMidi:
         self.status = 'looking for the IAC Driver'
         self.last_try = 0.0
         self.held = {}            # (channel, note) -> pad note
+        self.out = None           # IAC output: the audio brain's heard chords go out on channel 2
+        self.heard_note = None
+        self.last_played = -100.0
         self.notes = 0
         self.last_note = None
         self.open()
@@ -106,6 +111,35 @@ class LiveMidi:
         except Exception:
             pass
         self.inp = None
+        try:
+            if self.out:
+                self.out.close()
+        except Exception:
+            pass
+        self.out = None
+
+    # ------------------------------------------------------------ the audio brain's chords -> MIDI
+    def send_heard(self, root, minor=False, strength=0.0):
+        """A steady chord heard in the music -> note on IAC channel 2 (root, C2-B2 so never the rainbow).
+        Everything that listens to the show's MIDI (hub, TouchDesigner, the Zephyrus) treats it like a
+        played note -- but notes you actually play win for HEARD_HOLD seconds."""
+        if not self.settings().get('heard_on', True) or self.name is None:
+            return
+        try:
+            from hub_audio import midi_call
+        except Exception:
+            midi_call = lambda fn, *a, **k: fn(*a)
+        try:
+            if self.out is None:
+                self.out = midi_call(mido.open_output, self.name)
+            if self.heard_note is not None:
+                self.out.send(mido.Message('note_off', channel=HEARD_CH, note=self.heard_note, velocity=0))
+            n = 48 + int(root) % 12
+            self.out.send(mido.Message('note_on', channel=HEARD_CH, note=n, velocity=int(40 + 60 * max(0.0, min(1.0, strength)))))
+            self.heard_note = n
+        except Exception as e:
+            self.out = None
+            self.status_heard = 'could not send heard chords (%s)' % e
 
     def poll(self):
         if self.inp is None:
@@ -188,7 +222,13 @@ class LiveMidi:
                 and t in ('note_on', 'note_off', 'control_change', 'polytouch')):
             return self.handle_vj(msg)
         # (otherwise the VJ track's notes colour the room by their step in the key, like any other notes)
+        ch_ = getattr(msg, 'channel', 0)
         if t == 'note_on' and msg.velocity > 0:
+            if ch_ == HEARD_CH:
+                if time.time() - self.last_played < HEARD_HOLD:
+                    return                              # you're playing: your notes set the colour
+            else:
+                self.last_played = time.time()
             rgb = None
             if self.settings().get('iac_map', 'pads') == 'degree':
                 p, rgb = self.degree_pad(msg.note)

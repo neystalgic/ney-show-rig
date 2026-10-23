@@ -544,15 +544,21 @@ def midi(message, channel, index, value):
         if is_on:
             pad_on(n, v)
             degree(n)                             # the VJ track's notes colour the visuals too (lamps: the hub)
+            VJC.store('vj_played_t', absTime.seconds)
             _p().Lastnote = n
         elif is_off:
             pad_off(n)
         elif 'control' in m:
             knob(n, v)
     elif is_on:
+        if ch == 2:                               # a chord the audio brain HEARD in the mix (hub_brain.py)
+            if absTime.seconds - VJC.fetch('vj_played_t', -100.0, search=False) < 6.0:
+                return                            # you played something in the last 6 s: your notes win
+        else:
+            VJC.store('play_mode_t', absTime.seconds) # playing an instrument: Push's knobs belong to Live
+            VJC.store('vj_played_t', absTime.seconds)
         degree(n)
         _p().Lastnote = n
-        VJC.store('play_mode_t', absTime.seconds) # playing an instrument: Push's knobs belong to Live
 
 
 # Push 2's eight track knobs (CC 71-78, relative) read straight from Push. They steer the VJ board while
