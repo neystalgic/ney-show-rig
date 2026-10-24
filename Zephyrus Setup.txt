@@ -1,106 +1,135 @@
-ZEPHYRUS SETUP  --  links + checklist (RTX 4070 laptop, 8 GB video memory)
+ZEPHYRUS SETUP  --  links + checklist, v2 (Oct 24)
+ASUS Zephyrus, RTX 4070 laptop GPU (8 GB video memory)
 ==========================================================================
-Idea: the Mac stays the show brain (Ableton, Hue Hub, VJ board, flicker-safe pass).
-The Zephyrus is the 3D + AI render box. EVERYTHING it does is driven by the same MIDI
-that already runs the show (IAC Bus 1 + the Digitakt clock), sent over the network.
-Its picture comes back to the Mac over Ethernet (NDI) and through the safety pass.
+The idea: the Mac stays the show brain (Ableton, Hue Hub, VJ board, flicker-safe pass).
+The Zephyrus is the 3D + AI render box. Everything it does is driven by the same MIDI
+that already runs the show, plus what the hub now hears in the music (chords, key,
+sections, drums), all sent to it as MIDI over the network. Its picture comes back to
+the Mac (NDI) and goes through the flicker-safe pass like everything else.
+
+WHAT'S NEW ON THE MAC SINCE v1 (already working, nothing to do)
+   - Key follows Live: change Live's key/scale and the colours follow (AbletonOSC)
+   - Audio brain: the hub hears chords + key in Ableton's master (Essentia)
+   - Autopilot conductor: the VJ board picks recipes on its own by song section
+   - Code is on GitHub (private): github.com/neystalgic/ney-show-rig
+
+TONIGHT: Wi-Fi is fine for everything below. When the Ethernet cable arrives Monday,
+plug it in -- nothing else changes.
 
 
-STEP 0 -- BEFORE ANYTHING (Zephyrus, plugged in)
--------------------------------------------------
-[ ] Windows Update (Settings > Windows Update), restart
+STEP 0 -- BEFORE ANYTHING (Zephyrus, plugged into power)            ~30-60 min
+---------------------------------------------------------------------------------
+[ ] Windows Update (Settings > Windows Update), restart, repeat until it says up to date
 [ ] NVIDIA Studio driver for "GeForce RTX 4070 Laptop GPU"
     https://www.nvidia.com/en-us/drivers/
-[ ] Power: plugged in, Armoury Crate > Turbo / Performance mode
-[ ] Check free disk space (want 150 GB+ free: Unreal + AI models)
-[ ] Claude desktop app, sign in, link it to our conversation (so I can do the rest)
+[ ] Armoury Crate > Performance (or Turbo) mode, and GPU mode "Ultimate"/dGPU if offered
+[ ] Settings > System > Power: Best performance; never sleep when plugged in
+[ ] Check free disk space -- want 150 GB+ (Unreal ~60 GB, AI models ~20 GB)
+[ ] Claude desktop app, sign in, then link it to this conversation so I can do the rest
     https://claude.ai/download
-[ ] Ethernet cable from the Zephyrus to the router (Wi-Fi works, wired is steadier)
+[ ] Rename the PC "Zephyrus" (Settings > System > About > Rename) -- makes it easy to find
 
 
-STEP 1 -- THE MIDI BRIDGE (the heart of the plan)
---------------------------------------------------
-Mac side (built in already, just turn on):
+STEP 1 -- THE MIDI BRIDGE (the heart of the plan)                      ~15 min
+---------------------------------------------------------------------------------
+Mac side (built in, just switch on):
 [ ] Audio MIDI Setup > Window > Show MIDI Studio > Network (globe icon)
     > "+" under My Sessions, name it "Show", tick Enabled
-    > allow "Anyone" to connect (or add the Zephyrus once it appears)
+    > "Who may connect": Anyone (or add the Zephyrus once it shows up)
 Zephyrus side:
-[ ] rtpMIDI (free, Windows network MIDI that talks to the Mac's session)
+[ ] rtpMIDI (free -- Windows network MIDI that talks to the Mac's session)
     https://www.tobias-erichsen.de/software/rtpmidi.html
-    > open it, the Mac's "Show" session appears under Directory > Connect
-I'll then make the Hue Hub relay the show MIDI into that session (see MIDI MAP below).
+    > open it, the Mac's "Show" session appears under Directory > select > Connect
+    (Windows firewall pop-up: allow on Private networks)
+Then tell me -- I make the Hue Hub relay the show MIDI into that session (MIDI MAP below).
 
 
-STEP 2 -- VIDEO BACK TO THE MAC
--------------------------------
+STEP 2 -- VIDEO BACK TO THE MAC                                        ~20 min
+---------------------------------------------------------------------------------
 [ ] NDI Tools on BOTH machines (free)
     https://ndi.video/tools
     Test: on the Zephyrus run "Test Patterns", on the Mac open "Studio Monitor" and pick it.
+    (Over Wi-Fi it may stutter -- that's what Monday's cable fixes.)
 
 
-STEP 3 -- TOUCHDESIGNER ON THE ZEPHYRUS
----------------------------------------
+STEP 3 -- TOUCHDESIGNER + THE SHOW CODE ON THE ZEPHYRUS                ~20 min
+---------------------------------------------------------------------------------
 [ ] TouchDesigner for Windows -- same version as the Mac (2025.32820)
     https://derivative.ca/download
+[ ] GitHub Desktop, sign in yourself, then File > Clone repository > ney-show-rig
+    https://desktop.github.com
+    (hue_config.json -- the Hue Bridge keys -- is NOT in GitHub on purpose; the Zephyrus
+     doesn't need it. Lights stay on the Mac.)
 
 
-STEP 4 -- AI DREAM LAYER (live Stable Diffusion, ~24 fps on your card at 512x512)
---------------------------------------------------------------------------------
-[ ] Python 3.11 (Windows installer, tick "Add to PATH")
+STEP 4 -- AI DREAM LAYER (live Stable Diffusion, ~24 fps at 512x512)  ~1 hour
+---------------------------------------------------------------------------------
+[ ] Python 3.11 (Windows installer, tick "Add python.exe to PATH")
     https://www.python.org/downloads/release/python-3119/
 [ ] CUDA Toolkit 11.8 (restart after)
     https://developer.nvidia.com/cuda-11-8-0-download-archive
 [ ] Git for Windows
     https://git-scm.com/download/win
-[ ] TouchDiffusion (TouchDesigner component, use the PORTABLE version)
+[ ] TouchDiffusion (TouchDesigner component -- use the PORTABLE version)
     https://github.com/olegchomp/TouchDiffusion
-    > run webui.bat > "Update dependencies" (~10 min) > make an sd-turbo engine (~10 min)
+    > run webui.bat > "Update dependencies" (~10 min) > build an sd-turbo engine (~10 min)
     Tutorial: https://derivative.ca/community-post/tutorial/streamdiffusion-touchdesigner-tutorial/73320
 
 
-STEP 5 -- UNREAL ENGINE (the 3D world)
---------------------------------------
-[ ] Epic Games Launcher, then Unreal Engine (big download -- start it before bed)
+STEP 5 -- UNREAL ENGINE (the 3D world)                 start the download before bed
+---------------------------------------------------------------------------------
+[ ] Epic Games Launcher, then Unreal Engine
     https://www.unrealengine.com/download
-    Pick the newest version the TouchEngine + NDI plugins list as supported:
+    Pick the newest version that BOTH of these list as supported:
     https://github.com/TouchDesigner/TouchEngine-UE
     https://docs.ndi.video/docs/unreal-engine-sdk/ndi-plugin-installation
-[ ] Plugins to switch on in the project: MIDI Device Support, OSC, DMX, NDI, Remote Control
+[ ] Plugins to switch on in a new project: MIDI Device Support, OSC, DMX, NDI, Remote Control
     MIDI in Unreal:  https://dev.epicgames.com/documentation/unreal-engine/midi-in-unreal-engine
     OSC in Unreal:   https://dev.epicgames.com/documentation/en-us/unreal-engine/osc-plugin-overview-for-unreal-engine
     Motion Design:   https://dev.epicgames.com/documentation/unreal-engine/motion-design-quickstart-guide-in-unreal-engine
 
 
 LATER -- LOCAL ASSISTANT
-------------------------
-[ ] Ollama (runs open models locally; 7-8B models fit your 8 GB card)
+---------------------------------------------------------------------------------
+[ ] Ollama (runs open models locally; 7-8B models fit the 8 GB card)
     https://ollama.com/download
 
 
 SHOW MIDI MAP  (one language for the whole rig -- everything listens to this)
------------------------------------------------------------------------------
-Already running today:
-   ch 1   NOTES you play (Note Colours track)   pitch -> degree colour, velocity -> intensity
-   ch 16  VJ PADS (VJ track)                    which of the 64 recipes (row = family, column = construction)
-   CLOCK  Digitakt / Ableton MIDI clock         beat + bar sync, start / stop
-Added by the hub relay (so the Zephyrus gets the show's "state" as MIDI too):
-   ch 15  CC 1  degree colour (1-8)        CC 6  build progress
-          CC 2  geometry family (0-7)      CC 7  diffuse amount
-          CC 3  construction (0-7)         CC 8  brightness / master
-          CC 4  kick (envelope)            CC 9  look (clean, ASCII, 8-bit ...)
-          CC 5  loudness                   CC 10 lighting effect
+---------------------------------------------------------------------------------
+Running today:
+   ch 1    NOTES you play (Note Colours track)       pitch -> degree colour, velocity -> intensity
+   ch 2    HEARD CHORDS (audio brain)                 the chord in the mix when you're not playing
+   ch 16   VJ PADS (VJ track)                          which of the 64 recipes
+   CLOCK   Digitakt MIDI clock                         beat + bar sync, start / stop
+   KEY     from Live (AbletonOSC)                      what "1 = red" means right now
+Being wired up (Digitakt MIDI tracks -> Scarlett MIDI In):
+   ch 9 kick   ch 11 snare   ch 12 hats               exact drum hits
+Added by the hub relay once rtpMIDI is up (the show's "state" as MIDI):
+   ch 15  CC 1  degree colour (1-8)        CC 7  diffuse amount
+          CC 2  geometry family (0-7)      CC 8  brightness / master
+          CC 3  construction (0-7)         CC 9  look (clean, ASCII, 8-bit ...)
+          CC 4  kick (envelope)            CC 10 lighting effect
+          CC 5  loudness                   CC 11 song section (quiet/groove/breakdown/drop)
+          CC 6  build progress             CC 12 key root (0-11)
    (audio is turned INTO MIDI on the Mac, so the Zephyrus never needs the audio itself)
 
 What listens on the Zephyrus:
-   Unreal:        note ch16 = build that recipe's 3D geometry, ch1 notes = colour + light pulses,
-                  clock = camera / tunnel speed on the beat, ch15 CCs = glow, fog, particles
-   TouchDiffusion: ch15 CC2 family -> prompt style, CC1 degree -> palette words,
-                  CC5 loudness -> how strongly it repaints
+   Unreal:         ch16 = build that recipe's 3D geometry, ch1/ch2 = colour + light pulses,
+                   clock = camera / tunnel speed on the beat, kick = shockwave,
+                   CC11 section = camera move (calm drift in breakdowns, fly-through on drops)
+   TouchDiffusion: CC2 family -> prompt style, CC1 degree -> palette words,
+                   CC5 loudness -> how strongly it repaints, CC11 drop -> wilder prompts
 
 
 ORDER OF WORK
--------------
-1. Steps 0-2 (installs + MIDI bridge + NDI test)        -- ~1 hour, mostly waiting on downloads
-2. Hub relay + ch 15 state CCs, "Zephyrus" deck on Push  -- I build this on the Mac
-3. AI dream layer (fastest wow)                          -- ~1 hour
-4. Unreal 3D infinite sacred-geometry tunnel             -- first session ~2 hours
+---------------------------------------------------------------------------------
+Tonight:     Step 0, then start the Unreal download (Step 5) and let it run overnight
+             Steps 1-3 if you have energy (~1 hour)
+Morning:     link the Claude app on the Zephyrus -> I check everything, build the hub
+             relay + ch 15 CCs, then we do the AI dream layer together (Step 4)
+Next session: Unreal sacred-geometry tunnel driven by the show MIDI (~2 hours)
+Monday:      Ethernet cable in.   Tuesday: Raspberry Pi (health watch + backups).
+
+SAFETY: whatever the Zephyrus makes comes back through the Mac's flicker-safe pass
+(Flicker Guard 0.5 flashes/s). Nothing reaches the wall without going through it.
