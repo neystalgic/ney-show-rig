@@ -44,12 +44,25 @@ they go back to Live as soon as you play a note on another track)
 
 COLOURS: every note -- the VJ pads themselves AND what you play on 1 MIDI -- colours the geometry and the lamps by its
 step in the key (F minor now): 1 red 2 orange 3 yellow 4 green 5 blue 6 indigo 7 violet,
-the 1 an octave up = rainbow. The key is set in TouchDesigner (/project1/vj, Key + Scale)
-and on the Light Desk.
+the 1 an octave up = rainbow.
+KEY FOLLOWS LIVE: once AbletonOSC is picked as a Control Surface in Live, change the Scale
+(key + scale) in Live's top bar and the colours follow within a second. Without it, the key
+is set on the Light Desk (or /project1/vj, Key + Scale).
+
+AUTOPILOT CONDUCTOR (on by default -- /project1/vj, "Autopilot conductor")
+   When you're not tapping pads, the board plays itself: a new recipe every 8 bars,
+   landing on the phrase, chosen to suit what the music is doing:
+     groove     the five classic families in turn, constructions getting richer
+     breakdown  calm, open forms (flower, golden angle, chladni), lots of diffusion
+     drop       the dense ones (quasicrystal, mandala, metatron, tesseract), zoom-through
+     quiet      holds still
+   A drop or breakdown gets a new recipe right away. Tap any VJ pad and you're in charge:
+   the autopilot waits 4 bars after your last pad ("Autopilot waits after you play"),
+   then carries on from where you left it. Every 4 / 8 / 16 bars: "Autopilot: new recipe every".
 
 WHY NOT PUSH'S BUTTONS: in Live mode every Push button also does something in Live
 (the ones under the screen even change the selected track, which would knock you off
-the VJ track). So the looks and transitions live on knobs 5 and 6 instead.
+the VJ track). So the looks and transitions live in TouchDesigner, and the knobs run the lights.
 
 IN TOUCHDESIGNER  (/project1/vj)
    Recipe / Family / Construction, Build time (bars), Diffuse + Diffuse time (bars),
