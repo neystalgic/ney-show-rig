@@ -116,6 +116,15 @@ def rainbow_at(x):
     return hsv_mix(RAINBOW[i][1], RAINBOW[(i + 1) % n][1], smoothstep((f - 0.75) / 0.25))
 
 
+def hub_livemidi_deg(d):
+    """The colour of scale step d (0 = the 1, wraps round the 7 steps)."""
+    try:
+        import hub_livemidi
+        return hub_livemidi.DEG_RGB[d % 7]
+    except Exception:
+        return (1.0, 0.0, 0.0)
+
+
 # ---- lamps -----------------------------------------------------------------------------------
 class Rig:
     """Every lamp and its colour zones ('segments'), in streaming order."""
@@ -840,7 +849,9 @@ class Hub:
                     c = hsv_mix(c, p, depth) if max(p) > 0.02 else scale(c, 1 - depth)
             if look.get('pichits', 0) > 0 and self.phit > 0:
                 k = self.phit * look['pichits']
-                c = tuple(x + (1.0 - x) * k * 0.5 for x in scale(c, 1 + k))
+                m_ = max(c)                              # a hit brightens the lamp IN ITS OWN COLOUR (never white)
+                if m_ > 0.02:
+                    c = scale(c, min(1.0, m_ * (1 + k)) / m_)
             out.append(tuple(clamp(x * level) for x in c))
         return out
 
@@ -948,8 +959,21 @@ class Hub:
             drgb = getattr(lm, 'deg_rgb', None) if lm is not None else None
             if (drgb is not None and self.state['settings'].get('iac_map') == 'degree' and self.pads.active()
                     and not self.blackout and self.calib_test is None):
-                hd, sd, _ = colorsys.rgb_to_hsv(*drgb)
-                cols = [colorsys.hsv_to_rgb(hd, sd, max(clamp(x) for x in c_)) for c_ in cols]
+                ld = getattr(lm, 'last_degree', None)
+                if self.state['settings'].get('deg_spread', True) and ld is not None and float(ld) == int(ld):
+                    # the room plays the TRIAD on the step: the step's colour leads, its third and fifth
+                    # colour the lamps between (1 = red + yellow + blue, 2 = orange + green + indigo ...)
+                    d0 = int(ld) - 1
+                    tri = [hub_livemidi_deg(d0), hub_livemidi_deg(d0 + 2), hub_livemidi_deg(d0), hub_livemidi_deg(d0 + 4)]
+                    res = []
+                    for i_, c_ in enumerate(cols):
+                        r_ = self.rig.segs[i_].get('ord', i_) if i_ < len(self.rig.segs) else i_
+                        hd, sd, _ = colorsys.rgb_to_hsv(*tri[r_ % 4])
+                        res.append(colorsys.hsv_to_rgb(hd, sd, max(clamp(x) for x in c_)))
+                    cols = res
+                else:
+                    hd, sd, _ = colorsys.rgb_to_hsv(*drgb)
+                    cols = [colorsys.hsv_to_rgb(hd, sd, max(clamp(x) for x in c_)) for c_ in cols]
             # FREESTYLE RACK: Push's top knobs (strobe, prism, orbit, breathe, pump, echo, chord, sparkle)
             if not self.blackout and self.calib_test is None:
                 try:

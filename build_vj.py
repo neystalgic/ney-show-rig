@@ -238,7 +238,7 @@ void main() {
 # ---- looks: degree colour, ASCII, 8-bit, mirror, bold outline, superflat
 POST = r"""
 uniform vec4 uP;   // ascii, 8-bit, outline, superflat
-uniform vec4 uQ;   // mirror, cell size (px), colour amount, colour mode (0 degree 1 original 2 rainbow 3 duotone)
+uniform vec4 uQ;   // mirror, cell size (px), colour amount, colour mode (0 degree 1 original 2 rainbow 3 duotone 4 room)
 uniform vec4 uC;   // degree colour rgb, octave rainbow
 uniform vec4 uR;   // brightness, time, kick, unused
 uniform vec4 uO;   // overlay amount (0 = none), unused...
@@ -256,12 +256,32 @@ vec3 src(vec2 fc) {
     vec3 ov = texture(sTD2DInputs[1], uv).rgb * uO.x;          // sacred geometry, screened on top
     return 1.0 - (1.0 - base) * (1.0 - clamp(ov, 0.0, 1.0));
 }
+vec3 room(vec2 uv, float L, out float bri) {
+    // THE ROOM ON THE WALL: the lamps' live colours, left to right as they stand in the room,
+    // spread across the picture -- brighter lines slide further along the palette, so every
+    // form is many-coloured -- and the wall swells with the lamps' own brightness.
+    float n = float(textureSize(sTD2DInputs[3], 0).x);
+    float x = uv.x + L * 0.45 + 0.04 * sin(uR.y * 0.3);
+    float tri = 1.0 - abs(fract(x * 0.5) * 2.0 - 1.0);
+    vec3 p = texture(sTD2DInputs[3], vec2((0.5 + tri * (n - 1.0)) / max(n, 1.0), 0.5)).rgb;
+    float m = max(p.r, max(p.g, p.b));
+    bri = clamp(m * 2.2, 0.0, 1.0);
+    return m > 0.03 ? p / m : uC.rgb;
+}
 vec3 colour(vec3 c, vec2 uv) {
     float L = luma(c);
+    int m = int(uQ.w + 0.5);
+    if (m == 4) {
+        float bri;
+        vec3 rc = room(uv, L, bri);
+        rc *= clamp(0.4 / max(luma(rc), 0.05), 0.85, 1.4);
+        rc = min(rc, vec3(1.0));
+        vec3 t4 = rc * (0.12 + 1.25 * L) * mix(1.0, 0.45 + 0.8 * bri, 0.55);
+        return mix(c, t4, uQ.z);
+    }
     vec3 tint = uC.w > 0.5 ? hsv2rgb(vec3(fract(uv.x * 0.6 + uv.y * 0.3 + uR.y * 0.15), 0.9, 1.0)) : uC.rgb;
     tint *= clamp(0.4 / max(luma(tint), 0.05), 0.85, 1.4);   // similar brightness for every degree: colour changes stay quick
     tint = min(tint, vec3(1.0));
-    int m = int(uQ.w + 0.5);
     vec3 t = c;
     if (m == 0) t = tint * (0.12 + 1.25 * L);
     else if (m == 2) t = hsv2rgb(vec3(fract(L * 0.8 + uR.y * 0.1 + uv.x * 0.2), 0.85, 1.0)) * smoothstep(0.02, 0.4, L) * 1.15;
@@ -611,15 +631,15 @@ CLASSIC_KNOBS = {                          # hold SHIFT on Push for these
     77: ('sat', 0.0, 1.5, 'lin'),          # 7 vibrance
     78: ('smooth', 0.0, 1.0, 'lin'),       # 8 smoothing
 }
-LIGHT_KNOBS = {                            # the FREESTYLE RACK (hub_fx.py): 0 = off, turn in for more
-    71: ('fx_strobe', 0.0, 1.0, 'fx'),     # 1 strobe: every bar > half bar > beat
-    72: ('fx_prism', 0.0, 1.0, 'fx'),      # 2 rainbow across the room, rolling on the beat
-    73: ('fx_orbit', 0.0, 1.0, 'orbit'),   # 3 comet round the room: left = counter-clockwise, right = clockwise
-    74: ('fx_breathe', 0.0, 1.0, 'fx'),    # 4 breathe over 2 bars (past halfway: a wave)
-    75: ('fx_pump', 0.0, 1.0, 'fx'),       # 5 sidechain pump on every beat
-    76: ('fx_echo', 0.0, 1.0, 'fx'),       # 6 kicks bounce lamp to lamp
-    77: ('fx_chord', 0.0, 1.0, 'fx'),      # 7 lamps split into the chord's notes
-    78: ('fx_sparkle', 0.0, 1.0, 'fx'),    # 8 hats throw glitter
+LIGHT_KNOBS = {                            # the FREESTYLE RACK (hub_fx.py): each knob on its own grid
+    71: ('fx_strobe', 0.0, 1.0, 'fx'),     # 1 PUNCH    1 bar: the 1 slams up in the room's colour
+    72: ('fx_prism', 0.0, 1.0, 'fx'),      # 2 PRISM    1/2: rainbow across the room, steps every half note
+    73: ('fx_orbit', 0.0, 1.0, 'orbit'),   # 3 ORBIT    1/4: comet hops a lamp a beat (left CCW / right CW)
+    74: ('fx_sparkle', 0.0, 1.0, 'fx'),    # 4 SPARKLE  1/8: a random lamp glints every eighth
+    75: ('fx_pump', 0.0, 1.0, 'fx'),       # 5 PUMP     1/4: sidechain duck on every beat
+    76: ('fx_echo', 0.0, 1.0, 'fx'),       # 6 ECHO     1/2 + 1/8: a pulse bounces lamp to lamp
+    77: ('fx_breathe', 0.0, 1.0, 'fx'),    # 7 BREATHE  2 bars: in and out (past halfway: a wave)
+    78: ('fx_chord', 0.0, 1.0, 'fx'),      # 8 CHORD    the lamps split into the chord's notes
 }
 SHIFT_CC = 49
 _shift = [False]
@@ -752,13 +772,13 @@ def push_cc(message, channel, index, value):
 
 
 def _fx_label(key, x):
-    if key == 'fx_strobe':
-        return 'Strobe off' if x < 0.02 else 'Strobe every ' + ('bar' if x < 0.34 else 'half bar' if x < 0.67 else 'beat')
     if key == 'fx_orbit':
         if abs(x - 0.5) < 0.04:
             return 'Orbit off'
         return 'Orbit %s %d%%' % ('clockwise' if x > 0.5 else 'counter-clockwise', round(abs(x - 0.5) * 200))
-    return '%s %d%%' % (key[3:].capitalize(), round(x * 100))
+    names = dict(fx_strobe='Punch (bar)', fx_prism='Prism (1/2)', fx_sparkle='Sparkle (1/8)', fx_pump='Pump (1/4)',
+                 fx_echo='Echo (1/2 + 1/8)', fx_breathe='Breathe (2 bars)', fx_chord='Chord')
+    return '%s %d%%' % (names.get(key, key), round(x * 100))
 
 
 def push_midi(message, channel, index, value):
@@ -926,6 +946,26 @@ def _glsl(c, name, code, rows, tops, x, y, w=1280, h=800):
     return g
 
 
+def _room_palette(vj):
+    """hue_feed/lamps (each lamp's live colour from the hub, in room order) -> a 1-pixel-high strip."""
+    dc = vj.op('room_pal_chop') or vj.create(dattoCHOP, 'room_pal_chop')
+    dc.nodeX, dc.nodeY = 675, -1000
+    dc.par.dat = '/project1/hue_feed/lamps'
+    _set(dc, 'output', 'chanpercol')
+    _set(dc, 'firstrow', 'names')
+    _set(dc, 'firstcolumn', 'values')
+    sc = vj.op('room_pal_rgb') or vj.create(selectCHOP, 'room_pal_rgb')
+    sc.nodeX, sc.nodeY = 825, -1000
+    sc.inputConnectors[0].connect(dc)
+    sc.par.channames = 'r g b'
+    ct = vj.op('room_pal') or vj.create(choptoTOP, 'room_pal')
+    ct.nodeX, ct.nodeY = 975, -1000
+    ct.par.chop = sc.name
+    _set(ct, 'dataformat', 'rgb')
+    _set(ct, 'format', 'rgba32float')
+    return ct
+
+
 def _midi_device(name='Online IAC Driver Bus 1', out=True):
     d = op('/local/midi/device')
     for r in range(1, d.numRows):
@@ -983,8 +1023,8 @@ def _pars(vj, keep):
     fl('Bright', 'Brightness', 1.0, 0, 1.2)
     menu('Transition', 'Transition', ['melt', 'zoom', 'dissolve', 'wipe'],
          ['Melt', 'Zoom-through', 'Pixel dissolve', 'Radial wipe'])
-    menu('Colourmode', 'Colour', ['degree', 'original', 'rainbow', 'duotone'],
-         ['Degree colours', 'Original', 'Rainbow', 'Duotone'])
+    menu('Colourmode', 'Colour', ['degree', 'original', 'rainbow', 'duotone', 'room'],
+         ['Degree colours', 'Original', 'Rainbow', 'Duotone', 'The room (lamp colours)'], d=4)
     menu('Blend', 'Blend mode', ['screen', 'difference', 'lighten'])
     tg('Ascii', 'ASCII')
     tg('Bits', '8-bit')
@@ -1121,6 +1161,7 @@ def build():
     rdg.inputConnectors[0].connect(black)
     rdg.inputConnectors[1].connect(vj.op('deck_reaction'))
     rdg.par.index.expr = '1 if parent().par.Diffamt > 0.002 else 0'
+    pal = _room_palette(vj)                               # the lamps' live colours, as a strip
     post = _glsl(vj, 'post', POST, [
         ('uP', ('parent().par.Ascii', 'parent().par.Bits', 'parent().par.Outline', 'parent().par.Superflat')),
         ('uQ', ('parent().par.Mirror', 'parent().par.Cell', 'parent().par.Colouramt', 'parent().par.Colourmode.menuIndex')),
@@ -1129,7 +1170,7 @@ def build():
         ('uO', ("(parent().par.Overlayamt * (0.8 + 0.2 * %s.Akick)) if parent().par.Overlay.menuIndex > 0 else 0" % feed,
                 '0', '0', '0')),
         ('uD', ('parent().par.Diffamt', '0', '0', '0')),
-    ], [mixer, ov, rdg], 900, -500)
+    ], [mixer, ov, rdg, pal], 900, -500)
 
     sfb = vj.create(feedbackTOP, 'safe_fb')
     sfb.nodeX, sfb.nodeY = 1050, -250

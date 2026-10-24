@@ -28,20 +28,23 @@ COLUMNS (left to right) = how it is constructed
 
 THE 8 KNOBS ABOVE THE SCREEN = THE FREESTYLE RACK (after you've tapped a VJ pad;
 they go back to Live as soon as you play a note on another track)
-Every knob is an effect you turn IN: all the way left = off. They stack, they all ride the
-beat clock, and they all go through the flicker protection.
-   1 STROBE    white flashes on the grid: every bar > half bar > every beat
-   2 PRISM     a rainbow across the room that rolls round every two bars
-   3 ORBIT     a comet runs round the room. Centre = off (it clicks to a stop there),
-               right = clockwise, left = counter-clockwise; further out = faster
-   4 BREATHE   the room breathes in and out over two bars; past halfway it becomes a
-               wave rolling lamp to lamp
-   5 PUMP      sidechain: every beat ducks the lamps and they swell back (house pump)
-   6 ECHO      every kick fires a pulse that bounces lamp to lamp, like a delay
-   7 CHORD     the lamps split into the notes of the chord -- root, third, fifth (seventh) --
-               each in its degree colour: what you hold, or the chord the brain hears
-   8 SPARKLE   the hats throw glitter onto random lamps
-   Push shows nothing for these; the Light Desk (localhost:7020) shows the values.
+Every knob sits on its own beat grid and only sets HOW MUCH. All the way left = off.
+They stack, nothing ever goes white, and it all goes through the flicker protection.
+   1 PUNCH     1 bar      the 1 of every bar slams the room up in its own colour
+   2 PRISM     1/2 note   a rainbow across the room, stepping round every half note
+   3 ORBIT     1/4 note   a comet hops a lamp every beat. Centre = off,
+                          right = clockwise, left = counter-clockwise
+   4 SPARKLE   1/8 note   a random lamp glints on every eighth
+   5 PUMP      1/4 note   sidechain: the lamps duck on every beat and swell back
+   6 ECHO      1/2 + 1/8  on every half note a pulse bounces lamp to lamp
+   7 BREATHE   2 bars     the room breathes in and out (past halfway: a rolling wave)
+   8 CHORD     the chord  the lamps split into the chord's notes, each in its degree colour
+
+THE WALL FOLLOWS THE ROOM: the visuals take the lamps' live colours, left to right as the
+lamps stand, so every knob above also repaints the projection. When you play a step the
+room shows its TRIAD (1 = red + yellow + blue, 2 = orange + green + indigo ...), the step's
+own colour leading. (TouchDesigner /project1/vj, Colour = "The room" -- or Degree colours
+for the old one-colour look.)
 
 HOLD SHIFT + turn = THE CLASSIC KNOBS
    1 Brightness  2 Effect (wash > glow > pulse > chase > sparkle > sweep > hit)  3 Effect speed

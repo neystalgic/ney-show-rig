@@ -1,22 +1,20 @@
 # =============================================================================
 # HUE HUB -- the FREESTYLE RACK: eight light effects for Push 2's top knobs
 #
-# Each knob is an effect you turn IN: 0 = off, more = more. They stack, they all
-# run on the beat clock (the Digitakt / Live tempo), and everything still ends in
-# the flicker protection, so no knob can flash faster than the Flicker Guard.
+# Each knob sits on its own musical grid -- the knob only sets HOW MUCH, never how
+# fast -- so everything lands on the beat. 0 (all the way left) = off. They stack,
+# and everything still ends in the flicker protection.
 #
-#   1 STROBE   white flashes on the grid: every bar > half bar > every beat
-#   2 PRISM    a rainbow laid across the room that rolls round on the beat
-#   3 ORBIT    a comet runs round the room. Centre = off, right = clockwise,
-#              left = counter-clockwise; further out = faster (on the grid)
-#   4 BREATHE  the room breathes in and out over two bars; past halfway it
-#              becomes a wave that rolls from lamp to lamp
-#   5 PUMP     sidechain: every beat ducks the lamps and they swell back
-#   6 ECHO     every kick fires a pulse that bounces lamp to lamp, like a delay
-#   7 CHORD    the lamps split into the notes of the chord -- root, third, fifth,
-#              seventh, each in its own degree colour (what you hold, or the
-#              chord the audio brain hears)
-#   8 SPARKLE  hats throw glitter onto random lamps and gradient zones
+#   1 PUNCH    1 bar      the 1 of every bar slams the room up in its own colour, then it
+#                         sinks back (the knob = how hard). Never white.
+#   2 PRISM    1/2 note   a rainbow across the room that steps round every half note
+#   3 ORBIT    1/4 note   a comet hops one lamp every beat. Centre = off,
+#                         right = clockwise, left = counter-clockwise (further = darker room)
+#   4 SPARKLE  1/8 note   glitter: a random lamp lights on every eighth note
+#   5 PUMP     1/4 note   sidechain: every beat ducks the lamps and they swell back
+#   6 ECHO     1/2 + 1/8  on every half note a pulse bounces lamp to lamp in eighths
+#   7 BREATHE  2 bars     the room breathes in and out; past halfway it becomes a wave
+#   8 CHORD    the chord  the lamps split into the chord's notes, each in its degree colour
 #
 # Hold SHIFT on Push to get the classic knobs back (brightness, effect, speed ...).
 # =============================================================================
@@ -37,7 +35,6 @@ except Exception:
 FX_KEYS = ('fx_strobe', 'fx_prism', 'fx_orbit', 'fx_breathe', 'fx_pump', 'fx_echo', 'fx_chord', 'fx_sparkle')
 FX_DEFAULTS = dict(fx_strobe=0.0, fx_prism=0.0, fx_orbit=0.5, fx_breathe=0.0, fx_pump=0.0, fx_echo=0.0,
                    fx_chord=0.0, fx_sparkle=0.0)
-WHITE = (1.0, 1.0, 1.0)
 RAINBOW = [(1.0, 0.0, 0.0), (1.0, 0.38, 0.0), (1.0, 0.85, 0.0), (0.0, 1.0, 0.1), (0.0, 0.3, 1.0),
            (0.29, 0.0, 1.0), (0.62, 0.0, 1.0)]
 
@@ -50,10 +47,13 @@ def _mix(a, b, t):
     return tuple(x + (y - x) * t for x, y in zip(a, b))
 
 
+ROOM = [(1.0, 0.0, 0.0)]           # the room's colour right now (for lamps that are dark)
+
+
 def _hue(c):
-    """The colour of a lamp at full brightness (white if it's dark)."""
+    """The colour of a lamp at full brightness (the room's colour if it's dark -- never white)."""
     m = max(c)
-    return tuple(x / m for x in c) if m > 0.03 else (0.7, 0.7, 0.7)
+    return tuple(x / m for x in c) if m > 0.03 else ROOM[0]
 
 
 def _rainbow(x):
@@ -88,9 +88,9 @@ def orbit_rate(v, bps, guard):
 class LightFX:
     def __init__(self, hub):
         self.hub = hub
-        self.k_prev = 0.0
-        self.h_prev = 0.0
-        self.echoes = []          # wall time of each kick that fired an echo
+        self.k_prev = None        # the last half note that fired an echo
+        self.h_prev = None        # the last eighth note that threw sparkle
+        self.echoes = []          # beat each echo set off on
         self.sparks = {}          # segment index -> (start time, strength)
         self.last_spark = -1
 
@@ -99,19 +99,14 @@ class LightFX:
         return {k: float(L.get(k, FX_DEFAULTS[k])) for k in FX_KEYS}
 
     def label(self, key, v):
-        """What the knob is doing, in words (shown on the desk / Push messages)."""
-        tempo = float(self.hub.live.get('tempo', 120.0))
-        g = float(self.hub.live.get('guard', 2.0))
-        if key == 'fx_strobe':
-            d = strobe_division(v, tempo / 60.0, g)
-            return 'Strobe off' if d is None else 'Strobe every %s' % (
-                {4.0: 'bar', 2.0: 'half bar', 1.0: 'beat'}.get(d, '%g beats' % d))
+        """What the knob is doing, in words."""
         if key == 'fx_orbit':
-            s, r = orbit_rate(v, tempo / 60.0, g)
-            return 'Orbit off' if s == 0 else 'Orbit %s, a lap every %g beats' % (
-                'clockwise' if s > 0 else 'counter-clockwise', 1.0 / r)
-        names = dict(fx_prism='Prism', fx_breathe='Breathe', fx_pump='Pump', fx_echo='Echo',
-                      fx_chord='Chord', fx_sparkle='Sparkle')
+            if abs(v - 0.5) < 0.04:
+                return 'Orbit off'
+            return 'Orbit %s %d%%' % ('clockwise' if v > 0.5 else 'counter-clockwise', round(abs(v - 0.5) * 200))
+        names = dict(fx_strobe='Punch (bar)', fx_prism='Prism (1/2)', fx_sparkle='Sparkle (1/8)',
+                     fx_pump='Pump (1/4)', fx_echo='Echo (1/2 + 1/8)', fx_breathe='Breathe (2 bars)',
+                     fx_chord='Chord')
         return '%s %d%%' % (names.get(key, key), round(v * 100))
 
     # ---- the chord the room shows: what you hold, else what the brain hears ----
@@ -144,11 +139,6 @@ class LightFX:
     def render(self, cols, beats, tempo, now):
         a = self.amounts()
         on = {k: v for k, v in a.items() if (abs(v - 0.5) >= 0.04 if k == 'fx_orbit' else v >= 0.02)}
-        env = getattr(getattr(self.hub, 'audioshow', None), 'env', None) or {}
-        kick, hats = float(env.get('kick', 0.0)), float(env.get('hats', 0.0))
-        k_edge = kick > 0.55 >= self.k_prev
-        h_edge = hats > 0.5 >= self.h_prev
-        self.k_prev, self.h_prev = kick, hats
         if not on:
             self.echoes, self.sparks = [], {}
             return cols
@@ -162,6 +152,10 @@ class LightFX:
         guard = float(self.hub.live.get('guard', 2.0))
         ords = [s.get('ord', i) for i, s in enumerate(segs)]
         out = [tuple(c) for c in cols]
+        lit = [c for c in out if max(c) > 0.03]
+        if lit:                                           # the room's colour = its brightest lamp's colour
+            b = max(lit, key=max)
+            ROOM[0] = tuple(x / max(b) for x in b)
 
         # ---- colour layers ----
         amt = on.get('fx_chord', 0.0)
@@ -172,31 +166,33 @@ class LightFX:
                        for i, c in enumerate(out)]
         amt = on.get('fx_prism', 0.0)
         if amt:
-            roll = beats / 8.0 * 7.0                      # once round the rainbow every two bars
+            step = beats / 2.0                            # one colour step every half note,
+            j = math.floor(step)                          # a quick slide onto the beat
+            roll = j + min(1.0, (step - j) / 0.12)
             out = [_mix(c, tuple(x * max(max(c), 0.3 * amt) for x in _rainbow(roll + ords[i] * 7.0 / N)), amt)
                    for i, c in enumerate(out)]
 
         # ---- movement / level layers ----
         if 'fx_orbit' in on:
-            sgn, rate = orbit_rate(a['fx_orbit'], bps, guard)
-            if sgn:
-                depth = min(1.0, abs(a['fx_orbit'] - 0.5) * 2.4)
-                head = (beats * rate * N) % N
-                res = []
-                for i, c in enumerate(out):
-                    d = (head - ords[i]) % N if sgn > 0 else (ords[i] - head) % N
-                    b = math.exp(-d / 1.1)
-                    lvl = max(c)
-                    res.append(tuple(x * (lvl * (1 - depth) + max(lvl, 0.55) * depth * b) for x in _hue(c)))
-                out = res
+            off = a['fx_orbit'] - 0.5
+            sgn = 1 if off > 0 else -1
+            depth = min(1.0, (abs(off) - 0.04) / 0.46 * 1.1)
+            head = (beats % N)                            # one lamp per beat (quarter notes)
+            res = []
+            for i, c in enumerate(out):
+                d = (head - ords[i]) % N if sgn > 0 else (ords[i] - (N - head)) % N
+                b = math.exp(-d / 0.7)
+                lvl = max(c)
+                res.append(tuple(x * (lvl * (1 - depth) + max(lvl, 0.55) * depth * b) for x in _hue(c)))
+            out = res
         amt = on.get('fx_breathe', 0.0)
         if amt:
             wave = max(0.0, amt - 0.5) * 2.0
             res = []
             for i, c in enumerate(out):
                 ph = (beats / 8.0 - wave * 0.5 * ords[i] / N) % 1.0
-                s = 0.5 + 0.5 * math.cos(2 * math.pi * ph)        # full on the downbeat of every 2 bars
-                res.append(tuple(x * (1 - min(1.0, amt * 1.4) * 0.92 * (1 - s)) for x in c))
+                s_ = 0.5 + 0.5 * math.cos(2 * math.pi * ph)       # full on the downbeat of every 2 bars
+                res.append(tuple(x * (1 - min(1.0, amt * 1.4) * 0.92 * (1 - s_)) for x in c))
             out = res
         amt = on.get('fx_pump', 0.0)
         if amt:
@@ -205,54 +201,59 @@ class LightFX:
             m = 1 - amt * 0.92 * duck
             out = [tuple(x * m for x in c) for c in out]
 
-        # ---- hits on top ----
+        # ---- hits on top, all on the grid ----
         amt = on.get('fx_echo', 0.0)
         if amt:
-            if k_edge and (not self.echoes or now - self.echoes[-1] > 0.2):
-                self.echoes.append(now)
-            hop = 0.5 / bps                                 # an eighth note per lamp
+            hb = math.floor(beats / 2.0)                   # every half note a new pulse sets off
+            if hb != self.k_prev:
+                self.k_prev = hb
+                self.echoes.append(hb * 2.0)
             fb = 0.35 + 0.6 * amt
             hops = int(N * (1 + 2 * amt))
-            self.echoes = [t for t in self.echoes if now - t < hop * (hops + 2)]
+            self.echoes = [b0 for b0 in self.echoes if beats - b0 < 0.5 * (hops + 2)]
             add = [0.0] * n
-            for t0 in self.echoes:
-                h = int((now - t0) / hop)
-                if h < hops:
-                    tgt = h % n
-                    k = (fb ** h) * math.exp(-((now - t0) - h * hop) / 0.16)
+            for b0 in self.echoes:
+                h = int((beats - b0) / 0.5)                # an eighth note per lamp
+                if 0 <= h < hops:
+                    k = (fb ** h) * math.exp(-((beats - b0) - h * 0.5) / bps / 0.16)
                     for i in range(n):
-                        if ords[i] == tgt:
+                        if ords[i] == h % n:
                             add[i] = max(add[i], k)
-            out = [tuple(_cl(x + (y * 0.85 + 0.15) * add[i] * amt) for x, y in zip(c, _hue(c)))
+            out = [tuple(_cl(x + y * add[i] * amt) for x, y in zip(c, _hue(c)))
                    for i, c in enumerate(out)]
         else:
             self.echoes = []
         amt = on.get('fx_sparkle', 0.0)
         if amt:
-            if h_edge:
-                for _ in range(1 + int(amt * 2.2)):
+            e8 = math.floor(beats * 2.0)                   # every eighth note
+            if e8 != self.h_prev:
+                self.h_prev = e8
+                for _ in range(1 + int(amt * 1.6)):
                     j = random.randrange(n)
                     if n > 1 and j == self.last_spark:
                         j = (j + 1 + random.randrange(n - 1)) % n
                     self.last_spark = j
-                    self.sparks[j] = (now, 0.55 + 0.45 * amt)
+                    self.sparks[j] = (now, 0.4 + 0.6 * amt)
             res = []
             for i, c in enumerate(out):
-                t0, s = self.sparks.get(i, (-10.0, 0.0))
-                k = s * math.exp(-(now - t0) / 0.14)
-                res.append(tuple(_cl(x + (0.6 * y + 0.4) * k) for x, y in zip(c, _hue(c))) if k > 0.01 else c)
+                t0, s_ = self.sparks.get(i, (-10.0, 0.0))
+                k = s_ * math.exp(-(now - t0) / 0.14)
+                res.append(tuple(_cl(x + y * k) for x, y in zip(c, _hue(c))) if k > 0.01 else c)
             out = res
         else:
             self.sparks = {}
 
-        # ---- the strobe goes last: it owns the room while it's in ----
+        # ---- the bar punch goes last ----
         amt = on.get('fx_strobe', 0.0)
         if amt:
-            div = strobe_division(amt, bps, guard)
-            since = ((beats % div) / bps) if div else 9.0
-            if since < 0.09:
-                out = [WHITE for _ in out]
-            else:
-                dim = 1 - min(0.9, 0.35 + amt * 0.6)
-                out = [tuple(x * dim for x in c) for c in out]
+            ph = (beats % 4.0) / 4.0                       # the 1 of every bar: up to full, in its colour,
+            env_ = math.exp(-ph / 0.18)                    # then it sinks back over the bar
+            res = []
+            for c in out:
+                hc = _hue(c)
+                lvl = max(c)
+                top = lvl + (1.0 - lvl) * env_            # the punch, in the lamp's own colour
+                low = lvl * (1 - 0.55 * amt)               # the rest of the bar sits lower, so it hits
+                res.append(tuple(x * (low + (top - low) * env_ * amt / max(amt, 1e-6)) for x in hc))
+            out = [_mix(c, r_, amt) for c, r_ in zip(out, res)]
         return [tuple(_cl(x) for x in c) for c in out]
