@@ -46,6 +46,7 @@ import hub_visuals                                          # noqa: E402  (what 
 import hub_audioshow                                        # noqa: E402  (the gear plays the lamps)
 import hub_geometry as geo                                  # noqa: E402  (sacred geometry forms + harmonies)
 import hub_fx                                               # noqa: E402  (Push's freestyle light effects)
+import hub_palette                                          # noqa: E402  (the room's colours: spectrum / triad / degree)
 
 STATE_PATH = os.path.join(HERE, 'hub_state.json')
 DESK_PATH = os.path.join(HERE, 'desk.html')
@@ -410,6 +411,7 @@ class Hub:
         self.audio = None                       # the gear's sound through the Scarlett (hub_audio.py)
         self.audioshow = hub_audioshow.AudioShow(self)
         self.fx = hub_fx.LightFX(self)
+        self.palette = hub_palette.Palette(self)
         self.movie_prev = None                  # Movie mode: the lamps' colours from the picture (smoothed)
         self.movie_status = 'off'
         self.message = ('', 0.0)
@@ -957,10 +959,15 @@ class Hub:
             # bright each one is). Lasts while the note's pad is held / latched; "all pads off" hands back.
             lm = self.ableton
             drgb = getattr(lm, 'deg_rgb', None) if lm is not None else None
-            if (drgb is not None and self.state['settings'].get('iac_map') == 'degree' and self.pads.active()
-                    and not self.blackout and self.calib_test is None):
+            pmode = self.palette.mode()          # 'spectrum' (rainbow gradient) / 'triad' / 'degree' (1 = red ...)
+            playing = drgb is not None and self.state['settings'].get('iac_map') == 'degree' and self.pads.active()
+            if playing:
+                self.palette.note(drgb, now)
+            if pmode == 'spectrum' and not self.blackout and self.calib_test is None:
+                cols = self.palette.render(cols, beats, now, dt, getattr(self.audioshow, 'section', 'groove'))
+            elif playing and not self.blackout and self.calib_test is None:
                 ld = getattr(lm, 'last_degree', None)
-                if self.state['settings'].get('deg_spread', True) and ld is not None and float(ld) == int(ld):
+                if pmode == 'triad' and ld is not None and float(ld) == int(ld):
                     # the room plays the TRIAD on the step: the step's colour leads, its third and fifth
                     # colour the lamps between (1 = red + yellow + blue, 2 = orange + green + indigo ...)
                     d0 = int(ld) - 1
@@ -1282,14 +1289,15 @@ class Hub:
                 return True
             if op == 'setting':                          # desk > Setup > Ableton
                 k, v = c.get('key'), c.get('value')
-                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, iac_looks=bool, iac_mpe=bool,
+                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, palette=str, iac_looks=bool, iac_mpe=bool,
                              audio_on=bool, audio_in=str, audio_ch=str, audio_sens=float, trig_on=bool, trig_port=str,
                              trig_map=dict, a_voices=dict, gear_clock=bool, a_pat=str, a_spat=str, a_origin=str,
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,
                              movie=bool, movie_src=str)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
-                        k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')):
+                        k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (
+                        k == 'palette' and v not in hub_palette.MODES):
                     return False
                 if (k == 'a_pat' and v not in hub_audioshow.KICK_PATTERNS) or (
                         k == 'a_spat' and v not in hub_audioshow.SNARE_PATTERNS) or (
@@ -1511,7 +1519,8 @@ def lan_ip():
 
 # the hub restarts itself when its code is updated (no more running yesterday's version by mistake)
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
-              'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py']
+              'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py',
+              'hub_palette.py']
 
 
 class Reload(Exception):

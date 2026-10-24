@@ -40,11 +40,20 @@ They stack, nothing ever goes white, and it all goes through the flicker protect
    7 BREATHE   2 bars     the room breathes in and out (past halfway: a rolling wave)
    8 CHORD     the chord  the lamps split into the chord's notes, each in its degree colour
 
-THE WALL FOLLOWS THE ROOM: the visuals take the lamps' live colours, left to right as the
-lamps stand, so every knob above also repaints the projection. When you play a step the
-room shows its TRIAD (1 = red + yellow + blue, 2 = orange + green + indigo ...), the step's
-own colour leading. (TouchDesigner /project1/vj, Colour = "The room" -- or Degree colours
-for the old one-colour look.)
+THE ROOM'S COLOURS (hub setting 'palette' -- ask Claude to switch, takes a second):
+   spectrum (now)  a rainbow GRADIENT across the room, left to right, hues spaced evenly to
+                   the eye (OKLCH colour space) and blended round the colour wheel, so no
+                   muddy browns or greys. The step you play is the centre of the gradient
+                   (1 = red, 2 = orange ... the same degree colours); the section sets how wide
+                   it spreads: breakdown = neighbouring hues, groove = wide, drop = full rainbow.
+                   With no notes it drifts slowly round the wheel (a turn every 16 bars).
+   triad           the step's colour plus its third and fifth (1 = red + yellow + blue)
+   degree          THE ORIGINAL RULE: the whole room is the step's colour (1 red, 2 orange,
+                   3 yellow, 4 green, 5 blue, 6 indigo, 7 violet, 8 rainbow). Still all there.
+   Knob 8 (Chord) and 2 (Prism) paint over the palette -- turn Chord down to see the gradient.
+THE WALL FOLLOWS THE ROOM: the visuals take the lamps' live colours, left to right, blended the
+same way round the wheel. (TouchDesigner /project1/vj, Colour = "The room"; "Degree colours"
+is the old one-colour wall.)
 
 HOLD SHIFT + turn = THE CLASSIC KNOBS
    1 Brightness  2 Effect (wash > glow > pulse > chase > sparkle > sweep > hit)  3 Effect speed
@@ -54,7 +63,7 @@ HOLD SHIFT + turn = THE CLASSIC KNOBS
    -- still on the grid -- until it's safe.
 
 CAPPED LAMPS: the Hue Play floor lamp and Hue color lamp 1 (by the projector) never go above
-50%, so they don't wash out the picture.
+75%, so they don't wash out the picture.
 
 COLOURS: every note -- the VJ pads themselves AND what you play on 1 MIDI -- colours the geometry and the lamps by its
 step in the key (F minor now): 1 red 2 orange 3 yellow 4 green 5 blue 6 indigo 7 violet,

@@ -256,17 +256,52 @@ vec3 src(vec2 fc) {
     vec3 ov = texture(sTD2DInputs[1], uv).rgb * uO.x;          // sacred geometry, screened on top
     return 1.0 - (1.0 - base) * (1.0 - clamp(ov, 0.0, 1.0));
 }
+vec3 okFrom(vec3 c) {                      // sRGB -> OKLab (perceptual)
+    c = pow(max(c, vec3(0.0)), vec3(2.2));
+    float l = pow(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b, 1.0 / 3.0);
+    float m = pow(0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b, 1.0 / 3.0);
+    float s = pow(0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b, 1.0 / 3.0);
+    return vec3(0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+                1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+                0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s);
+}
+vec3 okTo(vec3 o) {
+    float l = o.x + 0.3963377774 * o.y + 0.2158037573 * o.z;
+    float m = o.x - 0.1055613458 * o.y - 0.0638541728 * o.z;
+    float s = o.x - 0.0894841775 * o.y - 1.2914855480 * o.z;
+    l = l * l * l; m = m * m * m; s = s * s * s;
+    vec3 c = vec3(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+                  -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+                  -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s);
+    return pow(max(c, vec3(0.0)), vec3(1.0 / 2.2));
+}
+vec3 okBlend(vec3 a, vec3 b, float t) {    // round the colour wheel (OKLCH), never through grey or brown
+    vec3 A = okFrom(a), B = okFrom(b);
+    float ha = atan(A.z, A.y), hb = atan(B.z, B.y);
+    float dh = mod(hb - ha + 3.14159265, 6.2831853) - 3.14159265;
+    float h = ha + dh * t;
+    float C = mix(length(A.yz), length(B.yz), t);
+    vec3 c = okTo(vec3(mix(A.x, B.x, t), C * cos(h), C * sin(h)));
+    return c / max(max(c.r, max(c.g, c.b)), 1e-4);
+}
 vec3 room(vec2 uv, float L, out float bri) {
     // THE ROOM ON THE WALL: the lamps' live colours, left to right as they stand in the room,
-    // spread across the picture -- brighter lines slide further along the palette, so every
-    // form is many-coloured -- and the wall swells with the lamps' own brightness.
-    float n = float(textureSize(sTD2DInputs[3], 0).x);
+    // blended round the colour wheel into one chromatic gradient. Brighter lines slide further
+    // along it (every form many-coloured), and the wall swells with the lamps' own brightness.
+    int n = textureSize(sTD2DInputs[3], 0).x;
     float x = uv.x + L * 0.45 + 0.04 * sin(uR.y * 0.3);
     float tri = 1.0 - abs(fract(x * 0.5) * 2.0 - 1.0);
-    vec3 p = texture(sTD2DInputs[3], vec2((0.5 + tri * (n - 1.0)) / max(n, 1.0), 0.5)).rgb;
-    float m = max(p.r, max(p.g, p.b));
-    bri = clamp(m * 2.2, 0.0, 1.0);
-    return m > 0.03 ? p / m : uC.rgb;
+    float pos = tri * float(max(n - 1, 0));
+    int i0 = int(floor(pos));
+    int i1 = min(i0 + 1, n - 1);
+    float f = smoothstep(0.0, 1.0, pos - float(i0));
+    vec3 p0 = texelFetch(sTD2DInputs[3], ivec2(i0, 0), 0).rgb;
+    vec3 p1 = texelFetch(sTD2DInputs[3], ivec2(i1, 0), 0).rgb;
+    float m0 = max(p0.r, max(p0.g, p0.b)), m1 = max(p1.r, max(p1.g, p1.b));
+    bri = clamp(mix(m0, m1, f) * 2.2, 0.0, 1.0);
+    vec3 h0 = m0 > 0.03 ? p0 / m0 : uC.rgb;
+    vec3 h1 = m1 > 0.03 ? p1 / m1 : uC.rgb;
+    return okBlend(h0, h1, f);
 }
 vec3 colour(vec3 c, vec2 uv) {
     float L = luma(c);
