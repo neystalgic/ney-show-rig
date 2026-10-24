@@ -45,6 +45,7 @@ import hub_pads                                             # noqa: E402  (Push 
 import hub_visuals                                          # noqa: E402  (what the TD visuals follow)
 import hub_audioshow                                        # noqa: E402  (the gear plays the lamps)
 import hub_geometry as geo                                  # noqa: E402  (sacred geometry forms + harmonies)
+import hub_fx                                               # noqa: E402  (Push's freestyle light effects)
 
 STATE_PATH = os.path.join(HERE, 'hub_state.json')
 DESK_PATH = os.path.join(HERE, 'desk.html')
@@ -213,7 +214,7 @@ def default_looks():
 
 DEFAULT_LIVE = dict(master=1.0, speed=1.0, smooth=0.25, fade=2.0, tint=0.0, sat=1.0, depth=1.0, guard=2.0,
                     tempo=120.0, movie_bri=1.0, movie_speed=0.25, movie_sat=1.2,
-                    **hub_pads.PAD_DEFAULTS, **hub_audioshow.SHOW_DEFAULTS)
+                    **hub_pads.PAD_DEFAULTS, **hub_audioshow.SHOW_DEFAULTS, **hub_fx.FX_DEFAULTS)
 
 
 SETTINGS_DEFAULT = dict(beats_per_bar=4, iac_on=True, iac_port='IAC', iac_map='pads', iac_looks=True, iac_mpe=True,
@@ -399,6 +400,7 @@ class Hub:
         self.ableton = None                     # Ableton's MIDI through the IAC Driver (hub_livemidi.py)
         self.audio = None                       # the gear's sound through the Scarlett (hub_audio.py)
         self.audioshow = hub_audioshow.AudioShow(self)
+        self.fx = hub_fx.LightFX(self)
         self.movie_prev = None                  # Movie mode: the lamps' colours from the picture (smoothed)
         self.movie_status = 'off'
         self.message = ('', 0.0)
@@ -948,6 +950,14 @@ class Hub:
                     and not self.blackout and self.calib_test is None):
                 hd, sd, _ = colorsys.rgb_to_hsv(*drgb)
                 cols = [colorsys.hsv_to_rgb(hd, sd, max(clamp(x) for x in c_)) for c_ in cols]
+            # FREESTYLE RACK: Push's top knobs (strobe, prism, orbit, breathe, pump, echo, chord, sparkle)
+            if not self.blackout and self.calib_test is None:
+                try:
+                    cols = self.fx.render(cols, beats, tempo, now)
+                except Exception as e:
+                    if now - getattr(self, '_fx_err_t', 0.0) > 10.0:
+                        self._fx_err_t = now
+                        say('Light FX: %s' % e)
             # PER-LAMP CAP: lamps near the projection never go above their cap (the music still moves them)
             caps = [self.rig.lamps[sg['lamp']].get('cap', 1.0) for sg in self.rig.segs]
             if any(k < 0.999 for k in caps):
@@ -1201,7 +1211,8 @@ class Hub:
                            p_spread=(0, 1), p_latch=(0, 1), p_pressure=(0, 1), p_patterns=(0, 1),
                            a_amt=(0, 1), a_kick=(0, 1), a_snare=(0, 1), a_hats=(0, 1), a_follow=(0, 1),
                            a_colour=(0, 1), a_drop=(0, 1), a_move=(0, 1), a_spread=(0, 1),
-                           crowd_amt=(0, 1), movie_bri=(0, 1.5), movie_speed=(0.03, 1.5), movie_sat=(0.5, 2.0)).get(k)
+                           crowd_amt=(0, 1), movie_bri=(0, 1.5), movie_speed=(0.03, 1.5), movie_sat=(0.5, 2.0),
+                           **{fk: (0, 1) for fk in hub_fx.FX_KEYS}).get(k)
                 if k == 'p_latch' and float(c['value']) < 0.5:
                     self.pads.release_latched(time.time())     # latch off: let the latched pad fade
                 if lim is None:
@@ -1476,7 +1487,7 @@ def lan_ip():
 
 # the hub restarts itself when its code is updated (no more running yesterday's version by mistake)
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
-              'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py']
+              'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py']
 
 
 class Reload(Exception):

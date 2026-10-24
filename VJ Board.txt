@@ -26,21 +26,32 @@ COLUMNS (left to right) = how it is constructed
    7  golden-ratio nest, five deep
    8  three-fold
 
-THE 8 KNOBS ABOVE THE SCREEN = LIGHTING EFFECTS (after you've tapped a VJ pad;
+THE 8 KNOBS ABOVE THE SCREEN = THE FREESTYLE RACK (after you've tapped a VJ pad;
 they go back to Live as soon as you play a note on another track)
-   1 Brightness         the lamps' master level
-   2 EFFECT             turn to step: wash > glow > pulse > chase > sparkle > sweep > hit
-   3 Effect speed       on the beat grid: x1/4  x1/2  x1  x2  x4
-   4 Spread             how the effect spreads across the room
-   5 Beat punch         how hard the music pumps the lamps
-   6 Fade               how long the colour hangs on: 1/4, 1/2, 1, 2, 4 or 8 beats (follows the tempo)
-   7 Vibrance
-   8 Smoothing
-   (The Light Desk at localhost:7020 shows the values moving.)
-   BPM SYNC: every effect runs on the Digitakt's MIDI clock (Ableton's tempo). If a speed would
-   flash faster than the Flicker Guard allows at the current tempo, it halves -- still on the
-   grid -- until it's safe. At 140 BPM with the Guard at 0.5: pulse lands every 2 bars, chase
-   runs a full sweep every 2 bars. At Guard 2: pulse every 2 beats, chase every bar.
+Every knob is an effect you turn IN: all the way left = off. They stack, they all ride the
+beat clock, and they all go through the flicker protection.
+   1 STROBE    white flashes on the grid: every bar > half bar > every beat
+   2 PRISM     a rainbow across the room that rolls round every two bars
+   3 ORBIT     a comet runs round the room. Centre = off (it clicks to a stop there),
+               right = clockwise, left = counter-clockwise; further out = faster
+   4 BREATHE   the room breathes in and out over two bars; past halfway it becomes a
+               wave rolling lamp to lamp
+   5 PUMP      sidechain: every beat ducks the lamps and they swell back (house pump)
+   6 ECHO      every kick fires a pulse that bounces lamp to lamp, like a delay
+   7 CHORD     the lamps split into the notes of the chord -- root, third, fifth (seventh) --
+               each in its degree colour: what you hold, or the chord the brain hears
+   8 SPARKLE   the hats throw glitter onto random lamps
+   Push shows nothing for these; the Light Desk (localhost:7020) shows the values.
+
+HOLD SHIFT + turn = THE CLASSIC KNOBS
+   1 Brightness  2 Effect (wash > glow > pulse > chase > sparkle > sweep > hit)  3 Effect speed
+   4 Spread      5 Beat punch      6 Fade (in beats)      7 Vibrance      8 Smoothing
+   BPM SYNC: everything runs on the Digitakt's MIDI clock (Live's tempo). If something would
+   flash faster than the Flicker Guard allows (now 2.8 a second, never more than 3), it halves
+   -- still on the grid -- until it's safe.
+
+CAPPED LAMPS: the Hue Play floor lamp and Hue color lamp 1 (by the projector) never go above
+50%, so they don't wash out the picture.
 
 COLOURS: every note -- the VJ pads themselves AND what you play on 1 MIDI -- colours the geometry and the lamps by its
 step in the key (F minor now): 1 red 2 orange 3 yellow 4 green 5 blue 6 indigo 7 violet,
@@ -78,4 +89,4 @@ ABLETON (press Cmd+S in Ableton to keep it)
    Don't select Note Colours on Push (it's just a pipe). Don't use Solo while performing.
 
 SAFETY: everything ends in the flicker-safe pass set by the hub's Flicker Guard
-(now 0.5 flashes/s). Nothing on the wall can flash faster than that.
+(now 2.8 flashes/s, hard limit 3). Nothing can flash faster than that.

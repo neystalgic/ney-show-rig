@@ -601,7 +601,7 @@ def midi(message, channel, index, value):
 # you're on the VJ track (you pressed a VJ pad more recently than you played a note).
 # Push's 8 knobs above the screen = LIGHTING EFFECTS (the Hue Hub's live settings), while you're on the VJ track.
 #   (key, low, high, curve)   curve: lin / exp / step (a menu: a few clicks = one step)
-LIGHT_KNOBS = {
+CLASSIC_KNOBS = {                          # hold SHIFT on Push for these
     71: ('master', 0.0, 1.0, 'lin'),       # 1 brightness
     72: ('deg_effect', 0, 0, 'step'),      # 2 effect: wash > glow > pulse > chase > sparkle > sweep > hit
     73: ('p_speed', 0, 0, 'speed'),        # 3 effect speed, on the beat grid: x1/4 x1/2 x1 x2 x4
@@ -611,6 +611,18 @@ LIGHT_KNOBS = {
     77: ('sat', 0.0, 1.5, 'lin'),          # 7 vibrance
     78: ('smooth', 0.0, 1.0, 'lin'),       # 8 smoothing
 }
+LIGHT_KNOBS = {                            # the FREESTYLE RACK (hub_fx.py): 0 = off, turn in for more
+    71: ('fx_strobe', 0.0, 1.0, 'fx'),     # 1 strobe: every bar > half bar > beat
+    72: ('fx_prism', 0.0, 1.0, 'fx'),      # 2 rainbow across the room, rolling on the beat
+    73: ('fx_orbit', 0.0, 1.0, 'orbit'),   # 3 comet round the room: left = counter-clockwise, right = clockwise
+    74: ('fx_breathe', 0.0, 1.0, 'fx'),    # 4 breathe over 2 bars (past halfway: a wave)
+    75: ('fx_pump', 0.0, 1.0, 'fx'),       # 5 sidechain pump on every beat
+    76: ('fx_echo', 0.0, 1.0, 'fx'),       # 6 kicks bounce lamp to lamp
+    77: ('fx_chord', 0.0, 1.0, 'fx'),      # 7 lamps split into the chord's notes
+    78: ('fx_sparkle', 0.0, 1.0, 'fx'),    # 8 hats throw glitter
+}
+SHIFT_CC = 49
+_shift = [False]
 EFFECTS = ['wash', 'glow', 'pulse', 'chase', 'sparkle', 'sweep', 'hit']
 SPEEDS = [0.25, 0.5, 1.0, 2.0, 4.0]
 FADES = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0]          # beats
@@ -666,16 +678,28 @@ def push_cc(message, channel, index, value):
         cc, v = int(index) - IDX_OFFSET, int(float(value))
     except Exception:
         return
-    if cc not in LIGHT_KNOBS:
+    if cc == SHIFT_CC:                                # SHIFT held: the classic knobs
+        _shift[0] = v > 0
+        return
+    table = CLASSIC_KNOBS if _shift[0] else LIGHT_KNOBS
+    if cc not in table:
         return
     if VJC.fetch('vj_mode_t', -100.0, search=False) <= VJC.fetch('play_mode_t', -50.0, search=False):
         return
     if time.time() - _hub['t'] > 5.0 and not _hub['busy']:      # keep a fresh copy of the hub's values
         _hub['busy'] = True
         threading.Thread(target=_hub_refresh, daemon=True).start()
-    key, lo, hi, curve = LIGHT_KNOBS[cc]
+    key, lo, hi, curve = table[cc]
     d = v if v < 64 else v - 128
-    if curve in ('speed', 'fade'):                    # musical steps, a few clicks each
+    if curve in ('fx', 'orbit'):                      # the freestyle rack: quick to turn in and out
+        x = float(_hub['live'].get(key, 0.5 if curve == 'orbit' else 0.0))
+        x = max(0.0, min(1.0, x + d / 110.0))
+        if curve == 'orbit' and abs(x - 0.5) < 0.04 and abs(d) < 3:
+            x = 0.5                                   # a soft click at the centre = orbit off
+        _hub['live'][key] = x
+        _pending[key] = {'op': 'live', 'key': key, 'value': round(x, 4)}
+        VJC.store('vj_light_msg', _fx_label(key, x))
+    elif curve in ('speed', 'fade'):                    # musical steps, a few clicks each
         a = _acc.get(cc, 0) + d
         if abs(a) >= 6:
             if curve == 'speed':
@@ -725,6 +749,16 @@ def push_cc(message, channel, index, value):
         _flush()
     else:
         run("op('%s').module._flush()" % op('engine').path, delayFrames=3)
+
+
+def _fx_label(key, x):
+    if key == 'fx_strobe':
+        return 'Strobe off' if x < 0.02 else 'Strobe every ' + ('bar' if x < 0.34 else 'half bar' if x < 0.67 else 'beat')
+    if key == 'fx_orbit':
+        if abs(x - 0.5) < 0.04:
+            return 'Orbit off'
+        return 'Orbit %s %d%%' % ('clockwise' if x > 0.5 else 'counter-clockwise', round(abs(x - 0.5) * 200))
+    return '%s %d%%' % (key[3:].capitalize(), round(x * 100))
 
 
 def push_midi(message, channel, index, value):
