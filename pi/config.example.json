@@ -1,0 +1,7 @@
+{
+  "port": 7030,
+  "quiet_after": 60,
+  "show_name": "Ney show",
+  "ntfy_topic": "",
+  "ntfy_server": "https://ntfy.sh"
+}

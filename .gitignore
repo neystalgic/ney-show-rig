@@ -18,3 +18,7 @@ __pycache__/
 td_snaps/
 *.new
 *.bak
+
+# --- Pi: its own settings + logs stay on the Pi ---
+pi/config.json
+pi/backup.log

@@ -1,0 +1,14 @@
+[Unit]
+Description=Ney show health watch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ney
+WorkingDirectory=/home/ney/ney-show-rig/pi
+ExecStart=/usr/bin/python3 /home/ney/ney-show-rig/pi/ney_health.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

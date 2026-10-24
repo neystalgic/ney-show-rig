@@ -978,6 +978,29 @@ class Hub:
             except OSError as e:
                 say('Could not save hub_state.json: %s' % e)
 
+    def pi_heartbeat(self):
+        """Every 10 s tell the Ney Pi (setting pi_url) we're alive -- it alerts your phone if we go quiet."""
+        url = self.state['settings'].get('pi_url', '')
+        now = time.time()
+        if not url or now - getattr(self, '_pi_t', 0.0) < 10.0:
+            return
+        self._pi_t = now
+        beat = dict(t=now, bridge=self.bridge_status, feed=(now - self.feed['t'] < 3.0),
+                    audio=(self.audio.status if self.audio is not None else 'off'),
+                    push=(self.push.status if self.push else 'off'),
+                    brain=(self.audio.brain.snapshot() if self.audio is not None and getattr(self.audio, 'brain', None)
+                           is not None else None))
+
+        def send():
+            try:
+                import urllib.request
+                rq = urllib.request.Request(url, data=json.dumps(beat).encode(),
+                                            headers={'Content-Type': 'application/json'})
+                urllib.request.urlopen(rq, timeout=3).read()
+            except Exception:
+                pass
+        threading.Thread(target=send, daemon=True).start()
+
     def code_changed(self, now):
         """New code in the Hue Rig folder (an update)? True once it has settled and compiles cleanly."""
         if now - getattr(self, 'code_t', 0.0) < 2.0:
@@ -1015,6 +1038,7 @@ class Hub:
                     self.push.poll()
                 if self.ableton:
                     self.ableton.poll()
+                    self.pi_heartbeat()
                     br = getattr(self.audio, 'brain', None) if self.audio is not None else None
                     if br is not None:
                         for root, minor, strength in br.poll():          # chords heard in the mix -> MIDI ch 2
@@ -1208,7 +1232,7 @@ class Hub:
                 return True
             if op == 'setting':                          # desk > Setup > Ableton
                 k, v = c.get('key'), c.get('value')
-                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, iac_looks=bool, iac_mpe=bool,
+                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, iac_looks=bool, iac_mpe=bool,
                              audio_on=bool, audio_in=str, audio_ch=str, audio_sens=float, trig_on=bool, trig_port=str,
                              trig_map=dict, a_voices=dict, gear_clock=bool, a_pat=str, a_spat=str, a_origin=str,
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,
