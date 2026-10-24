@@ -397,10 +397,44 @@ def deck(i):
         life.allowCooking = (i == li) or (p.Layer.menuIndex == li and p.Layeramt.eval() > 0)
 
 
+LIVE_SCALES = {
+    'major': [0, 2, 4, 5, 7, 9, 11], 'minor': [0, 2, 3, 5, 7, 8, 10],
+    'dorian': [0, 2, 3, 5, 7, 9, 10], 'mixolydian': [0, 2, 4, 5, 7, 9, 10],
+    'lydian': [0, 2, 4, 6, 7, 9, 11], 'phrygian': [0, 1, 3, 5, 7, 8, 10], 'locrian': [0, 1, 3, 5, 6, 8, 10],
+    'harmonic minor': [0, 2, 3, 5, 7, 8, 11], 'melodic minor': [0, 2, 3, 5, 7, 9, 11],
+    'harmonic major': [0, 2, 4, 5, 7, 8, 11], 'phrygian dominant': [0, 1, 4, 5, 7, 8, 10],
+    'dorian #4': [0, 2, 3, 6, 7, 9, 10], 'lydian dominant': [0, 2, 4, 6, 7, 9, 10],
+    'lydian augmented': [0, 2, 4, 6, 8, 9, 11], 'super locrian': [0, 1, 3, 4, 6, 8, 10],
+    'hungarian minor': [0, 2, 3, 6, 7, 8, 11], 'bhairav': [0, 1, 4, 5, 7, 8, 11],
+    'major pentatonic': [0, 2, 4, 7, 9], 'minor pentatonic': [0, 3, 5, 7, 10], 'minor blues': [0, 3, 5, 6, 7, 10],
+    'whole tone': [0, 2, 4, 6, 8, 10], 'hirajoshi': [0, 2, 3, 7, 8], 'in-sen': [0, 1, 5, 7, 10],
+    'iwato': [0, 1, 5, 6, 10], 'kumoi': [0, 2, 3, 7, 9],
+}
+
+
+def _key():
+    # the hub follows Live's key (AbletonOSC); fall back to the Key / Scale parameters here
+    import threading
+    if time.time() - _hub['t'] > 3.0 and not _hub['busy']:
+        _hub['busy'] = True
+        threading.Thread(target=_hub_refresh, daemon=True).start()
+    st = _hub['settings']
+    p = _p()
+    if 'deg_root' in st and time.time() - _hub['t'] < 30.0:
+        root, scale = int(st['deg_root']) % 12, str(st.get('deg_scale', 'major')).lower()
+        if p.Key.menuIndex != root:
+            p.Key.menuIndex = root
+        if scale in p.Scale.menuNames and p.Scale.eval() != scale:
+            p.Scale.val = scale
+        return root, scale
+    return p.Key.menuIndex, p.Scale.eval()
+
+
 def degree(note):
     p = _p()
-    root, scale, home = p.Key.menuIndex, p.Scale.eval(), int(p.Home.eval())
-    sc = SCALES.get(scale, SCALES['major'])
+    root, scale = _key()
+    home = int(p.Home.eval())
+    sc = LIVE_SCALES.get(scale) or (LIVE_SCALES['minor'] if 'minor' in scale else LIVE_SCALES['major'])
     iv = (note - root) % 12
     if iv in sc:
         d, half = sc.index(iv), 0.0
@@ -411,6 +445,7 @@ def degree(note):
         p.Rainbow = True
         p.Lastdegree = 8
         return
+    d = d % 7
     a, b = DEG[d], DEG[(d + 1) % 7]
     c = [x + (y - x) * half for x, y in zip(a, b)]
     p.Rainbow = False
@@ -494,6 +529,7 @@ def pad_on_old(n, vel):
 
 
 def pad_on(n, vel):
+    VJC.store('vj_manual_t', absTime.seconds)    # you're driving: the autopilot steps back for a few bars
     recipe_for(n)
 
 
@@ -702,6 +738,70 @@ def push_midi(message, channel, index, value):
     push_cc(message, channel, index, value)
 
 
+# ---------------------------------------------------------------- AUTOPILOT CONDUCTOR
+# Moves through the 64 recipes on its own, on the beat grid, choosing forms to suit the music:
+#   groove     the five classic families in turn, constructions getting richer phrase by phrase
+#   breakdown  calm, open forms (flower, golden angle, chladni) and the diffusion takes over
+#   drop       the dense ones (quasicrystal, mandala, metatron, tesseract) with a zoom-through
+#   quiet      holds still
+# Any pad you press (or a note on the VJ track) wins: the autopilot waits Handsoff bars, then carries on.
+POOLS = {'groove': ([0, 1, 2, 3, 4], [0, 1, 2, 3, 4, 5, 6, 7]),
+         'breakdown': ([0, 3, 5], [0, 1, 2, 3]),
+         'drop': ([6, 7, 1, 4], [4, 5, 6, 7])}
+SECTION_LOOK = {'groove': (0.5, 'melt'), 'breakdown': (0.85, 'melt'), 'drop': (0.35, 'zoom')}
+
+
+def _auto_pick(section):
+    p = _p()
+    fams, vars_ = POOLS.get(section, POOLS['groove'])
+    n = int(VJC.fetch('ap_n', 0, search=False)) + 1
+    VJC.store('ap_n', n)
+    fam = fams[n % len(fams)]
+    var = vars_[(n // len(fams) + n) % len(vars_)]
+    r = fam * 8 + var
+    if r == p.Recipe.eval():
+        r = fam * 8 + vars_[(vars_.index(var) + 1) % len(vars_)]
+    dif, trans = SECTION_LOOK.get(section, SECTION_LOOK['groove'])
+    p.Diffuse = dif
+    p.Transition = trans
+    VJC.store('ap_last', '%s -> recipe %d (%s, construction %d)' % (section, r, FAMILIES_[fam], r % 8))
+    recipe(r)
+
+
+FAMILIES_ = ['flower', 'metatron', 'yantra', 'golden', 'tesseract', 'chladni', 'quasicrystal', 'mandala']
+
+
+def auto(frame, feed=None):
+    p = _p()
+    if frame % 6 or not p.Autopilot.eval() or p.Deck.eval() != 'builder':
+        return
+    if feed is None:
+        f = op('/project1/hue_feed').par
+        feed = dict(beats=float(f.Beats.eval()), section=str(f.Section.eval()), level=float(f.Alevel.eval()),
+                    tempo=float(f.Tempo.eval()))
+    now = absTime.seconds if 'now' not in feed else feed['now']
+    bar_s = 240.0 / max(60.0, feed['tempo'])
+    hands_free = now - VJC.fetch('vj_manual_t', -1000.0, search=False) > float(p.Handsoff.eval()) * bar_s
+    sec = feed['section']
+    prev = VJC.fetch('ap_section', 'quiet', search=False)
+    if sec != prev:
+        VJC.store('ap_section', sec)
+        if hands_free and sec in ('drop', 'breakdown'):          # the music changed gear: answer right away
+            _auto_pick(sec)
+            return
+    # phrase boundaries: on the gear clock when it's running, otherwise by time
+    lb, lt = VJC.fetch('ap_beat', (feed['beats'], now), search=False)
+    moving = feed['beats'] - lb > 0.01 or now - lt < 1.0
+    if feed['beats'] != lb:
+        VJC.store('ap_beat', (feed['beats'], now))
+    phrase_beats = 4 * int(p.Autobars.eval())
+    idx = int(feed['beats'] // phrase_beats) if moving else int(now // (phrase_beats * 60.0 / max(60.0, feed['tempo'])))
+    if idx != VJC.fetch('ap_idx', -1, search=False):
+        VJC.store('ap_idx', idx)
+        if hands_free and sec != 'quiet' and feed['level'] > 0.05:
+            _auto_pick('drop' if sec == 'drop' else sec)
+
+
 def _layer(on):
     # Blend now (an expression) glides from where it is to the Blend knob (or to 0) in 0.3 s
     VJC.store('vj_lay_from', float(VJC.par.Layeramt.eval()))
@@ -712,6 +812,12 @@ def _layer(on):
 PUSH_CB = r"""
 def onReceiveMIDI(dat, rowIndex, message, channel, index, value, *rest):
     op('engine').module.push_midi(message, channel, index, value)
+    return
+"""
+
+AUTO_CB = r"""
+def onFrameEnd(frame):
+    op('engine').module.auto(frame)
     return
 """
 
@@ -807,6 +913,9 @@ def _pars(vj, keep):
     fl('Buildspin', 'Build spin', 0.05, 0, 0.5)
     fl('Buildscale', 'Build scale', 1.0, 0.3, 3)
     menu('Look', 'Look (knob 5)', LOOKS)
+    tg('Autopilot', 'Autopilot conductor', True)
+    menu('Autobars', 'Autopilot: new recipe every (bars)', ['4', '8', '16'], d=1)
+    fl('Handsoff', 'Autopilot waits after you play (bars)', 4.0, 0, 16)
     fl('Overlayamt', 'Overlay amount', 0.7, 0, 1)
     fl('Morph', 'Morph time (s)', 1.5, 0.1, 8)
     fl('Trails', 'Trails / feedback', 0.08, 0, 1)
@@ -1010,6 +1119,11 @@ def build():
     mi.par.id = _midi_device()
     mi.par.callbacks = 'midi_cb'
     vj.store('vj_built', absTime.seconds)
+    at = vj.create(executeDAT, 'auto_tick')                 # the autopilot conductor's heartbeat
+    at.nodeX, at.nodeY = 1200, 450
+    at.text = AUTO_CB
+    _set(at, 'frameend', True)
+    at.par.active = True
     pc = vj.create(textDAT, 'push_cb')
     pc.nodeX, pc.nodeY = 900, 450
     pc.text = PUSH_CB

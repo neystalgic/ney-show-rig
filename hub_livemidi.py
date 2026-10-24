@@ -48,9 +48,13 @@ DEG_EFFECTS = ['wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep']   # 
 
 
 def degree_of(note, root, scale):
-    """(step 0-6, between 0 / 0.5) of a MIDI note in the key."""
+    """(step 0-6, between 0 / 0.5) of a MIDI note in the key (any of Live's scales)."""
     iv = (note - root) % 12
-    sc = SCALES.get(scale, SCALES['major'])
+    try:
+        from hub_liveosc import scale_steps
+        sc = scale_steps(scale)
+    except Exception:
+        sc = SCALES.get(scale, SCALES['major'])
     if iv in sc:
         return sc.index(iv), 0.0
     return max(k for k, x in enumerate(sc) if x < iv), 0.5
@@ -191,6 +195,7 @@ class LiveMidi:
             self.last_degree = 8
             self.deg_rgb = None                         # rainbow: the pad's own multi-colour effect shows
             return 92, None                             # the octave: rainbow (top row, first pad)
+        d = d % 7                                       # scales with 8 notes: the 8th wraps to red
         rgb = DEG_RGB[d] if half == 0.0 else _mix(DEG_RGB[d], DEG_RGB[(d + 1) % 7], 0.5)
         self.last_degree = d + 1 + half
         self.deg_rgb = rgb                              # the hub lays this colour over the whole room
