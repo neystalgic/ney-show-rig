@@ -289,7 +289,13 @@ vec3 room(vec2 uv, float L, out float bri) {
     // blended round the colour wheel into one chromatic gradient. Brighter lines slide further
     // along it (every form many-coloured), and the wall swells with the lamps' own brightness.
     int n = textureSize(sTD2DInputs[3], 0).x;
-    float x = uv.x + L * 0.45 + 0.04 * sin(uR.y * 0.3);
+    // lava lamp: slow, rounded blobs of colour that rise and fold into each other
+    float t = uR.y * 0.11;
+    vec2 q = uv * vec2(1.6, 1.0);
+    float blob = 0.16 * sin(q.y * 2.3 - t * 1.7 + 0.8 * sin(q.x * 1.9 + t))
+               + 0.11 * sin((q.x + q.y) * 3.1 + t * 1.3)
+               + 0.07 * sin(length(q - vec2(0.8, 0.5 + 0.3 * sin(t * 0.7))) * 6.0 - t * 2.1);
+    float x = uv.x + blob + L * 0.35;
     float tri = 1.0 - abs(fract(x * 0.5) * 2.0 - 1.0);
     float pos = tri * float(max(n - 1, 0));
     int i0 = int(floor(pos));

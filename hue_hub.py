@@ -963,7 +963,10 @@ class Hub:
             playing = drgb is not None and self.state['settings'].get('iac_map') == 'degree' and self.pads.active()
             if playing:
                 self.palette.note(drgb, now)
-            if pmode == 'spectrum' and not self.blackout and self.calib_test is None:
+            if pmode == 'lava' and not self.blackout and self.calib_test is None:
+                cols = self.palette.render_lava(cols, beats, now, dt, getattr(self.audioshow, 'section', 'groove'),
+                                                kick=float(getattr(self.audioshow, 'env', {}).get('kick', 0.0)))
+            elif pmode == 'spectrum' and not self.blackout and self.calib_test is None:
                 cols = self.palette.render(cols, beats, now, dt, getattr(self.audioshow, 'section', 'groove'))
             elif playing and not self.blackout and self.calib_test is None:
                 ld = getattr(lm, 'last_degree', None)
