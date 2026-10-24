@@ -2,15 +2,12 @@
 # HUE HUB -- the room's PALETTE (colour theory)
 #
 # Setting 'palette' picks how the room is coloured:
-#   'lava'      (default) THE ROOM AND THE WALL SHARE ONE RAINBOW. Each bulb (and each zone
-#               of a gradient lamp) sits at a point on a rainbow gradient laid across the
-#               room; every bar the gradient scrolls one lamp along, so each bulb FADES into
-#               its neighbour's colour over the first beat -- calm, flowing, on the grid.
-#               The whole rainbow drifts slowly round the wheel (a turn every 32 bars) like a
-#               lava lamp; the step you play glides the rainbow to start from its colour
-#               (1 = red ...). Brightness is calm: steady, a soft swell on the 1 of the bar
-#               and a little lift from the kick. Section = how much rainbow is in the room:
-#               breakdown half the wheel, groove three quarters, drop all of it.
+#   'lava'      (default) EVERY BULB TOGETHER, walking the rainbow in order -- red, orange,
+#               yellow, green, blue, indigo, violet, red ... one step a bar, gliding into the
+#               next over the first half of the bar. The wall is a lava-lamp rainbow centred on
+#               that same colour, and a gradient lamp (the Play floor lamp, once it has zones)
+#               shows the wall's rainbow across its zones. Brightness is calm: steady, a soft
+#               swell on the 1 and a little lift from the kick.
 #   'spectrum'  the earlier gradient: music-driven brightness, centred on the played step a chromatic rainbow GRADIENT across the room, left to right.
 #               - hues are spaced evenly to the EYE (OKLCH, a perceptual colour space),
 #                 not evenly in numbers, so no colour hogs the room and none gets skipped
@@ -30,6 +27,9 @@ import math
 SPAN = {'quiet': 90.0, 'breakdown': 120.0, 'groove': 220.0, 'drop': 330.0}   # degrees of the wheel
 MODES = ('lava', 'spectrum', 'triad', 'degree')
 LAVA_SPAN = {'quiet': 240.0, 'breakdown': 180.0, 'groove': 270.0, 'drop': 360.0}
+LAVA_WALL_SPAN = 270.0           # how much rainbow the wall (and the floor lamp's zones) spreads round the room colour
+# the rainbow in order, as OKLCH hues of the degree colours: red orange yellow green blue indigo violet
+RAINBOW_HUES = [29.2, 39.9, 96.1, 142.9, 263.2, 276.6, 303.5]
 
 
 # ---- OKLab / OKLCH (Bjorn Ottosson's perceptual colour space) ----
@@ -138,35 +138,36 @@ class Palette:
             out.append(tuple(x * v for x in vivid(hue)))
         return out
 
+    def lava_hue(self, beats):
+        """The whole room's colour: one step of the rainbow per bar (red, orange, yellow, green,
+        blue, indigo, violet, red ...), gliding into the next over the first half of the bar."""
+        bar = beats / 4.0
+        step = math.floor(bar)
+        f = bar - step
+        g = min(1.0, f / 0.5)
+        g = g * g * (3 - 2 * g)
+        a = RAINBOW_HUES[int(step) % 7]
+        b = RAINBOW_HUES[(int(step) + 1) % 7]
+        return (a + ((b - a) % 360.0) * g) % 360.0, f
+
     def render_lava(self, cols, beats, now, dt, section='groove', kick=0.0):
         segs = self.hub.rig.segs
         n = len(segs)
         if n == 0:
             return cols
         live = self.hub.live
-        playing = self.last_note_hue is not None and now - self.last_note_t < 8.0
-        drift = (beats / 128.0) * 360.0                     # the lava drift: a turn every 32 bars
-        want = (self.last_note_hue if playing else 29.0 + drift)
-        if self.centre is None:
-            self.centre = want
-        k = 1.0 - math.exp(-dt / (1.5 if playing else 2.0))  # glides, never jumps
-        self.centre = (self.centre + _angdiff(self.centre, want) * k) % 360.0
-        ws = LAVA_SPAN.get(section, 270.0)
-        self.span += (ws - self.span) * (1.0 - math.exp(-dt / 4.0))
-        bar = beats / 4.0
-        step = math.floor(bar)
-        f = bar - step
-        g = f / 0.25 if f < 0.25 else 1.0                  # the move happens over the first beat of the bar
-        g = g * g * (3 - 2 * g)
-        scroll = (step % 4096) + g                          # lamps moved along so far
-        ranks = [s.get('rank', i) for i, s in enumerate(segs)]
+        hue, f = self.lava_hue(beats)
         swell = 0.5 + 0.5 * math.cos(2 * math.pi * f)      # soft breath, fullest on the 1
         master = max(0.0, min(1.0, live.get('master', 1.0)))
         punch = max(0.0, min(1.0, live.get('a_amt', 0.7)))
         v = master * (0.74 + 0.14 * swell + 0.12 * kick * punch)
         out = []
         for i, c in enumerate(cols):
-            hue = (self.centre + self.span * (ranks[i] + scroll) / max(n, 1)) % 360.0
-            vv = v if max(c) > 0.001 or v > 0 else 0.0
-            out.append(tuple(x * vv for x in vivid(hue)))
+            sg = segs[i]
+            k = sg.get('of', 1)
+            if k > 1:                                       # a gradient lamp: the wall's rainbow, zone by zone
+                h = hue + ((sg.get('index', 0) + 0.5) / k - 0.5) * LAVA_WALL_SPAN
+            else:                                           # every bulb together: the room's colour
+                h = hue
+            out.append(tuple(x * v for x in vivid(h % 360.0)))
         return out

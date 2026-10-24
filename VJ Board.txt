@@ -41,14 +41,12 @@ They stack, nothing ever goes white, and it all goes through the flicker protect
    8 CHORD     the chord  the lamps split into the chord's notes, each in its degree colour
 
 THE ROOM'S COLOURS (hub setting 'palette' -- ask Claude to switch, takes a second):
-   lava (now)      THE ROOM AND THE WALL SHARE ONE RAINBOW. Each bulb (and each zone of the
-                   floor lamp) sits at a point on a rainbow laid across the room; every bar
-                   it scrolls one lamp along, so each bulb FADES into its neighbour's colour
-                   over the first beat. Calm brightness: steady, a soft swell on the 1, a little
-                   lift from the kick. The rainbow drifts round the wheel (a turn every 32 bars);
-                   the step you play glides it to start from that step's colour. Breakdown =
-                   half the rainbow in the room, groove = three quarters, drop = all of it.
-                   The wall flows like a lava lamp in the same colours.
+   lava (now)      EVERY BULB TOGETHER, walking the rainbow in order: red, orange, yellow,
+                   green, blue, indigo, violet, red ... one step a bar, gliding into the next
+                   over the first half of the bar. The wall is a lava-lamp rainbow centred on
+                   that same colour; the Play floor lamp (once it has zones) shows the wall's
+                   rainbow across its zones. Calm brightness: steady, a soft swell on the 1,
+                   a little lift from the kick.
    spectrum         a rainbow GRADIENT across the room, left to right, hues spaced evenly to
                    the eye (OKLCH colour space) and blended round the colour wheel, so no
                    muddy browns or greys. The step you play is the centre of the gradient

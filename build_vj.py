@@ -238,7 +238,7 @@ void main() {
 # ---- looks: degree colour, ASCII, 8-bit, mirror, bold outline, superflat
 POST = r"""
 uniform vec4 uP;   // ascii, 8-bit, outline, superflat
-uniform vec4 uQ;   // mirror, cell size (px), colour amount, colour mode (0 degree 1 original 2 rainbow 3 duotone 4 room)
+uniform vec4 uQ;   // mirror, cell size (px), colour amount, colour mode (0 degree 1 original 2 rainbow 3 duotone 4 room 5 lava)
 uniform vec4 uC;   // degree colour rgb, octave rainbow
 uniform vec4 uR;   // brightness, time, kick, unused
 uniform vec4 uO;   // overlay amount (0 = none), unused...
@@ -309,12 +309,31 @@ vec3 room(vec2 uv, float L, out float bri) {
     vec3 h1 = m1 > 0.03 ? p1 / m1 : uC.rgb;
     return okBlend(h0, h1, f);
 }
+vec3 lavaWall(vec2 uv, float L, out float bri) {
+    // LAVA: the room's colour (every bulb shows it) sits in the middle of a rainbow that flows
+    // across the wall in slow lava-lamp blobs -- the same rainbow the Play floor lamp shows.
+    vec3 p = texelFetch(sTD2DInputs[3], ivec2(0, 0), 0).rgb;          // a bulb = the room's colour
+    float m = max(p.r, max(p.g, p.b));
+    bri = clamp(m * 1.25, 0.0, 1.0);
+    vec3 o = okFrom(m > 0.03 ? p / m : uC.rgb);
+    float H = atan(o.z, o.y);
+    float t = uR.y * 0.11;
+    vec2 q = uv * vec2(1.6, 1.0);
+    float blob = 0.16 * sin(q.y * 2.3 - t * 1.7 + 0.8 * sin(q.x * 1.9 + t))
+               + 0.11 * sin((q.x + q.y) * 3.1 + t * 1.3)
+               + 0.07 * sin(length(q - vec2(0.8, 0.5 + 0.3 * sin(t * 0.7))) * 6.0 - t * 2.1);
+    float x = uv.x + blob + L * 0.35;
+    float tri = 1.0 - abs(fract(x * 0.5) * 2.0 - 1.0);              // 0 .. 1 across, ping-pong
+    float h = H + (tri - 0.5) * radians(270.0);
+    vec3 c = okTo(vec3(0.72, 0.16 * cos(h), 0.16 * sin(h)));
+    return c / max(max(c.r, max(c.g, c.b)), 1e-4);
+}
 vec3 colour(vec3 c, vec2 uv) {
     float L = luma(c);
     int m = int(uQ.w + 0.5);
-    if (m == 4) {
+    if (m == 4 || m == 5) {
         float bri;
-        vec3 rc = room(uv, L, bri);
+        vec3 rc = m == 5 ? lavaWall(uv, L, bri) : room(uv, L, bri);
         rc *= clamp(0.4 / max(luma(rc), 0.05), 0.85, 1.4);
         rc = min(rc, vec3(1.0));
         vec3 t4 = rc * (0.12 + 1.25 * L) * mix(1.0, 0.45 + 0.8 * bri, 0.55);
@@ -1064,8 +1083,9 @@ def _pars(vj, keep):
     fl('Bright', 'Brightness', 1.0, 0, 1.2)
     menu('Transition', 'Transition', ['melt', 'zoom', 'dissolve', 'wipe'],
          ['Melt', 'Zoom-through', 'Pixel dissolve', 'Radial wipe'])
-    menu('Colourmode', 'Colour', ['degree', 'original', 'rainbow', 'duotone', 'room'],
-         ['Degree colours', 'Original', 'Rainbow', 'Duotone', 'The room (lamp colours)'], d=4)
+    menu('Colourmode', 'Colour', ['degree', 'original', 'rainbow', 'duotone', 'room', 'lava'],
+         ['Degree colours', 'Original', 'Rainbow', 'Duotone', 'The room (lamp colours)',
+          'Lava rainbow (round the room colour)'], d=5)
     menu('Blend', 'Blend mode', ['screen', 'difference', 'lighten'])
     tg('Ascii', 'ASCII')
     tg('Bits', '8-bit')
