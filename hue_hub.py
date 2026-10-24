@@ -47,6 +47,7 @@ import hub_audioshow                                        # noqa: E402  (the g
 import hub_geometry as geo                                  # noqa: E402  (sacred geometry forms + harmonies)
 import hub_fx                                               # noqa: E402  (Push's freestyle light effects)
 import hub_palette                                          # noqa: E402  (the room's colours: spectrum / triad / degree)
+import hub_gradlamp                                         # noqa: E402  (the Play floor lamp's gradient, outside the stream)
 
 STATE_PATH = os.path.join(HERE, 'hub_state.json')
 DESK_PATH = os.path.join(HERE, 'desk.html')
@@ -115,6 +116,11 @@ def rainbow_at(x):
     i = int(math.floor(x)) % n
     f = x - math.floor(x)
     return hsv_mix(RAINBOW[i][1], RAINBOW[(i + 1) % n][1], smoothstep((f - 0.75) / 0.25))
+
+
+def SEND_AHEAD_BEATS(hub):
+    """How far ahead the floor lamp is told (it fades over half a second to get there)."""
+    return 0.5 * hub.live.get('tempo', 120.0) / 60.0 / 2.0
 
 
 def hub_livemidi_deg(d):
@@ -412,6 +418,7 @@ class Hub:
         self.audioshow = hub_audioshow.AudioShow(self)
         self.fx = hub_fx.LightFX(self)
         self.palette = hub_palette.Palette(self)
+        self.gradlamp = hub_gradlamp.GradLamp(self)
         self.movie_prev = None                  # Movie mode: the lamps' colours from the picture (smoothed)
         self.movie_status = 'off'
         self.message = ('', 0.0)
@@ -1008,6 +1015,12 @@ class Hub:
             # streaming order = sorted channel ids
             ordered = [cols[self.rig.by_ch[ch]] for ch in self.rig.channels]
             ordered = self.lim.step(ordered, now)
+            try:
+                self.grad_frame(beats, pmode)
+            except Exception as e:
+                if now - getattr(self, '_gl_err_t', 0.0) > 30.0:
+                    self._gl_err_t = now
+                    say('Floor lamp gradient: %s' % e)
             self.held = self.held * 0.97 + (0.03 if self.lim.held else 0.0)
             self.out = ordered
             self.out_hist.append((now, ordered))
@@ -1033,6 +1046,29 @@ class Hub:
                 self.save_now()
             except OSError as e:
                 say('Could not save hub_state.json: %s' % e)
+
+    def grad_frame(self, beats, pmode):
+        """The Play floor lamp's gradient (hub_gradlamp): the wall's rainbow in lava mode, else the room."""
+        gl = getattr(self, 'gradlamp', None)
+        if gl is None:
+            return
+        cap = clamp(float(self.state['settings'].get('grad_cap', 0.75)), 0.05, 1.0)
+        if self.blackout:
+            gl.update([], 0.0, on=False)
+            return
+        master = clamp(self.live.get('master', 1.0))
+        if pmode == 'lava':
+            hue, f = self.palette.lava_hue(beats + 2.0 * SEND_AHEAD_BEATS(self))
+            cols5 = [hub_palette.vivid((hue + (j / 4.0 - 0.5) * hub_palette.LAVA_WALL_SPAN) % 360.0) for j in range(5)]
+            gl.update(cols5, master * 0.85 * cap)
+        else:
+            segs = sorted(range(len(self.rig.segs)), key=lambda i: self.rig.segs[i].get('rank', i))
+            room = [self.out[self.rig.channels.index(self.rig.segs[i]['ch'])] for i in segs] if self.out else []
+            if not room:
+                return
+            pick = [room[int(round(j * (len(room) - 1) / 4.0))] for j in range(5)]
+            bri = max(max(c) for c in pick)
+            gl.update([tuple(x / max(max(c), 1e-3) for x in c) for c in pick], bri * cap)
 
     def pi_heartbeat(self):
         """Every 10 s tell the Ney Pi (setting pi_url) we're alive -- it alerts your phone if we go quiet."""
@@ -1523,7 +1559,7 @@ def lan_ip():
 # the hub restarts itself when its code is updated (no more running yesterday's version by mistake)
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
               'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py',
-              'hub_palette.py']
+              'hub_palette.py', 'hub_gradlamp.py']
 
 
 class Reload(Exception):

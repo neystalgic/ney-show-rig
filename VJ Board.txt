@@ -68,6 +68,10 @@ HOLD SHIFT + turn = THE CLASSIC KNOBS
    flash faster than the Flicker Guard allows (now 2.8 a second, never more than 3), it halves
    -- still on the grid -- until it's safe.
 
+THE PLAY FLOOR LAMP shows several colours at once: the hub sends it the wall's rainbow (bottom to
+top) twice a second and it fades between updates. The Hue Bridge can only stream it as one colour,
+so it is NOT in the show's entertainment area -- the hub streams "Show area" (the other five bulbs);
+your own "Music area" in the Hue app is untouched.
 CAPPED LAMPS: the Hue Play floor lamp and Hue color lamp 1 (by the projector) never go above
 75%, so they don't wash out the picture.
 
