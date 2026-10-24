@@ -469,8 +469,8 @@ def recipe(r):
     p.Family.menuIndex = r // 8
     p.Variant = r % 8
     now = absTime.seconds
-    VJC.store('vj_dprev', float(p.Diffamt.eval()))   # the old diffusion fades out while the new form builds
-    b = float(p.Build.eval())
+    VJC.store('vj_dprev', max(0.0, min(1.0, float(p.Diffamt.eval()))))   # the old diffusion fades out while the new form builds
+    b = max(0.0, min(1.0, float(p.Build.eval())))
     VJC.store('vj_bstart', b if b < 1.0 else 0.0)    # hit again mid-build: carry on growing, don't restart small
     VJC.store('vj_b0', now)                     # Build and Diffuse (expressions) start again
     VJC.store('vj_t0', now)                     # and the last picture melts into the new build
@@ -771,8 +771,30 @@ def _auto_pick(section):
 FAMILIES_ = ['flower', 'metatron', 'yantra', 'golden', 'tesseract', 'chladni', 'quasicrystal', 'mandala']
 
 
+TIMERS = ('vj_b0', 'vj_t0', 'vj_lay_t', 'vj_played_t', 'vj_manual_t', 'vj_mode_t', 'play_mode_t', 'vj_built')
+
+
+def _heal():
+    # TouchDesigner's clock starts again from 0 when the project reopens, but the stored times were
+    # saved with the file: a time 'in the future' would freeze the build. Move them back to the past.
+    now = absTime.seconds
+    for k in TIMERS:
+        v = VJC.fetch(k, None, search=False)
+        if isinstance(v, (int, float)) and v > now + 1.0:
+            VJC.store(k, now - 1000.0)
+    for k in ('vj_dprev', 'vj_bstart'):
+        v = VJC.fetch(k, 0.0, search=False)
+        if not isinstance(v, (int, float)) or not (0.0 <= v <= 1.0):
+            VJC.store(k, 0.0)
+    ab = VJC.fetch('ap_beat', None, search=False)
+    if isinstance(ab, (tuple, list)) and len(ab) == 2 and ab[1] > now + 1.0:
+        VJC.unstore('ap_beat')
+
+
 def auto(frame, feed=None):
     p = _p()
+    if frame % 60 == 0:
+        _heal()
     if frame % 6 or not p.Autopilot.eval() or p.Deck.eval() != 'builder':
         return
     if feed is None:
@@ -1132,9 +1154,9 @@ def build():
     pm.par.id = _midi_device('Ableton Push 2 Live Port', out=False)
     pm.par.callbacks = 'push_cb'
     bar = "(240.0 / max(60.0, op('/project1/hue_feed').par.Tempo.eval()))"
-    vj.par.Build.expr = ("min(1.0, me.fetch('vj_bstart', 0.0, search=False) + (absTime.seconds - me.fetch('vj_b0', -100.0, search=False)) / "
-                         "max(0.05, me.par.Buildbars.eval() * %s))" % bar)
-    vj.par.Diffamt.expr = ("(me.par.Deck.eval() == 'builder') * max(me.fetch('vj_dprev', 0.0, search=False) * (1.0 - me.par.Build.eval()), "
+    vj.par.Build.expr = ("max(0.0, min(1.0, me.fetch('vj_bstart', 0.0, search=False) + (absTime.seconds - me.fetch('vj_b0', -100.0, search=False)) / "
+                         "max(0.05, me.par.Buildbars.eval() * %s)))" % bar)
+    vj.par.Diffamt.expr = ("(me.par.Deck.eval() == 'builder') * max(min(1.0, me.fetch('vj_dprev', 0.0, search=False)) * (1.0 - me.par.Build.eval()), "
                            "me.par.Diffuse.eval() * max(0.0, min(1.0, (absTime.seconds - me.fetch('vj_b0', -100.0, search=False)"
                            " - me.par.Buildbars.eval() * %s) / max(0.05, me.par.Diffusebars.eval() * %s))))" % (bar, bar))
     for par_, look in (('Ascii', 'ascii'), ('Bits', '8bit'), ('Outline', 'outline'), ('Superflat', 'superflat'),
