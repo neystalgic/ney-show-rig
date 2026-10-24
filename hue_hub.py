@@ -139,7 +139,7 @@ class Rig:
                                    capable=max(l.get('gradient_points', 0), l.get('max_segments', 1), 1),
                                    channels=[s['channel'] for s in segs],
                                    place=list(saved.get('place', place)), axis=saved.get('axis', axis),
-                                   order=saved.get('order')))
+                                   order=saved.get('order'), cap=clamp(float(saved.get('cap', 1.0)), 0.05, 1.0)))
         self.channels = sorted(c for l in self.lamps for c in l['channels'])
         self.layout()
 
@@ -170,7 +170,7 @@ class Rig:
 
     def describe(self):
         return [dict(key=l['key'], name=l['name'], product=l['product'], capable=l['capable'],
-                     place=l['place'], axis=l['axis'], order=l.get('order'),
+                     place=l['place'], axis=l['axis'], order=l.get('order'), cap=l.get('cap', 1.0),
                      segs=['%s#%d' % (l['key'], i) for i in range(len(l['channels']))]) for l in self.lamps]
 
 
@@ -511,7 +511,8 @@ class Hub:
         with self.lock:
             st = copy.deepcopy(self.state)
             st['active'] = self.active
-            st['lamps'] = {l['key']: dict(place=l['place'], axis=l['axis'], order=l.get('order')) for l in self.rig.lamps}
+            st['lamps'] = {l['key']: dict(place=l['place'], axis=l['axis'], order=l.get('order'), cap=l.get('cap', 1.0))
+                           for l in self.rig.lamps}
         tmp = STATE_PATH + '.tmp'
         with open(tmp, 'w') as f:
             json.dump(st, f, indent=1)
@@ -947,6 +948,17 @@ class Hub:
                     and not self.blackout and self.calib_test is None):
                 hd, sd, _ = colorsys.rgb_to_hsv(*drgb)
                 cols = [colorsys.hsv_to_rgb(hd, sd, max(clamp(x) for x in c_)) for c_ in cols]
+            # PER-LAMP CAP: lamps near the projection never go above their cap (the music still moves them)
+            caps = [self.rig.lamps[sg['lamp']].get('cap', 1.0) for sg in self.rig.segs]
+            if any(k < 0.999 for k in caps):
+                cols = [scale(c_, k) if k < 0.999 else c_ for c_, k in zip(cols, caps)]
+            idt = getattr(self, 'ident', None)
+            if idt is not None:
+                if time.time() < idt[1]:
+                    cols = [(0.8, 0.8, 0.8) if self.rig.lamps[sg['lamp']]['key'] == idt[0] else (0.0, 0.0, 0.0)
+                            for sg in self.rig.segs]
+                else:
+                    self.ident = None
             self.lim.set_rate(self.live.get('guard', 2.0))
             hs.VIVID = self.state['calibration'].get('vivid', 1.0)
             # streaming order = sorted channel ids
@@ -1294,6 +1306,9 @@ class Hub:
             if op == 'downbeat':
                 self.downbeat()
                 return True
+            if op == 'lamp.blink':                       # which lamp is which: this one white, the rest dark, 4 s
+                self.ident = (str(c.get('key')), time.time() + float(c.get('secs', 4.0)))
+                return True
             if op == 'lamp.order':                       # desk > Setup > Set the order: lamp keys in order
                 keys = [str(k) for k in (c.get('keys') or [])]
                 for l in self.rig.lamps:
@@ -1308,6 +1323,8 @@ class Hub:
                             l['place'] = [clamp(float(c['place'][0])), clamp(float(c['place'][1]))]
                         if c.get('axis') in ('up', 'across'):
                             l['axis'] = c['axis']
+                        if 'cap' in c:                           # brightest this lamp may go (0.05-1), e.g. near the screen
+                            l['cap'] = clamp(float(c['cap']), 0.05, 1.0)
                         self.rig.layout()
                         self.save_soon()
                         return True
