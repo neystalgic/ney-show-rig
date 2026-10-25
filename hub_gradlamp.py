@@ -32,6 +32,7 @@ class GradLamp:
         self.name = None
         self.status = 'off'
         self.want = None              # the newest gradient to send: (points, brightness, on)
+        self.every = SEND_EVERY       # seconds between updates (faster in sync mode)
         self.sent = None
         self.lock = threading.Lock()
         self.run = True
@@ -65,7 +66,7 @@ class GradLamp:
         last = 0.0
         while self.run:
             time.sleep(0.05)
-            if time.time() - last < SEND_EVERY:
+            if time.time() - last < self.every:
                 continue
             try:
                 if self.rid is None:
@@ -81,7 +82,7 @@ class GradLamp:
                 body = dict(on=dict(on=on), dimming=dict(brightness=max(1.0, bri)),
                             gradient=dict(points=[dict(color=dict(xy=dict(x=x, y=y))) for x, y in pts],
                                           mode='interpolated_palette'),
-                            dynamics=dict(duration=int(SEND_EVERY * 1000)))
+                            dynamics=dict(duration=int(self.every * 1000)))
                 if not on:
                     body = dict(on=dict(on=False), dynamics=dict(duration=300))
                 hs.v2(self.hub.cfg, 'light/%s' % self.rid, 'PUT', body)

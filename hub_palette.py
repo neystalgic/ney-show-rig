@@ -209,13 +209,17 @@ class Palette:
         db = 20.0 * math.log10(max(rms, 1e-6))
         lvl = max(0.0, min(1.0, (db + 48.0) / 36.0))        # -48 dBFS = nothing, -12 dBFS = full
         env = getattr(self, 'sync_env', 0.0)
-        k = 1.0 - math.exp(-dt / (0.03 if lvl > env else 0.35))   # quick to rise, gentle to fall
+        att = max(0.01, float(st.get('sync_attack', 0.7)))      # seconds to swell up (slow: voices don't flash)
+        rel = max(0.01, float(st.get('sync_release', 1.6)))     # seconds to sink back
+        k = 1.0 - math.exp(-dt / (att if lvl > env else rel))
         env += (lvl - env) * k
         self.sync_env = env
         base = max(0.0, min(1.0, float(st.get('sync_base', 0.30))))
         boost = max(0.0, min(1.0, float(st.get('sync_boost', 0.45))))
         v = max(0.0, min(1.0, base + boost * env))
+        self.sync_v = v
         c = self.sync_colour(now)
+        self.sync_c = c
         return [tuple(x * v for x in c) for _ in cols]
 
 DEEP = [(0.0, 0.10, 1.0), (0.22, 0.0, 1.0), (0.48, 0.0, 1.0), (0.62, 0.0, 0.85)]   # deep blue -> indigo -> purple -> plum

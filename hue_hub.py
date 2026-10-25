@@ -1064,17 +1064,14 @@ class Hub:
             gl.update([], 0.0, on=False)
             return
         master = clamp(self.live.get('master', 1.0))
-        if pmode == 'sync':
-            hue = self.palette.sync_hue(time.time() + 0.5)
-            st_ = self.state['settings']
-            v = clamp(float(st_.get('sync_base', 0.30)) + float(st_.get('sync_boost', 0.45)) * getattr(self.palette, 'sync_env', 0.0))
-            sp_ = self.palette.sync_spread()
-            if self.state['settings'].get('sync_scheme') == 'deep':
-                cols5 = [self.palette.sync_colour(time.time() + 0.5, (j / 4.0 - 0.5) * 0.3) for j in range(5)]
-            else:
-                cols5 = [hub_palette.vivid((hue + (j / 4.0 - 0.5) * sp_) % 360.0) for j in range(5)]
-            gl.update(cols5, v * cap)
+        if pmode == 'sync':                       # movie / sync: exactly the room's colour and brightness
+            gl.every = 0.25
+            c = getattr(self.palette, 'sync_c', None)
+            if c is None:
+                return
+            gl.update([c] * 5, getattr(self.palette, 'sync_v', 0.0) * cap)
             return
+        gl.every = 0.5
         if pmode == 'lava':
             hue, f = self.palette.lava_hue(beats + 2.0 * SEND_AHEAD_BEATS(self))
             cols5 = [hub_palette.vivid((hue + (j / 4.0 - 0.5) * hub_palette.LAVA_WALL_SPAN) % 360.0) for j in range(5)]
