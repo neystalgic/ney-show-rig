@@ -2,6 +2,11 @@
 # HUE HUB -- the room's PALETTE (colour theory)
 #
 # Setting 'palette' picks how the room is coloured:
+#   'sync'      EVERY BULB THE SAME COLOUR, fading together round the whole rainbow (a full
+#               turn every sync_period seconds, default 60). Brightness rests at sync_base
+#               (default 30%) and is pushed up by the sound on one Scarlett input (sync_ch,
+#               default input 2) by up to sync_boost (default +45%). The Play floor lamp
+#               shows the same colour with its two rainbow neighbours either side.
 #   'lava'      (default) EVERY BULB TOGETHER, walking the rainbow in order -- red, orange,
 #               yellow, green, blue, indigo, violet, red ... one step a bar, gliding into the
 #               next over the first half of the bar. The wall is a lava-lamp rainbow centred on
@@ -25,7 +30,7 @@
 import math
 
 SPAN = {'quiet': 90.0, 'breakdown': 120.0, 'groove': 220.0, 'drop': 330.0}   # degrees of the wheel
-MODES = ('lava', 'spectrum', 'triad', 'degree')
+MODES = ('sync', 'lava', 'spectrum', 'triad', 'degree')
 LAVA_SPAN = {'quiet': 240.0, 'breakdown': 180.0, 'groove': 270.0, 'drop': 360.0}
 LAVA_WALL_SPAN = 270.0           # how much rainbow the wall (and the floor lamp's zones) spreads round the room colour
 # the rainbow in order, as OKLCH hues of the degree colours: red orange yellow green blue indigo violet
@@ -171,3 +176,22 @@ class Palette:
                 h = hue
             out.append(tuple(x * v for x in vivid(h % 360.0)))
         return out
+
+    def sync_hue(self, now):
+        period = max(5.0, float(self.hub.state['settings'].get('sync_period', 60.0)))
+        return ((now / period) * 360.0) % 360.0
+
+    def render_sync(self, cols, now, dt, rms):
+        """All bulbs one colour, fading round the rainbow; brightness = rest + the input's loudness."""
+        st = self.hub.state['settings']
+        db = 20.0 * math.log10(max(rms, 1e-6))
+        lvl = max(0.0, min(1.0, (db + 48.0) / 36.0))        # -48 dBFS = nothing, -12 dBFS = full
+        env = getattr(self, 'sync_env', 0.0)
+        k = 1.0 - math.exp(-dt / (0.03 if lvl > env else 0.35))   # quick to rise, gentle to fall
+        env += (lvl - env) * k
+        self.sync_env = env
+        base = max(0.0, min(1.0, float(st.get('sync_base', 0.30))))
+        boost = max(0.0, min(1.0, float(st.get('sync_boost', 0.45))))
+        v = max(0.0, min(1.0, base + boost * env))
+        c = vivid(self.sync_hue(now))
+        return [tuple(x * v for x in c) for _ in cols]

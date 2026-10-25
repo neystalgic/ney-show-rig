@@ -319,6 +319,7 @@ class AudioIn:
         self.clk_bpm = None
         self.clk_run = False
         self.peak_acc = 0.0         # loudest sample since the last check (raw, before anything)
+        self.ch_rms = {}            # Scarlett input number -> loudness (RMS) of the newest block
         self.peak = None            # loudest sample over the last 2 s
         self.zero_for = 0.0         # seconds of pure digital silence (macOS blocking the microphone)
         self.hear = ''              # what the self-check thinks of the input
@@ -387,6 +388,7 @@ class AudioIn:
             try:
                 x = indata[:, use].mean(axis=1) if len(use) > 1 else indata[:, use[0]]
                 pk = float(np.max(np.abs(indata[:, use]))) if len(x) else 0.0
+                self.ch_rms = {c + 1: float(np.sqrt(np.mean(indata[:, c] ** 2))) for c in use} if len(x) else {}
                 with self.lock:
                     if pk > self.peak_acc:
                         self.peak_acc = pk

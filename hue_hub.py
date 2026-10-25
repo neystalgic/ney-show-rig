@@ -973,7 +973,11 @@ class Hub:
             playing = drgb is not None and self.state['settings'].get('iac_map') == 'degree' and self.pads.active()
             if playing:
                 self.palette.note(drgb, now)
-            if pmode == 'lava' and not self.blackout and self.calib_test is None:
+            if pmode == 'sync' and not self.blackout and self.calib_test is None:
+                ch = int(self.state['settings'].get('sync_ch', 2))
+                rms = float(getattr(self.audio, 'ch_rms', {}).get(ch, 0.0)) if self.audio is not None else 0.0
+                cols = self.palette.render_sync(cols, now, dt, rms)
+            elif pmode == 'lava' and not self.blackout and self.calib_test is None:
                 cols = self.palette.render_lava(cols, beats, now, dt, getattr(self.audioshow, 'section', 'groove'),
                                                 kick=float(getattr(self.audioshow, 'env', {}).get('kick', 0.0)))
             elif pmode == 'spectrum' and not self.blackout and self.calib_test is None:
@@ -1060,6 +1064,12 @@ class Hub:
             gl.update([], 0.0, on=False)
             return
         master = clamp(self.live.get('master', 1.0))
+        if pmode == 'sync':
+            hue = self.palette.sync_hue(time.time() + 0.5)
+            v = max(clamp(float(self.state['settings'].get('sync_base', 0.30))), getattr(self.palette, 'sync_env', 0.0) * 0.5 + 0.3)
+            cols5 = [hub_palette.vivid((hue + (j / 4.0 - 0.5) * 60.0) % 360.0) for j in range(5)]
+            gl.update(cols5, v * cap)
+            return
         if pmode == 'lava':
             hue, f = self.palette.lava_hue(beats + 2.0 * SEND_AHEAD_BEATS(self))
             cols5 = [hub_palette.vivid((hue + (j / 4.0 - 0.5) * hub_palette.LAVA_WALL_SPAN) % 360.0) for j in range(5)]
@@ -1334,7 +1344,7 @@ class Hub:
                 return True
             if op == 'setting':                          # desk > Setup > Ableton
                 k, v = c.get('key'), c.get('value')
-                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, palette=str, iac_looks=bool, iac_mpe=bool,
+                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, palette=str, sync_ch=int, sync_base=float, sync_boost=float, sync_period=float, iac_looks=bool, iac_mpe=bool,
                              audio_on=bool, audio_in=str, audio_ch=str, audio_sens=float, trig_on=bool, trig_port=str,
                              trig_map=dict, a_voices=dict, gear_clock=bool, a_pat=str, a_spat=str, a_origin=str,
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,
