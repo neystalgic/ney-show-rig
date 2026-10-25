@@ -1066,7 +1066,8 @@ class Hub:
         master = clamp(self.live.get('master', 1.0))
         if pmode == 'sync':
             hue = self.palette.sync_hue(time.time() + 0.5)
-            v = max(clamp(float(self.state['settings'].get('sync_base', 0.30))), getattr(self.palette, 'sync_env', 0.0) * 0.5 + 0.3)
+            st_ = self.state['settings']
+            v = clamp(float(st_.get('sync_base', 0.30)) + float(st_.get('sync_boost', 0.45)) * getattr(self.palette, 'sync_env', 0.0))
             cols5 = [hub_palette.vivid((hue + (j / 4.0 - 0.5) * 60.0) % 360.0) for j in range(5)]
             gl.update(cols5, v * cap)
             return
