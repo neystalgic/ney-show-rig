@@ -350,6 +350,16 @@ th{color:var(--dim);font-weight:500;font-size:12px}
     Every note goes through the same pad data as User mode: colour, geometry, latch and flicker protection. User mode still works.</div>
   </div>
   <div class="card" style="margin-top:12px">
+    <h2>Zephyrus relay (network MIDI) <span class="spacer"></span><button id="relay-on">On</button></h2>
+    <div class="row"><label>Status</label><span id="relay-status" class="hint">-</span></div>
+    <div class="row"><label>Session name</label><input type="text" id="relay-port" style="width:200px" title="Part of the network session's name (Audio MIDI Setup > Network > My Sessions)"></div>
+    <div class="hint">The show's MIDI goes out to the Zephyrus: your notes (ch 1), heard chords (ch 2), the VJ pads (ch 16),
+    the Digitakt's clock, and the show's state on ch 15 (CC 1 degree colour, 2 family, 3 construction, 4 kick, 5 loudness,
+    6 build, 7 diffuse, 8 brightness, 9 look, 10 lighting effect -- kick, loudness and brightness after the Flicker Guard).
+    Mac: Audio MIDI Setup &gt; Window &gt; Show MIDI Studio &gt; Network &gt; My Sessions "Show", Enabled.
+    Zephyrus: rtpMIDI &gt; Directory &gt; the Mac &gt; Connect.</div>
+  </div>
+  <div class="card" style="margin-top:12px">
     <h2>Push 2 (press User on Push 2)</h2>
     <table class="pushmap">
       <tr><td>Session button</td><td>LOOKS mode: top 6 pad rows = your looks (playing one white), bottom 2 rows = song sections</td></tr>
@@ -782,13 +792,17 @@ $('#song-next').onclick = () => { const sg=L&&L.song; if(sg) api({op:'song.jump'
 // ---------- setup ----------
 function syncIAC(){ const st=S.settings||{}; const on=st.iac_on!==false; const b=$('#iac-on'); b.classList.toggle('on',on); b.textContent=on?'On':'Off';
   const m=$('#iac-map'); if(document.activeElement!==m) m.value=st.iac_map||'pads'; const p=$('#iac-port'); if(document.activeElement!==p) p.value=st.iac_port||'IAC';
-  $('#iac-looks').checked=st.iac_looks!==false; $('#iac-mpe').checked=st.iac_mpe!==false; }
+  $('#iac-looks').checked=st.iac_looks!==false; $('#iac-mpe').checked=st.iac_mpe!==false;
+  const ro=st.relay_on!==false; const rb=$('#relay-on'); rb.classList.toggle('on',ro); rb.textContent=ro?'On':'Off';
+  const rp=$('#relay-port'); if(document.activeElement!==rp) rp.value=st.relay_port||'Show'; }
 const iacSet=(key,value)=>{ S.settings=S.settings||{}; S.settings[key]=value; api({op:'setting',key,value}); syncIAC(); };
 $('#iac-on').onclick=()=>iacSet('iac_on', !((S.settings||{}).iac_on!==false));
 $('#iac-map').onchange=e=>iacSet('iac_map', e.target.value);
 $('#iac-port').onchange=e=>iacSet('iac_port', e.target.value.trim()||'IAC');
 $('#iac-looks').onchange=e=>iacSet('iac_looks', e.target.checked);
 $('#iac-mpe').onchange=e=>iacSet('iac_mpe', e.target.checked);
+$('#relay-on').onclick=()=>iacSet('relay_on', !((S.settings||{}).relay_on!==false));
+$('#relay-port').onchange=e=>iacSet('relay_port', e.target.value.trim()||'Show');
 function renderSetup(){
   syncIAC();
   const t = $('#lamp-table'); t.innerHTML='';
@@ -843,6 +857,7 @@ function onLive(d){
   set('#c-feed', d.feed?(d.picture?'ok':'warn'):'bad', d.feed?(d.picture?'TD: beat + picture':'TD: beat only'):'TD: not sending');
   set('#c-push', (d.push||'').startsWith('connected')?'ok':'', 'Push 2: '+d.push);
   const ia=$('#iac-status'); if(ia) ia.textContent = d.ableton || 'off';
+  const rs=$('#relay-status'); if(rs) rs.textContent = d.relay || 'off';
   audioLive(d.audio); paintMiniRoom(d.cols);
   if(d.movie){ const ms=$('#mv-status'); if(ms) ms.textContent = d.movie.on ? d.movie.status : 'off'; const mb=$('#movie'); if(mb) mb.classList.toggle('on', !!d.movie.on); }
   $('#c-clock').textContent = d.clock.tempo.toFixed(1)+' BPM · bar '+d.clock.bar+' · beat '+d.clock.beat;

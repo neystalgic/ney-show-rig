@@ -28,7 +28,8 @@ Zephyrus side:
 [ ] rtpMIDI (free, Windows network MIDI that talks to the Mac's session)
     https://www.tobias-erichsen.de/software/rtpmidi.html
     > open it, the Mac's "Show" session appears under Directory > Connect
-I'll then make the Hue Hub relay the show MIDI into that session (see MIDI MAP below).
+The Hue Hub relays the show MIDI into that session (hub_relay.py, see MIDI MAP below).
+    Light Desk > Setup > Zephyrus relay shows what it sends. Restart the hub once after updating.
 
 
 STEP 2 -- VIDEO BACK TO THE MAC
@@ -83,6 +84,7 @@ Already running today:
    ch 1   NOTES you play (Note Colours track)   pitch -> degree colour, velocity -> intensity
    ch 16  VJ PADS (VJ track)                    which of the 64 recipes (row = family, column = construction)
    CLOCK  Digitakt / Ableton MIDI clock         beat + bar sync, start / stop
+   ch 2   chords the audio brain hears in the mix (the relay passes these on too)
 Added by the hub relay (so the Zephyrus gets the show's "state" as MIDI too):
    ch 15  CC 1  degree colour (1-8)        CC 6  build progress
           CC 2  geometry family (0-7)      CC 7  diffuse amount
@@ -90,6 +92,10 @@ Added by the hub relay (so the Zephyrus gets the show's "state" as MIDI too):
           CC 4  kick (envelope)            CC 9  look (clean, ASCII, 8-bit ...)
           CC 5  loudness                   CC 10 lighting effect
    (audio is turned INTO MIDI on the Mac, so the Zephyrus never needs the audio itself)
+   CC 1 = 1-8 (8 = the octave, rainbow).  CC 2/3 = 0-7.  CC 9 = 0 clean 1 ASCII 2 8-bit 3 outline
+   4 superflat 5 mirror (sent once TouchDesigner tells the hub the look).  CC 10 = 0 wash 1 glow
+   2 pulse 3 chase 4 sparkle 5 sweep 6 hit.  Kick / loudness / brightness come AFTER the Flicker Guard.
+   Clock: the Digitakt's (through the Scarlett); Ableton's only when the Digitakt's is silent.
 
 What listens on the Zephyrus:
    Unreal:        note ch16 = build that recipe's 3D geometry, ch1 notes = colour + light pulses,
