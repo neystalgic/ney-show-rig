@@ -414,6 +414,8 @@ class Hub:
         self.crowd, self.crowd_t = 0.0, -10.0   # crowd motion from the Osmo (TouchDesigner osmo_fx)
         self.push = None
         self.ableton = None                     # Ableton's MIDI through the IAC Driver (hub_livemidi.py)
+        self.relay = None                       # the show's MIDI out to the Zephyrus (hub_relay.py)
+        self.td_msg = None                      # the last message TouchDesigner got (the relay reads it)
         self.audio = None                       # the gear's sound through the Scarlett (hub_audio.py)
         self.audioshow = hub_audioshow.AudioShow(self)
         self.fx = hub_fx.LightFX(self)
@@ -475,6 +477,7 @@ class Hub:
             try:
                 with self.lock:
                     msg = self.visuals.step(now)
+                    self.td_msg = msg
                 # TouchDesigner draws it on its next frame: send one frame (1/60 s) early
                 self.td_queue.append((now + max(0.0, self.lamp_delay() - 1 / 60.0), json.dumps(msg, separators=(',', ':')).encode()))
             except Exception as e:
@@ -1137,6 +1140,8 @@ class Hub:
                     if br is not None:
                         for root, minor, strength in br.poll():          # chords heard in the mix -> MIDI ch 2
                             self.ableton.send_heard(root, minor, strength)
+                if self.relay:
+                    self.relay.poll(t0)
             except Exception as e:                       # never let one bad frame stop the show
                 say('frame error: %s: %s' % (type(e).__name__, e))
                 key = '%s: %s' % (type(e).__name__, e)
@@ -1169,6 +1174,7 @@ class Hub:
                         song=self.song_view if hasattr(self, 'song_view') else None,
                         push=self.push.status if self.push else 'off', live=self.live, message=msg,
                         ableton=self.ableton.describe() if self.ableton else 'off',
+                        relay=self.relay.describe() if self.relay else 'off',
                         audio=self.audioshow.snapshot(),
                         live_key=(self.livekey.status if getattr(self, 'livekey', None) is not None else 'off'),
                         brain=(self.audio.brain.snapshot() if self.audio is not None and getattr(self.audio, 'brain', None)
@@ -1332,7 +1338,9 @@ class Hub:
                              audio_on=bool, audio_in=str, audio_ch=str, audio_sens=float, trig_on=bool, trig_port=str,
                              trig_map=dict, a_voices=dict, gear_clock=bool, a_pat=str, a_spat=str, a_origin=str,
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,
-                             movie=bool, movie_src=str)
+                             movie=bool, movie_src=str,
+                             relay_on=bool, relay_port=str, relay_build_bars=float, relay_diffuse=float,
+                             relay_diffuse_bars=float)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (
@@ -1483,6 +1491,8 @@ def feed_listener(hub, port):
                 f['grid'], f['gw'], f['gh'] = msg['grid'], int(msg['w']), int(msg['h'])
             else:
                 f['grid'] = None
+            if isinstance(msg.get('vj'), dict):         # the VJ board's state, for the Zephyrus relay (optional)
+                f['vj'], f['vj_t'] = msg['vj'], now
             f['t'] = now
 
 
@@ -1559,7 +1569,7 @@ def lan_ip():
 # the hub restarts itself when its code is updated (no more running yesterday's version by mistake)
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
               'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py',
-              'hub_palette.py', 'hub_gradlamp.py']
+              'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py']
 
 
 class Reload(Exception):
@@ -1636,6 +1646,12 @@ def main():
     import hub_audio                           # the gear listens whether or not the Push is in use
     hub.audio = hub_audio.AudioIn(hub)
     say('Audio (the gear): %s' % hub.audio.status)
+    try:                                       # the show's MIDI out to the Zephyrus (network session "Show")
+        import hub_relay
+        hub.relay = hub_relay.Relay(hub)
+        say('Zephyrus relay: %s' % hub.relay.status)
+    except ImportError as e:
+        say('Zephyrus relay: off (%s)' % e)
     threading.Thread(target=feed_listener, args=(hub, args.feed_port), daemon=True).start()
     httpd = ThreadingHTTPServer((host, args.desk_port), make_handler(hub))
     httpd.daemon_threads = True
@@ -1661,7 +1677,7 @@ def main():
             pass
         if hub.push:
             hub.push.close()
-        for part in (hub.ableton, hub.audio):
+        for part in (hub.relay, hub.ableton, hub.audio):
             try:
                 if part is not None:
                     part.close()

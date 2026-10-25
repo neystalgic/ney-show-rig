@@ -41,7 +41,8 @@ Zephyrus side:
     https://www.tobias-erichsen.de/software/rtpmidi.html
     > open it, the Mac's "Show" session appears under Directory > select > Connect
     (Windows firewall pop-up: allow on Private networks)
-Then tell me -- I make the Hue Hub relay the show MIDI into that session (MIDI MAP below).
+The Hue Hub relays the show MIDI into that session (hub_relay.py, see MIDI MAP below).
+    Light Desk > Setup > Zephyrus relay shows what it sends. Restart the hub once after updating.
 
 
 STEP 2 -- VIDEO BACK TO THE MAC                                        ~20 min
@@ -105,14 +106,18 @@ Running today:
    KEY     from Live (AbletonOSC)                      what "1 = red" means right now
 Being wired up (Digitakt MIDI tracks -> Scarlett MIDI In):
    ch 9 kick   ch 11 snare   ch 12 hats               exact drum hits
-Added by the hub relay once rtpMIDI is up (the show's "state" as MIDI):
+Sent by the hub relay (hub_relay.py) to the Zephyrus (the show's "state" as MIDI):
    ch 15  CC 1  degree colour (1-8)        CC 7  diffuse amount
           CC 2  geometry family (0-7)      CC 8  brightness / master
           CC 3  construction (0-7)         CC 9  look (clean, ASCII, 8-bit ...)
           CC 4  kick (envelope)            CC 10 lighting effect
-          CC 5  loudness                   CC 11 song section (quiet/groove/breakdown/drop)
-          CC 6  build progress             CC 12 key root (0-11)
+          CC 5  loudness                   CC 11 section (planned)
+          CC 6  build progress             CC 12 key root (planned)
    (audio is turned INTO MIDI on the Mac, so the Zephyrus never needs the audio itself)
+   CC 1 = 1-8 (8 = the octave, rainbow).  CC 2/3 = 0-7.  CC 9 = 0 clean 1 ASCII 2 8-bit 3 outline
+   4 superflat 5 mirror (sent once TouchDesigner tells the hub the look).  CC 10 = 0 wash 1 glow
+   2 pulse 3 chase 4 sparkle 5 sweep 6 hit.  Kick / loudness / brightness come AFTER the Flicker Guard.
+   Clock: the Digitakt's (through the Scarlett); Ableton's only when the Digitakt's is silent.
 
 What listens on the Zephyrus:
    Unreal:         ch16 = build that recipe's 3D geometry, ch1/ch2 = colour + light pulses,
