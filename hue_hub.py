@@ -1068,7 +1068,11 @@ class Hub:
             hue = self.palette.sync_hue(time.time() + 0.5)
             st_ = self.state['settings']
             v = clamp(float(st_.get('sync_base', 0.30)) + float(st_.get('sync_boost', 0.45)) * getattr(self.palette, 'sync_env', 0.0))
-            cols5 = [hub_palette.vivid((hue + (j / 4.0 - 0.5) * 60.0) % 360.0) for j in range(5)]
+            sp_ = self.palette.sync_spread()
+            if self.state['settings'].get('sync_scheme') == 'deep':
+                cols5 = [self.palette.sync_colour(time.time() + 0.5, (j / 4.0 - 0.5) * 0.3) for j in range(5)]
+            else:
+                cols5 = [hub_palette.vivid((hue + (j / 4.0 - 0.5) * sp_) % 360.0) for j in range(5)]
             gl.update(cols5, v * cap)
             return
         if pmode == 'lava':
@@ -1345,7 +1349,7 @@ class Hub:
                 return True
             if op == 'setting':                          # desk > Setup > Ableton
                 k, v = c.get('key'), c.get('value')
-                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, palette=str, sync_ch=int, sync_base=float, sync_boost=float, sync_period=float, iac_looks=bool, iac_mpe=bool,
+                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, palette=str, sync_ch=int, sync_base=float, sync_boost=float, sync_period=float, sync_from=float, sync_to=float, sync_scheme=str, iac_looks=bool, iac_mpe=bool,
                              audio_on=bool, audio_in=str, audio_ch=str, audio_sens=float, trig_on=bool, trig_port=str,
                              trig_map=dict, a_voices=dict, gear_clock=bool, a_pat=str, a_spat=str, a_origin=str,
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,

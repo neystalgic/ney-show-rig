@@ -178,8 +178,30 @@ class Palette:
         return out
 
     def sync_hue(self, now):
-        period = max(5.0, float(self.hub.state['settings'].get('sync_period', 60.0)))
-        return ((now / period) * 360.0) % 360.0
+        """The whole room's colour. With sync_from / sync_to (OKLCH hue degrees) it sways back and
+        forth inside that range (e.g. 255 -> 310 = deep blue to deep purple), otherwise the full rainbow."""
+        st = self.hub.state['settings']
+        period = max(5.0, float(st.get('sync_period', 60.0)))
+        lo, hi = st.get('sync_from'), st.get('sync_to')
+        if lo is None or hi is None:
+            return ((now / period) * 360.0) % 360.0
+        ph = (now / period) % 1.0
+        tri = 0.5 - 0.5 * math.cos(2 * math.pi * ph)        # a smooth sway: lo -> hi -> lo each period
+        return (float(lo) + ((float(hi) - float(lo)) % 360.0) * tri) % 360.0
+
+    def sync_colour(self, now, offset=0.0):
+        """sync_scheme 'deep' = deep blues and purples swaying slowly; otherwise the hue from sync_hue."""
+        st = self.hub.state['settings']
+        if st.get('sync_scheme') == 'deep':
+            period = max(5.0, float(st.get('sync_period', 60.0)))
+            tri = 0.5 - 0.5 * math.cos(2 * math.pi * ((now / period) % 1.0))
+            return deep_colour(tri + offset)
+        return vivid((self.sync_hue(now) + offset * 360.0) % 360.0)
+
+    def sync_spread(self):
+        st = self.hub.state['settings']
+        lo, hi = st.get('sync_from'), st.get('sync_to')
+        return 60.0 if lo is None or hi is None else min(60.0, ((float(hi) - float(lo)) % 360.0) * 0.5)
 
     def render_sync(self, cols, now, dt, rms):
         """All bulbs one colour, fading round the rainbow; brightness = rest + the input's loudness."""
@@ -193,5 +215,16 @@ class Palette:
         base = max(0.0, min(1.0, float(st.get('sync_base', 0.30))))
         boost = max(0.0, min(1.0, float(st.get('sync_boost', 0.45))))
         v = max(0.0, min(1.0, base + boost * env))
-        c = vivid(self.sync_hue(now))
+        c = self.sync_colour(now)
         return [tuple(x * v for x in c) for _ in cols]
+
+DEEP = [(0.0, 0.10, 1.0), (0.22, 0.0, 1.0), (0.48, 0.0, 1.0), (0.62, 0.0, 0.85)]   # deep blue -> indigo -> purple -> plum
+
+
+def deep_colour(t):
+    """t 0..1 along deep blue -> indigo -> purple -> plum (all fully saturated: nothing washes out)."""
+    t = max(0.0, min(1.0, t)) * (len(DEEP) - 1)
+    i = min(len(DEEP) - 2, int(t))
+    f = t - i
+    f = f * f * (3 - 2 * f)
+    return tuple(a + (b - a) * f for a, b in zip(DEEP[i], DEEP[i + 1]))
