@@ -1007,8 +1007,10 @@ class Hub:
                         self._fx_err_t = now
                         say('Light FX: %s' % e)
             # PER-LAMP CAP: lamps near the projection never go above their cap (the music still moves them)
+            # (not in sync / movie mode: there every bulb must match exactly -- a capped bulb dips below
+            #  its lowest dim level at a different moment and looks out of sync)
             caps = [self.rig.lamps[sg['lamp']].get('cap', 1.0) for sg in self.rig.segs]
-            if any(k < 0.999 for k in caps):
+            if pmode != 'sync' and any(k < 0.999 for k in caps):
                 cols = [scale(c_, k) if k < 0.999 else c_ for c_, k in zip(cols, caps)]
             idt = getattr(self, 'ident', None)
             if idt is not None:
@@ -1065,13 +1067,25 @@ class Hub:
             return
         master = clamp(self.live.get('master', 1.0))
         if pmode == 'sync':                       # movie / sync: exactly the room's colour and brightness
-            gl.every = 0.25
+            gl.every = 0.2
+            gl.fade = 0.12                            # short fade: lands on the hit instead of smearing it
             c = getattr(self.palette, 'sync_c', None)
             if c is None:
                 return
-            v_ = getattr(self.palette, 'sync_v', 0.0)
-            gl.update([c] * 5, v_ * cap, on=v_ > 0.02)           # silence = the lamp goes fully dark
+            # The floor lamp only gets ~5 updates a second (it's outside the stream), so it can't sample
+            # every syllable. Send it the PEAK of the last update window, so it lights on the same hits
+            # the streamed bulbs do instead of catching a random moment between them.
+            now_ = time.time()
+            pk = getattr(self, '_grad_peak', None)
+            if pk is None:
+                pk = self._grad_peak = collections.deque()
+            pk.append((now_, getattr(self.palette, 'sync_v', 0.0)))
+            while pk and pk[0][0] < now_ - gl.every:
+                pk.popleft()
+            v_ = max(v for _, v in pk)
+            gl.update([c] * 5, v_, on=v_ > 0.02)                 # same level as every bulb; silence = fully dark
             return
+        gl.fade = None
         gl.every = 0.5
         if pmode == 'lava':
             hue, f = self.palette.lava_hue(beats + 2.0 * SEND_AHEAD_BEATS(self))
