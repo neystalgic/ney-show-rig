@@ -27,6 +27,7 @@
 # Brightness always stays with the music; this only decides the colours.
 # =============================================================================
 
+import collections
 import math
 
 SPAN = {'quiet': 90.0, 'breakdown': 120.0, 'groove': 220.0, 'drop': 330.0}   # degrees of the wheel
@@ -224,7 +225,17 @@ class Palette:
         self.sync_v = v
         c = self.sync_colour(now)
         self.sync_c = c
-        return [tuple(x * v for x in c) for _ in cols]
+        # SYNC BUFFER: the streamed bulbs wait sync_delay seconds so they land together with the Play
+        # floor lamp, which is driven outside the stream and needs that long to catch up.
+        d = max(0.0, float(st.get('sync_delay', 0.3)))
+        hist = getattr(self, 'sync_hist', None)
+        if hist is None:
+            hist = self.sync_hist = collections.deque()
+        hist.append((now, v, c))
+        while len(hist) > 1 and hist[1][0] <= now - d:
+            hist.popleft()
+        _, vd, cd = hist[0]
+        return [tuple(x * vd for x in cd) for _ in cols]
 
 DEEP = [(0.0, 0.10, 1.0), (0.22, 0.0, 1.0), (0.48, 0.0, 1.0), (0.62, 0.0, 0.85)]   # deep blue -> indigo -> purple -> plum
 
