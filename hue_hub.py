@@ -551,7 +551,7 @@ class Hub:
                 if self.args.ip:
                     self.cfg['ip'] = self.args.ip
                 hs.need_pairing(self.cfg)
-                area = hs.pick_area(self.cfg, self.args.area or self.cfg.get('area_name'))
+                area = hs.pick_area(self.cfg, self.args.area or self.wanted_area() or self.cfg.get('area_name'))
                 self.area_name = area.get('metadata', {}).get('name', '')
                 lamps = hs.lamp_layout(self.cfg, area)
             except SystemExit:
@@ -569,6 +569,14 @@ class Hub:
                 lamps = virtual_lamps()
                 say('Rehearsal: using 6 practice lamps')
         self.rig = Rig(lamps, self.state.get('lamps', {}))
+
+    def wanted_area(self):
+        """Movie / sync mode streams EVERY lamp, floor lamp included, in one area (setting 'movie_area',
+        default "Music area") so they all land on the same frame. Other modes use the show's area."""
+        st = self.state['settings']
+        if st.get('palette') == 'sync' and st.get('movie_area', 'Music area'):
+            return st.get('movie_area', 'Music area')
+        return None
 
     def connect(self):
         if self.args.rehearse:
@@ -1061,6 +1069,9 @@ class Hub:
         gl = getattr(self, 'gradlamp', None)
         if gl is None:
             return
+        gname = self.state['settings'].get('grad_lamp', 'Hue Play floor lamp large 1')
+        if any(l.get('name') == gname for l in self.rig.lamps):
+            return                                # it's in the stream: it gets its colour with every other bulb
         cap = clamp(float(self.state['settings'].get('grad_cap', 0.75)), 0.05, 1.0)
         if self.blackout:
             gl.update([], 0.0, on=False)
@@ -1177,7 +1188,7 @@ class Hub:
                     self._tb_seen = getattr(self, '_tb_seen', set()) | {key}
                     say(traceback.format_exc())
                 time.sleep(0.5)
-            if self.code_changed(t0):
+            if self.code_changed(t0) or getattr(self, 'area_reload', False):
                 raise Reload()
             time.sleep(max(0.0, period - (time.time() - t0)))
 
@@ -1361,7 +1372,7 @@ class Hub:
                 return True
             if op == 'setting':                          # desk > Setup > Ableton
                 k, v = c.get('key'), c.get('value')
-                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, palette=str, sync_ch=int, sync_base=float, sync_boost=float, sync_period=float, sync_from=float, sync_to=float, sync_scheme=str, sync_attack=float, sync_release=float, sync_floor_db=float, sync_top_db=float, sync_delay=float, iac_looks=bool, iac_mpe=bool,
+                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, palette=str, sync_ch=int, sync_base=float, sync_boost=float, sync_period=float, sync_from=float, sync_to=float, sync_scheme=str, sync_attack=float, sync_release=float, sync_floor_db=float, sync_top_db=float, sync_delay=float, movie_area=str, iac_looks=bool, iac_mpe=bool,
                              audio_on=bool, audio_in=str, audio_ch=str, audio_sens=float, trig_on=bool, trig_port=str,
                              trig_map=dict, a_voices=dict, gear_clock=bool, a_pat=str, a_spat=str, a_origin=str,
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,
@@ -1389,6 +1400,11 @@ class Hub:
                     v = {vo: dict(color=str(d.get('color', 'look'))[:16], zones=d.get('zones', 'all'))
                          for vo, d in v.items() if vo in ('kick', 'snare', 'hats') and isinstance(d, dict)}
                 self.state['settings'][k] = kinds[k](v)
+                if k in ('palette', 'movie_area') and not self.args.rehearse and not self.args.area:
+                    want = self.wanted_area() or (self.cfg or {}).get('area_name')
+                    if want and want != self.area_name:
+                        say('Switching the lights to "%s" -- restarting the hub (a few seconds)...' % want)
+                        self.area_reload = True
                 if self.audio and k in ('audio_on', 'audio_in', 'audio_ch'):
                     self.audio.close()
                     self.audio.last_try = 0.0
