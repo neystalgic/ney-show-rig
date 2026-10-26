@@ -1069,7 +1069,8 @@ class Hub:
             c = getattr(self.palette, 'sync_c', None)
             if c is None:
                 return
-            gl.update([c] * 5, getattr(self.palette, 'sync_v', 0.0) * cap)
+            v_ = getattr(self.palette, 'sync_v', 0.0)
+            gl.update([c] * 5, v_ * cap, on=v_ > 0.02)           # silence = the lamp goes fully dark
             return
         gl.every = 0.5
         if pmode == 'lava':
@@ -1346,7 +1347,7 @@ class Hub:
                 return True
             if op == 'setting':                          # desk > Setup > Ableton
                 k, v = c.get('key'), c.get('value')
-                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, palette=str, sync_ch=int, sync_base=float, sync_boost=float, sync_period=float, sync_from=float, sync_to=float, sync_scheme=str, iac_looks=bool, iac_mpe=bool,
+                kinds = dict(iac_on=bool, iac_port=str, iac_map=str, brain_on=bool, heard_on=bool, pi_url=str, key_from_live=bool, deg_root=int, deg_scale=str, deg_home=int, deg_effect=str, palette=str, sync_ch=int, sync_base=float, sync_boost=float, sync_period=float, sync_from=float, sync_to=float, sync_scheme=str, sync_attack=float, sync_release=float, sync_floor_db=float, sync_top_db=float, iac_looks=bool, iac_mpe=bool,
                              audio_on=bool, audio_in=str, audio_ch=str, audio_sens=float, trig_on=bool, trig_port=str,
                              trig_map=dict, a_voices=dict, gear_clock=bool, a_pat=str, a_spat=str, a_origin=str,
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,

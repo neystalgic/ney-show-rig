@@ -207,12 +207,16 @@ class Palette:
         """All bulbs one colour, fading round the rainbow; brightness = rest + the input's loudness."""
         st = self.hub.state['settings']
         db = 20.0 * math.log10(max(rms, 1e-6))
-        lvl = max(0.0, min(1.0, (db + 48.0) / 36.0))        # -48 dBFS = nothing, -12 dBFS = full
+        lo_db = float(st.get('sync_floor_db', -48.0))           # at or below this = silence = dark
+        hi_db = float(st.get('sync_top_db', -12.0))             # at or above this = full light
+        lvl = max(0.0, min(1.0, (db - lo_db) / max(1.0, hi_db - lo_db)))
         env = getattr(self, 'sync_env', 0.0)
         att = max(0.01, float(st.get('sync_attack', 0.7)))      # seconds to swell up (slow: voices don't flash)
         rel = max(0.01, float(st.get('sync_release', 1.6)))     # seconds to sink back
         k = 1.0 - math.exp(-dt / (att if lvl > env else rel))
         env += (lvl - env) * k
+        if lvl <= 0.0 and env < 0.01:
+            env = 0.0                                          # true silence = truly dark
         self.sync_env = env
         base = max(0.0, min(1.0, float(st.get('sync_base', 0.30))))
         boost = max(0.0, min(1.0, float(st.get('sync_boost', 0.45))))
