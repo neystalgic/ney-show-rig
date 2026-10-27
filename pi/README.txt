@@ -9,10 +9,17 @@ WHAT IT DOES
   - Later: Ableton Link / MIDI bridge for the Zephyrus, DMX via OLA.
 
 0. PUT IT TOGETHER (Pi 5 8 GB + Active Cooler + M.2 HAT+ + NVMe SSD)
-   - Active Cooler first: peel the pads, clip it on, plug its cable into FAN.
-   - Screw the SSD into the M.2 HAT+.
-   - HAT+ on top with the standoffs; its flat ribbon goes into the Pi's PCIe
-     connector (lift the little latch, contacts facing in, press the latch down).
+   (Raspberry Pi's official M.2 HAT+ steps; unplugged the whole time)
+   - Active Cooler first: peel the film off the pads, push both pins through, plug its
+     cable into FAN.
+   - Screw the 4 spacers onto the Pi; press the GPIO stacking header onto the pins.
+   - Unhook the ribbon from the HAT+. Into the Pi's PCIe port: lift the latch, metal
+     contacts facing the USB PORTS, fully in, latch down.
+   - HAT+ onto the spacers, screws in. Ribbon into the HAT+: copper contacts facing UP,
+     latch down.
+   - SSD: slide it in at a slight angle, press flat, turn the screw clockwise (don't
+     over-tighten).
+   - The official Pi 5 case only fits with its lid and fan off.
 
 1. FLASH THE microSD (on the Mac) -- only used once, to get onto the SSD
    - Raspberry Pi Imager: https://www.raspberrypi.com/software/
