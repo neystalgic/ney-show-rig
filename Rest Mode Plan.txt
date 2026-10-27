@@ -1,0 +1,73 @@
+REST MODE PLAN -- saving energy without thinking about it (Oct 27)
+==================================================================
+One command puts the whole rig to rest; another wakes it for a show.
+Saying it:  Light Desk button  |  "Hey Siri, rest mode" / "Hey Siri, show mode"  |  automatic (below)
+
+
+WHAT REST MODE DOES, DEVICE BY DEVICE
+----------------------------------------------------------------------------------
+ Device              Rest mode                                   Show mode (wake)
+ ------------------  ------------------------------------------  ------------------------------------
+ Moving heads (4)    DMX: light off, park pointing at the        Plugs on -> wait ~20 s (their reset
+                     ceiling. Then their Hue Smart Plugs off     sweep) -> DMX takes over
+                     10 s later (no standby hum, no fan)
+ Laser bar           DMX: off (then its smart plug, if added)    Plug on -> DMX
+ Hue bulbs + floor   Off -- or a dim "night glow" if you pick    The look you were in before
+   lamp              that as your rest look
+ Hue Hub             Stops streaming; keeps listening (tiny      Starts streaming
+                     power) so it can wake everything
+ TouchDesigner       Pauses its timeline -- the Mac's graphics   Plays again, picks up where it was
+   (Mac)             chip goes quiet
+ Zephyrus            Sleeps (the hub sends it a sleep message)   Wake-on-LAN from the Mac or the Pi
+                                                                 (needs the Ethernet cable)
+ Projector           Its own Eco mode + auto power-off (set in   Power button / remote
+                     ITS menu). Never a smart plug.
+ Mac, Scarlett       Never switched off by rest mode, never on   --
+                     a smart plug. The Mac sleeps on its own.
+ Studio monitors,    Manual switched power strip, flipped off    Flip it on
+   synths, Elektrons at night (a plain switch, not smart)
+ Raspberry Pi        Stays on (5-8 W, built for 24/7). It's      --
+                     what notices if something's left on.
+
+
+AUTOMATIC
+----------------------------------------------------------------------------------
+ - Show stops / movie ends  -> heads go to DMX sleep right away (lights off, parked).
+ - 30 min of nothing (no sound on the Scarlett, no Push or MIDI, not in movie mode)
+                            -> SOFT rest: heads asleep, TouchDesigner paused.
+                               Nothing switches off at the wall automatically.
+ - Full rest (smart plugs off, Zephyrus asleep) only when you ask for it -- or at a time
+   you choose (e.g. 2 am), never in the middle of anything.
+ - Your phone gets a quiet note from the Pi if something big is still running late at night.
+
+
+SAFETY (unchanged)
+----------------------------------------------------------------------------------
+ - Flicker guard stays on in every mode. Waking never flashes: everything fades up.
+ - Heads park pointing UP before their power is cut, so the reset sweep on wake starts
+   from a safe position.
+ - Rest mode never cuts power to the Mac, Scarlett or projector.
+
+
+BUILD ORDER
+----------------------------------------------------------------------------------
+ Phase 1 -- now (no new hardware)
+   [ ] Light Desk "Rest" / "Show" buttons: bulbs off or night glow, hub stops streaming,
+       TouchDesigner timeline paused / resumed
+   [ ] Siri Shortcuts on your iPhone ("rest mode", "show mode", "movie mode", "bright lights")
+   [ ] Soft rest after 30 min idle
+ Phase 2 -- when the Zephyrus, Enttec and DMX cables are in
+   [ ] Heads + laser: DMX sleep (off + parked) and wake
+   [ ] Zephyrus: sleep on rest; Wake-on-LAN on show (switch WoL on in its settings; Ethernet)
+ Phase 3 -- optional purchases
+   [ ] Hue Smart Plugs for the heads (+ laser) -- fully off overnight
+   [ ] Plug-in energy meter -- measure each device once, fill in the table below
+   [ ] Switched power strip for the gear-desk extras (monitors, synths, Elektrons)
+
+
+MEASURED DRAW  (fill in with the energy meter: idle / in use, watts)
+----------------------------------------------------------------------------------
+ Zephyrus ............ ____ / ____      Projector ........... ____ / ____
+ Mac + Scarlett ...... ____ / ____      Studio monitors ..... ____ / ____
+ One moving head ..... ____ / ____      Laser bar ........... ____ / ____
+ Synths + Elektrons .. ____ / ____      Raspberry Pi ........ ____ / ____
