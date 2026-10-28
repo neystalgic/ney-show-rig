@@ -14,6 +14,10 @@
 # Settings (desk > Setup, or POST /api op=setting):
 #   dmx_host   the Zephyrus' name or IP (its Tailscale name works), '' = heads off
 #   dmx_level  head brightness 0..1 (default 0.8)      dmx_move   movement amount 0..1 (default 1)
+#   dmx_strobe strobe hits on the kick in drops (default on)
+#   strobe_cone how far from straight up a head may be to strobe, degrees (default 45 = between 45 and 135
+#              degrees above the surface it sits on). Strobe hits: at most 3 a second, room-wide, in colour
+#              (never white), made by the hub -- the heads' own strobe channel stays locked off.
 # =============================================================================
 
 import colorsys
@@ -54,7 +58,10 @@ class Heads:
         self.node_status = None
         self.status = 'off'
         self.ip = None                     # the node's address (looked up off the show thread)
-        self.st = []                       # per head: dict(theta, pan, lvl)
+        self.st = []                       # per head: dict(theta, pan, lvl, flash)
+        self.kick_prev = 0.0
+        self.last_flash = -10.0
+        self.flashes = 0
         self.run = True
         threading.Thread(target=self._poll, name='hub-dmx', daemon=True).start()
 
@@ -87,7 +94,7 @@ class Heads:
     def heads(self):
         hs = (self.node_cfg or {}).get('heads') or DEFAULT_HEADS
         while len(self.st) < len(hs):
-            self.st.append(dict(theta=0.0, pan=None, lvl=0.0))
+            self.st.append(dict(theta=0.0, pan=None, lvl=0.0, flash=0.0))
         return hs
 
     def frame(self, now, dt, beats, cols, pmode):
@@ -107,6 +114,15 @@ class Heads:
         section = getattr(getattr(self.hub, 'audioshow', None), 'section', 'groove')
         spread = {'breakdown': 0.3, 'quiet': 0.45, 'groove': 0.75, 'drop': 1.0}.get(section, 0.75)
         tm = float(getattr(self.hub, 't_motion', beats / 4.0))
+        # STROBE HITS: on the kick, in drops, only for heads pointing up into the ceiling cone, max 3 a second
+        cone = clamp(float(s.get('strobe_cone', 45.0)), 0.0, 45.0)
+        strobe_on = bool(s.get('dmx_strobe', True)) and section == 'drop' and not dark
+        kick = float(getattr(getattr(self.hub, 'audioshow', None), 'env', {}).get('kick', 0.0))
+        fire = strobe_on and kick > 0.6 and self.kick_prev < 0.35 and now - self.last_flash >= 1.0 / 3.0 + 0.01
+        self.kick_prev = kick
+        if fire:
+            self.last_flash = now
+            self.flashes += 1
         data = bytearray(512)
         hs = self.heads()
         n = len(hs)
@@ -128,6 +144,8 @@ class Heads:
             else:
                 wave = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 8.0 + i * 0.3))
                 th_t = lean_max * move * spread * (0.35 + 0.65 * wave)
+                if strobe_on:
+                    th_t = min(th_t, cone * 0.8)                 # in drops, stay inside the strobe cone
             step = MAX_DEG_S * dt
             st['theta'] += clamp(th_t - st['theta'], -step, step)
             pmin, pmax = int(hd.get('pan_min', 0)), int(hd.get('pan_max', 65535))
@@ -142,6 +160,12 @@ class Heads:
             tilt = int(clamp(tilt, 0, 65535))
             pan = int(clamp(st['pan'], 0, 65535))
             lv = st['lvl']
+            if fire and st['theta'] <= cone:
+                st['flash'] = now + 0.05
+            if now < st['flash']:
+                lv = 1.0                                         # the hit: full, in the head's colour
+                r, g, b = colorsys.hsv_to_rgb(hh, max(ss, 0.7), 1.0)
+                w = 0.0
             master = 0 if lv < 0.004 else int(round(MASTER_MIN + clamp(lv) * (MASTER_MAX - MASTER_MIN)))
             a = int(hd.get('addr', 1)) - 1
             if a < 0 or a + 14 > 512:

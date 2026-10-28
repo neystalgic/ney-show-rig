@@ -7,6 +7,8 @@ The Mac stays the show brain. The hub turns the room's light into head colours, 
 movement and sends it ~40 times a second. The Zephyrus node is the last word on safety:
 
   * the heads' strobe is never used (master channel 8-134 only), auto programs, colour macros and reset are locked off
+  * STROBE HITS come from the hub instead: on the kick in drops, max 3 a second room-wide, in colour, and only
+    while a head points into the ceiling cone (within 45 deg of straight up = 45-135 deg above its surface)
   * each head's tilt stays in its calibrated window (beams above head height); optional pan window (mirror, glass door)
   * a head stays DARK until it's calibrated
   * flash guard: no head turns round brighter/darker more than 3 times a second (and the hub limits it first)
