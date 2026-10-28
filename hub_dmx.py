@@ -14,7 +14,8 @@
 # Settings (desk > Setup, or POST /api op=setting):
 #   dmx_host   the Zephyrus' name or IP (its Tailscale name works), '' = heads off
 #   dmx_level  head brightness 0..1 (default 0.8)      dmx_move   movement amount 0..1 (default 1)
-#   dmx_strobe strobe hits on the kick in drops (default on)
+#   dmx_strobe when the heads strobe: 'phrase' (default: the moment a drop lands + every 4 bars in it),
+#              'drop' (only the moment a drop lands), 'off'
 #   strobe_cone how far from straight up a head may be to strobe, degrees (default 45 = between 45 and 135
 #              degrees above the surface it sits on). Strobe hits: at most 3 a second, room-wide, in colour
 #              (never white), made by the hub -- the heads' own strobe channel stays locked off.
@@ -59,7 +60,8 @@ class Heads:
         self.status = 'off'
         self.ip = None                     # the node's address (looked up off the show thread)
         self.st = []                       # per head: dict(theta, pan, lvl, flash)
-        self.kick_prev = 0.0
+        self.sec_prev = ''
+        self.phrase_prev = None
         self.last_flash = -10.0
         self.flashes = 0
         self.run = True
@@ -114,12 +116,17 @@ class Heads:
         section = getattr(getattr(self.hub, 'audioshow', None), 'section', 'groove')
         spread = {'breakdown': 0.3, 'quiet': 0.45, 'groove': 0.75, 'drop': 1.0}.get(section, 0.75)
         tm = float(getattr(self.hub, 't_motion', beats / 4.0))
-        # STROBE HITS: on the kick, in drops, only for heads pointing up into the ceiling cone, max 3 a second
+        # STROBE HITS: when a drop lands (+ each 4-bar phrase in it), only heads in the ceiling cone, max 3 a second
         cone = clamp(float(s.get('strobe_cone', 45.0)), 0.0, 45.0)
-        strobe_on = bool(s.get('dmx_strobe', True)) and section == 'drop' and not dark
-        kick = float(getattr(getattr(self.hub, 'audioshow', None), 'env', {}).get('kick', 0.0))
-        fire = strobe_on and kick > 0.6 and self.kick_prev < 0.35 and now - self.last_flash >= 1.0 / 3.0 + 0.01
-        self.kick_prev = kick
+        smode = s.get('dmx_strobe', 'phrase')
+        smode = 'phrase' if smode is True else 'off' if smode in (False, None) else str(smode)
+        strobe_on = smode in ('phrase', 'drop') and section == 'drop' and not dark
+        bpb = int(s.get('beats_per_bar', 4) or 4)
+        phrase = int(math.floor(beats / (bpb * 4.0)))           # a 4-bar phrase
+        landed = section == 'drop' and self.sec_prev != 'drop'
+        new_phrase = self.phrase_prev is not None and phrase != self.phrase_prev
+        fire = strobe_on and (landed or (smode == 'phrase' and new_phrase)) and now - self.last_flash >= 1.0 / 3.0 + 0.01
+        self.sec_prev, self.phrase_prev = section, phrase
         if fire:
             self.last_flash = now
             self.flashes += 1
