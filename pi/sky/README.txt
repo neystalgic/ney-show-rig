@@ -1,6 +1,13 @@
 NEY SKY — a real-time sky for the ceiling
 =========================================
 
+Two styles (switch on the phone page)
+  Dreamy (default): Pixar-style puffy cumulus with lumpy edges, soft pastel shading and a silver lining,
+         storybook sky colours, a big storybook moon (real phase and position), little striped hot-air
+         balloons drifting through now and then, sparkly bright stars, and a rare soft shooting star at night.
+  Realistic: natural clouds and a true-size moon.
+  Either way the stars, constellations, moon and sun are where they really are.
+
 What it shows
   Day: blue sky with drifting clouds (follows real Burbank cloud cover and wind; always keeps a few clouds).
   Sunrise/sunset: colours timed to the real sun.
@@ -24,6 +31,7 @@ Preview on the Mac (no Pi needed)
     mode=music|movie|rest     preview a mode              calib=1     aiming grid + compass
     fov=110  rot=0  flip=1    view width / turn / mirror  weather=0   skip real weather
     instant=1                 skip the 4 s fade-in
+    (style, balloons etc. are set on the phone page, or in SKY_DEFAULTS)
 
 On the Pi (once the micro-HDMI cable arrives)
   1. Copy the repo to the Pi as before, then:  cd ~/ney-show-rig/pi/sky && bash install_sky.sh

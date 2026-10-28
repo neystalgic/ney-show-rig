@@ -20,6 +20,7 @@
   .row{display:flex;flex-wrap:wrap;gap:8px}
   button{background:#232845;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;min-height:44px}
   button.on{background:var(--accent);color:#000;border-color:var(--accent)}
+  button:disabled{opacity:.4}
   #msg{color:var(--muted);font-size:13px;min-height:1.2em}
 </style>
 </head>
@@ -44,6 +45,8 @@
 
 <div class="card">
   <h2>3 · Look</h2>
+  <div class="row"><button data-style="dream">Dreamy</button><button data-style="real">Realistic</button></div>
+  <div class="row" style="margin-top:8px"><button id="balloons">Balloons</button><button id="bigMoon">Storybook moon</button><button id="shootingStars">Shooting stars</button></div>
   <label><span>Sky width</span><input id="fov" type="range" min="60" max="160" step="1"><output id="fovO"></output></label>
   <label><span>Constellations</span><input id="lines" type="range" min="0" max="0.6" step="0.01"><output id="linesO"></output></label>
   <label><span>Faintest stars</span><input id="maglim" type="range" min="3" max="6" step="0.1"><output id="maglimO"></output></label>
@@ -59,7 +62,7 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-let cfg = {fov:110, rot:0, flip:false, lines:0.22, maglim:5.6, minClouds:0.18, weather:true, calib:false, corners:[[0,0],[1,0],[1,1],[0,1]]};
+let cfg = {fov:110, rot:0, flip:false, lines:0.22, maglim:5.6, minClouds:0.18, weather:true, calib:false, style:'dream', balloons:true, bigMoon:true, shootingStars:true, corners:[[0,0],[1,0],[1,1],[0,1]]};
 let timer = null;
 function save(){ clearTimeout(timer); timer = setTimeout(async () => {
   try { const r = await fetch('config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(cfg)});
@@ -68,6 +71,8 @@ function render(){
   for (const k of ['rot','fov','lines','maglim','minClouds']) { $(k).value = cfg[k]; $(k+'O').textContent = (+cfg[k]).toFixed(k==='rot'||k==='fov'?0:2).replace(/\.00$/,''); }
   $('flip').classList.toggle('on', !!cfg.flip); $('calib').classList.toggle('on', !!cfg.calib); $('weather').classList.toggle('on', !!cfg.weather);
   $('calib').textContent = cfg.calib ? 'Hide aiming grid' : 'Show aiming grid';
+  document.querySelectorAll('[data-style]').forEach(b => b.classList.toggle('on', b.dataset.style === (cfg.style || 'dream')));
+  for (const k of ['balloons','bigMoon','shootingStars']) { $(k).classList.toggle('on', !!cfg[k]); $(k).disabled = cfg.style === 'real'; }
   const pad = $('pad'), W = pad.clientWidth, H = pad.clientHeight;
   cfg.corners.forEach((p,i) => { let h = $('h'+i); if(!h){ h = document.createElement('div'); h.className='h'; h.id='h'+i; h.textContent=['TL','TR','BR','BL'][i]; pad.appendChild(h); drag(h,i); }
     h.style.left = (p[0]*W)+'px'; h.style.top = (p[1]*H)+'px'; });
@@ -83,6 +88,8 @@ document.querySelectorAll('[data-rot]').forEach(b => b.onclick = () => { cfg.rot
 $('flip').onclick = () => { cfg.flip = !cfg.flip; render(); save(); };
 $('calib').onclick = () => { cfg.calib = !cfg.calib; render(); save(); };
 $('weather').onclick = () => { cfg.weather = !cfg.weather; render(); save(); };
+document.querySelectorAll('[data-style]').forEach(b => b.onclick = () => { cfg.style = b.dataset.style; render(); save(); });
+for (const k of ['balloons','bigMoon','shootingStars']) $(k).onclick = () => { cfg[k] = !cfg[k]; render(); save(); };
 $('resetC').onclick = () => { cfg.corners = [[0,0],[1,0],[1,1],[0,1]]; render(); save(); };
 document.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => {
   document.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x===b));

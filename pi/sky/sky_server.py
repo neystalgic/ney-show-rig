@@ -42,9 +42,11 @@ def clean_cfg(new):
     for k, (lo, hi) in rules.items():
         if k in new:
             out[k] = clamp(new[k], lo, hi)
-    for k in ('flip', 'calib', 'weather'):
+    for k in ('flip', 'calib', 'weather', 'balloons', 'bigMoon', 'shootingStars'):
         if k in new:
             out[k] = bool(new[k])
+    if new.get('style') in ('dream', 'real'):
+        out['style'] = new['style']
     if 'corners' in new:
         c = new['corners']
         if isinstance(c, list) and len(c) == 4 and all(isinstance(p, list) and len(p) == 2 for p in c):
