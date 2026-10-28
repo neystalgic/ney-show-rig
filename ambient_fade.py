@@ -6,7 +6,7 @@
 # the colour wheel. The Play floor lamp shows its own 5-colour slice of it.
 # Colours are perceptually even (hub_palette.vivid), fades are done by the bulbs.
 #
-#   python3 ambient_fade.py [brightness 0-100] [seconds per full turn]
+#   python3 ambient_fade.py [brightness 0-100] [seconds per full turn] [spread degrees, 0 = all one colour]
 #   stop: Ctrl+C, or create a file called ambient.stop next to this script
 # Don't run it while the Hue Hub is running (they'd fight over the lamps).
 # =============================================================================
@@ -18,7 +18,8 @@ from hub_palette import vivid
 
 BRI = float(sys.argv[1]) if len(sys.argv) > 1 else 65.0
 TURN = float(sys.argv[2]) if len(sys.argv) > 2 else 120.0     # seconds for the rainbow to go all the way round
-SPREAD = 240.0                                                 # degrees of rainbow across the room
+SPREAD = float(sys.argv[3]) if len(sys.argv) > 3 else 240.0  # degrees of rainbow across the room
+                                                               # (0 = every lamp the SAME colour, fading round the rainbow together)
 STEP = 2.0                                                     # seconds between updates (the bulbs fade in between)
 STOP = os.path.join(HERE, 'ambient.stop')
 
@@ -61,7 +62,7 @@ while not os.path.exists(STOP):
             hs.v2(cfg, 'light/' + rid, 'PUT', body)
         except Exception as e:
             print('  %s: %s' % (info.get(rid, {}).get('metadata', {}).get('name', rid), e))
-        time.sleep(0.12)
-    time.sleep(max(0.0, STEP - 0.12 * n))
+        time.sleep(0.12 if SPREAD else 0.02)          # all-one-colour: send them back to back so they move together
+    time.sleep(max(0.0, STEP - (0.12 if SPREAD else 0.02) * n))
 os.remove(STOP)
 print('Ambient fade stopped.')
