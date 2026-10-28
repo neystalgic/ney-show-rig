@@ -96,6 +96,12 @@
     <div class="row"><button id="panA">Pan limit A = here</button><button id="panB">Pan limit B = here</button><button id="panAll">Any pan</button></div>
     <div class="keys" id="panInfo"></div>
     <hr>
+    <h2>Avoid directions</h2>
+    <p class="keys" style="margin-top:0">Aim at what the beam must never lean toward (the projection, mirror, glass door), then add it. Inside a zone the beam stays within 4° of straight up.</p>
+    <div class="field"><span>Zone width</span><input id="avw" type="range" min="10" max="120" step="5" value="60"><input id="avwN" type="number" min="10" max="120" step="5" value="60"></div>
+    <div class="row"><button id="avAdd">Avoid where it points now</button><button id="avClear">Clear zones</button></div>
+    <div id="avList" class="keys"></div>
+    <hr>
     <div class="field"><span>Brightness cap</span><input id="cap" type="range" min="0.1" max="1" step="0.05"><input id="capN" type="number" min="10" max="100" step="5"></div>
     <div class="field"><span>Motor speed</span><input id="spd" type="range" min="0" max="255" step="1"><input id="spdN" type="number" min="0" max="255"></div>
     <hr>
@@ -116,13 +122,20 @@ async function get(p) { const r = await fetch(base() + p, { cache: 'no-store' })
 // text/plain keeps the request "simple" so the browser needs no extra permission round-trip
 async function post(p, b) { const r = await fetch(base() + p, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(b) }); return r.json(); }
 function head() { return cfg.heads[sel]; }
+const AVOID_LEAN = 4;
+function leanDeg(p, h) { return (p.tilt - h.tilt_up) * h.tilt_dir * TILT_DEG / MAXV; }
+function azOf(p, h) { return ((p.pan / MAXV * PAN_DEG) + (leanDeg(p, h) < 0 ? 180 : 0)) % 360; }
+function inAvoid(p, h) { if (Math.abs(leanDeg(p, h)) <= AVOID_LEAN) return false; const az = azOf(p, h);
+  return (h.avoid || []).some(z => Math.abs(((az - z.az + 540) % 360) - 180) < z.width / 2); }
 function msg(t) { $('msg').textContent = t; }
 
 // ---------- steering ----------
 function inWindow(p) {
   const h = head(); if (free || !h.calibrated) return p;
   const span = h.tilt_max_deg / TILT_DEG * MAXV;
-  return { pan: Math.max(h.pan_min, Math.min(h.pan_max, p.pan)), tilt: Math.max(h.tilt_up - span, Math.min(h.tilt_up + span, p.tilt)) };
+  const q = { pan: Math.max(h.pan_min, Math.min(h.pan_max, p.pan)), tilt: Math.max(h.tilt_up - span, Math.min(h.tilt_up + span, p.tilt)) };
+  if (inAvoid(q, h)) { const lim = AVOID_LEAN / TILT_DEG * MAXV; q.tilt = h.tilt_up + Math.sign(q.tilt - h.tilt_up) * lim; }
+  return q;
 }
 function sendSteer(force) {
   if (!steering) return;
@@ -158,6 +171,18 @@ function draw() {
   const yA = (h.tilt_up - span) / MAXV * H, yB = (h.tilt_up + span) / MAXV * H;
   cx.fillStyle = 'rgba(95,211,141,.12)'; cx.fillRect(x0, yA, x1 - x0, yB - yA);
   cx.strokeStyle = 'rgba(95,211,141,.5)'; cx.strokeRect(x0, yA, x1 - x0, yB - yA);
+  // avoid zones: red where the beam would lean into them (both lean sides)
+  const lim = AVOID_LEAN / TILT_DEG * MAXV;
+  (h.avoid || []).forEach(z => {
+    [[1, 0], [-1, 180]].forEach(([side, off]) => {
+      const yNear = (h.tilt_up + side * h.tilt_dir * lim) / MAXV * H, yFar = (h.tilt_up + side * h.tilt_dir * MAXV) / MAXV * H;
+      for (let c = z.az + off - 720; c <= PAN_DEG + 360; c += 360) {
+        const a = Math.max(0, c - z.width / 2), b = Math.min(PAN_DEG, c + z.width / 2); if (b <= a) continue;
+        cx.fillStyle = 'rgba(255,107,107,.20)';
+        cx.fillRect(a / PAN_DEG * W, Math.min(yNear, yFar), (b - a) / PAN_DEG * W, Math.abs(yFar - yNear));
+      }
+    });
+  });
   // straight up line
   const yu = h.tilt_up / MAXV * H; cx.strokeStyle = '#6fb7ff'; cx.setLineDash([6, 5]); cx.beginPath(); cx.moveTo(0, yu); cx.lineTo(W, yu); cx.stroke(); cx.setLineDash([]);
   cx.fillStyle = '#6fb7ff'; cx.fillText('straight up', 6, yu - 6);
@@ -171,7 +196,7 @@ function draw() {
   $('rPan').textContent = (pos.pan / MAXV * PAN_DEG).toFixed(1) + '°  (' + Math.round(pos.pan) + ')';
   $('rTilt').textContent = (pos.tilt / MAXV * TILT_DEG).toFixed(1) + '°  (' + Math.round(pos.tilt) + ')';
   $('rLean').textContent = (Math.abs(pos.tilt - h.tilt_up) / MAXV * TILT_DEG).toFixed(1) + '°';
-  $('rOut').textContent = s ? (s.master ? 'lit' : 'dark') + (s.calibrating ? ' · steering' : '') : '–';
+  $('rOut').textContent = (s ? (s.master ? 'lit' : 'dark') + (s.calibrating ? ' · steering' : '') : '–') + (inAvoid(pos, h) ? ' · in an avoid zone' : '');
 }
 let dragging = false;
 function padEvt(e) { const r = cv.getBoundingClientRect(); pos = fromXY((e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height); if (!steering) setSteer(true); sendSteer(); draw(); }
@@ -205,6 +230,12 @@ $('panA').onclick = () => saveHead({ pan_min: Math.round(pos.pan) });
 $('panB').onclick = () => saveHead({ pan_max: Math.round(pos.pan) });
 $('panAll').onclick = () => saveHead({ pan_min: 0, pan_max: MAXV });
 $('calibrated').onclick = () => saveHead({ calibrated: !head().calibrated });
+bindPairLocal('avw', 'avwN');
+function bindPairLocal(r, n) { $(r).oninput = () => { $(n).value = $(r).value; }; $(n).onchange = () => { $(r).value = $(n).value; }; }
+$('avAdd').onclick = () => { const h = head(); if (Math.abs(leanDeg(pos, h)) <= AVOID_LEAN) { msg('Lean the beam toward the thing to avoid first (it is pointing straight up).'); return; }
+  saveHead({ avoid: (h.avoid || []).concat([{ az: Math.round(azOf(pos, h)), width: +$('avwN').value }]) }); };
+$('avClear').onclick = () => saveHead({ avoid: [] });
+function removeZone(i) { const h = head(); saveHead({ avoid: (h.avoid || []).filter((_, j) => j !== i) }); }
 $('steer').onclick = () => setSteer(!steering);
 $('free').onclick = () => { free = !free; $('free').classList.toggle('on', free); msg(free ? 'Free aim: ignores the green window (for re-calibrating).' : 'Aim stays inside the green window once a head is calibrated.'); };
 $('allDark').onclick = stopAll;
@@ -232,6 +263,11 @@ function renderCal() {
   $('addr').value = h.addr; $('addrN').value = h.addr; $('lean').value = h.tilt_max_deg; $('leanN').value = h.tilt_max_deg;
   $('cap').value = h.max_level; $('capN').value = Math.round(h.max_level * 100); $('spd').value = h.motor_speed; $('spdN').value = h.motor_speed;
   $('calibrated').classList.toggle('on', !!h.calibrated); $('calibrated').textContent = h.calibrated ? 'Calibrated ✓ (click to undo)' : 'Mark calibrated';
+  const al = $('avList'); al.innerHTML = '';
+  if (!('avoid' in h)) al.textContent = 'This needs the updated DMX node on the Zephyrus.';
+  (h.avoid || []).forEach((z, i) => { const d = document.createElement('div'); d.className = 'row';
+    const t = document.createElement('span'); t.textContent = `Around ${Math.round(z.az)}° (±${z.width / 2}°)`;
+    const b = document.createElement('button'); b.textContent = 'Remove'; b.onclick = () => removeZone(i); d.append(t, b); al.appendChild(d); });
   $('panInfo').textContent = `Pan window ${(h.pan_min / MAXV * PAN_DEG).toFixed(0)}°–${(h.pan_max / MAXV * PAN_DEG).toFixed(0)}°`;
   $('calInfo').textContent = `Straight up = ${h.tilt_up} · lean ${h.tilt_dir > 0 ? 'down' : 'up'} the pad · max ${h.tilt_max_deg}°`;
 }

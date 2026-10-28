@@ -1036,7 +1036,8 @@ class Hub:
                             for sg in self.rig.segs]
                 else:
                     self.ident = None
-            self.lim.set_rate(self.live.get('guard', 2.0))
+            # music mode runs the flicker protection at its ceiling (3 flashes/s) so every kick up to ~180 BPM lands
+            self.lim.set_rate(3.0 if pmode == 'music' else self.live.get('guard', 2.0))
             hs.VIVID = self.state['calibration'].get('vivid', 1.0)
             # streaming order = sorted channel ids
             ordered = [cols[self.rig.by_ch[ch]] for ch in self.rig.channels]

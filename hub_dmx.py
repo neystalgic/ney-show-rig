@@ -40,6 +40,17 @@ DEFAULT_HEADS = [dict(addr=a, tilt_up=32768, tilt_dir=1, tilt_max_deg=35.0, pan_
                  for a in (1, 15, 29, 43)]
 
 
+AVOID_LEAN = 4.0
+
+
+def in_avoid(hd, pan16, lean_deg, margin=0.0):
+    """The node's rule: a beam leaning more than AVOID_LEAN toward one of the head's avoid zones (pan degrees)."""
+    if abs(lean_deg) <= AVOID_LEAN:
+        return False
+    az = (pan16 * 540.0 / 65535.0 + (180.0 if lean_deg < 0 else 0.0)) % 360.0
+    return any(abs((az - float(z['az']) + 180.0) % 360.0 - 180.0) < float(z['width']) / 2.0 + margin for z in hd.get('avoid') or [])
+
+
 def clamp(x, lo=0.0, hi=1.0):
     return lo if x < lo else hi if x > hi else x
 
@@ -153,6 +164,8 @@ class Heads:
                 th_t = lean_max * move * spread * (0.35 + 0.65 * wave)
                 if strobe_on:
                     th_t = min(th_t, cone * 0.8)                 # in drops, stay inside the strobe cone
+                if st['pan'] is not None and in_avoid(hd, st['pan'], th_t, margin=30.0):   # starts rising 30 deg early
+                    th_t = AVOID_LEAN * 0.9                      # facing the projection (etc.): stay near straight up
             step = MAX_DEG_S * dt
             st['theta'] += clamp(th_t - st['theta'], -step, step)
             pmin, pmax = int(hd.get('pan_min', 0)), int(hd.get('pan_max', 65535))

@@ -26,6 +26,7 @@ import threading
 import time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import ipaddress
+import math
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CFG_PATH = os.path.join(HERE, 'heads_config.json')
@@ -52,7 +53,17 @@ HEAD_DEFAULTS = dict(calibrated=False,
                      tilt_max_deg=35.0,    # how far from straight up the beam may lean (keeps it above heads)
                      pan_min=0, pan_max=65535,  # allowed pan window (16-bit)
                      motor_speed=0,        # fixture's own pan/tilt speed channel (the hub already moves slowly)
-                     max_level=1.0)        # brightness cap for this head (0..1)
+                     max_level=1.0,        # brightness cap for this head (0..1)
+                     avoid=[])             # directions the beam must never lean toward: [{az, width}] in pan degrees
+AVOID_LEAN = 4.0          # inside an avoid zone the beam may lean at most this far from straight up (degrees)
+
+
+def in_avoid(h, pan16, lean_deg):
+    """Is a beam at this pan, leaning lean_deg (+ = the head's lean direction), pointing into an avoid zone?"""
+    if abs(lean_deg) <= AVOID_LEAN:
+        return False
+    az = (pan16 * PAN_DEG / 65535.0 + (180.0 if lean_deg < 0 else 0.0)) % 360.0
+    return any(abs((az - float(z['az']) + 180.0) % 360.0 - 180.0) < float(z['width']) / 2.0 for z in h.get('avoid') or [])
 
 
 def load_cfg():
@@ -237,6 +248,10 @@ class Node:
                 lo, hi = tilt_window(h)
                 tilt = max(lo, min(hi, tilt))
                 pan = max(int(h['pan_min']), min(int(h['pan_max']), pan))
+                lean = (tilt - int(h['tilt_up'])) * int(h['tilt_dir']) * TILT_DEG / 65535.0
+                if in_avoid(h, pan, lean):              # toward the projection etc.: pull the beam back up
+                    lim = AVOID_LEAN * 65535.0 / TILT_DEG
+                    tilt = int(h['tilt_up'] + math.copysign(lim, tilt - int(h['tilt_up'])))
             # master: off, or the dimming range -- never the strobe range
             if master < MASTER_MIN:
                 master = 0
@@ -353,6 +368,9 @@ def make_handler(node):
                             h[k] = max(lo, min(hi, float(b[k]) if k in ('tilt_max_deg', 'max_level') else int(b[k])))
                     if 'tilt_dir' in b:
                         h['tilt_dir'] = 1 if int(b['tilt_dir']) >= 0 else -1
+                    if isinstance(b.get('avoid'), list):
+                        h['avoid'] = [dict(az=float(z['az']) % 360.0, width=max(5.0, min(180.0, float(z.get('width', 60)))))
+                                      for z in b['avoid'][:6] if isinstance(z, dict) and 'az' in z]
                     if 'calibrated' in b:
                         h['calibrated'] = bool(b['calibrated'])
                     if h['pan_min'] > h['pan_max']:
