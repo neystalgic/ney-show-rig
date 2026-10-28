@@ -1853,23 +1853,31 @@ def main():
             pass
         if hub.push:
             hub.push.close()
-        for part in (hub.relay, hub.ableton, hub.audio):
-            try:
-                if part is not None:
-                    part.close()
-                    if getattr(part, 'midi', None) is not None:
-                        part.midi.close()
-            except Exception:
-                pass
+        def _close_parts():
+            for part in (hub.relay, hub.ableton, hub.audio):
+                try:
+                    if part is not None:
+                        part.close()
+                        if getattr(part, 'midi', None) is not None:
+                            part.midi.close()
+                except Exception:
+                    pass
+        t_p = threading.Thread(target=_close_parts, daemon=True)  # MIDI / audio drivers can stall on close
+        t_p.start()
+        t_p.join(3.0)
         hub.disconnect()
         if not reload:
             say('Stopped. Everything is saved in hub_state.json.')
     if reload:                                          # same Terminal window, same settings, the new code
-        try:
-            httpd.shutdown()
-            httpd.server_close()
-        except Exception:
-            pass
+        def _close_desk():
+            try:
+                httpd.shutdown()
+                httpd.server_close()
+            except Exception:
+                pass
+        t_ = threading.Thread(target=_close_desk, daemon=True)   # never let an open desk page hold the restart up
+        t_.start()
+        t_.join(2.0)
         time.sleep(3.0)                                 # give the bridge a moment to let go
         # a completely fresh process (macOS's MIDI and audio don't always reopen cleanly inside the same
         # one); it writes to this same Terminal window, and Ctrl+C still stops it
