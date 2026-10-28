@@ -28,8 +28,11 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 import ipaddress
 import math
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-CFG_PATH = os.path.join(HERE, 'heads_config.json')
+HERE = os.path.dirname(os.path.abspath(__file__))                  # ...\NeyDMX\app
+ROOT = os.path.dirname(HERE) if os.path.basename(HERE).lower() == 'app' else HERE
+CFG_DIR = os.path.join(ROOT, 'config')
+CFG_PATH = os.path.join(CFG_DIR, 'heads_config.json')              # your calibration lives here
+OLD_CFGS = [os.path.join(HERE, 'heads_config.json'), os.path.join(ROOT, 'heads_config.json')]
 ARTNET_PORT = 6454
 HTTP_PORT = 7060
 
@@ -67,6 +70,13 @@ def in_avoid(h, pan16, lean_deg):
 
 
 def load_cfg():
+    if not os.path.exists(CFG_PATH):                                  # bring over the calibration from the old layout
+        for old in OLD_CFGS:
+            if os.path.exists(old):
+                os.makedirs(CFG_DIR, exist_ok=True)
+                with open(old) as f, open(CFG_PATH, 'w') as g:
+                    g.write(f.read())
+                break
     try:
         with open(CFG_PATH) as f:
             c = json.load(f)
@@ -83,6 +93,7 @@ def load_cfg():
 
 
 def save_cfg(c):
+    os.makedirs(CFG_DIR, exist_ok=True)
     tmp = CFG_PATH + '.tmp'
     with open(tmp, 'w') as f:
         json.dump(c, f, indent=1)
@@ -309,6 +320,7 @@ class Node:
 
 def make_handler(node):
     page = os.path.join(HERE, 'node_page.html')
+    desk = os.path.join(HERE, 'heads_desk.html')
 
     class H(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -334,8 +346,8 @@ def make_handler(node):
             if p == '/config':
                 with node.lock:
                     return self.send(200, json.dumps(node.cfg))
-            if p in ('/', '/index.html'):
-                with open(page, 'rb') as f:
+            if p in ('/', '/index.html', '/desk', '/desk.html'):
+                with open(desk if p.startswith('/desk') else page, 'rb') as f:
                     return self.send(200, f.read(), 'text/html; charset=utf-8')
             return self.send(404, '{"error":"not found"}')
 
@@ -399,7 +411,8 @@ def main():
     threading.Thread(target=node.tx_loop, daemon=True).start()
     print('Ney DMX node: %s' % out.name)
     print('  listening for the hub (Art-Net) on UDP %d, universe %d' % (ARTNET_PORT, node.cfg['universe']))
-    print('  phone page: http://%s:%d/' % (socket.gethostname(), HTTP_PORT))
+    print('  Heads Desk (computer): http://%s:%d/desk   phone page: http://%s:%d/' % (socket.gethostname(), HTTP_PORT, socket.gethostname(), HTTP_PORT))
+    print('  calibration file: %s' % CFG_PATH)
     ThreadingHTTPServer(('0.0.0.0', HTTP_PORT), make_handler(node)).serve_forever()
 
 
