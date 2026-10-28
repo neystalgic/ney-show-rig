@@ -973,8 +973,10 @@ class Hub:
                     cols = res
             # MOVIE MODE: the lamps take the colours of the picture (PC / PS5 / this Mac / a camera, through
             # TouchDesigner's movie_in) -- around the screen like an ambilight. Only while Movie mode is on.
-            if self.state['settings'].get('movie') and self.calib_test is None:
+            self.pic_on = False
+            if self.state['settings'].get('movie') and self.calib_test is None and not self.state['settings'].get('intermission'):
                 mc = self.movie_cols(dt)
+                self.pic_on = mc is not None                    # the picture is driving the lamps: palettes stand aside
                 if mc is not None:
                     mst = 0.0 if self.blackout else self.live.get('master', 1.0)
                     cols = [scale(c, mst) for c in mc]
@@ -986,21 +988,21 @@ class Hub:
             playing = drgb is not None and self.state['settings'].get('iac_map') == 'degree' and self.pads.active()
             if playing:
                 self.palette.note(drgb, now)
-            if pmode == 'sync' and not self.blackout and self.calib_test is None:
+            if pmode == 'sync' and not self.blackout and self.calib_test is None and not self.pic_on:
                 ch = int(self.state['settings'].get('sync_ch', 2))
                 rms = float(getattr(self.audio, 'ch_rms', {}).get(ch, 0.0)) if self.audio is not None else 0.0
                 cols = self.palette.render_sync(cols, now, dt, rms)
-            elif pmode == 'music' and not self.blackout and self.calib_test is None:
+            elif pmode == 'music' and not self.blackout and self.calib_test is None and not self.pic_on:
                 # the Scarlett's TOTAL sound: every channel it hears (setting music_ch, default all) combined
                 chr_ = dict(getattr(self.audio, 'ch_rms', {}) or {}) if self.audio is not None else {}
                 want = str(self.state['settings'].get('music_ch', 'all'))
                 chans = list(chr_) if want == 'all' else [int(c) for c in want.split(',') if c.strip().isdigit()]
                 tot = math.sqrt(sum(float(chr_.get(c_, 0.0)) ** 2 for c_ in chans))
                 cols = self.palette.render_music(cols, now, dt, tot)
-            elif pmode == 'lava' and not self.blackout and self.calib_test is None:
+            elif pmode == 'lava' and not self.blackout and self.calib_test is None and not self.pic_on:
                 cols = self.palette.render_lava(cols, beats, now, dt, getattr(self.audioshow, 'section', 'groove'),
                                                 kick=float(getattr(self.audioshow, 'env', {}).get('kick', 0.0)))
-            elif pmode == 'spectrum' and not self.blackout and self.calib_test is None:
+            elif pmode == 'spectrum' and not self.blackout and self.calib_test is None and not self.pic_on:
                 cols = self.palette.render(cols, beats, now, dt, getattr(self.audioshow, 'section', 'groove'))
             elif playing and not self.blackout and self.calib_test is None:
                 ld = getattr(lm, 'last_degree', None)
@@ -1236,6 +1238,8 @@ class Hub:
                         heads=self.dmx.describe() if getattr(self, 'dmx', None) else 'off',
                         vibe=self.state['settings'].get('vibe'), energy=self.state['settings'].get('energy', 0.6),
                         palette=self.state['settings'].get('palette'),
+                        intermission=bool(self.state['settings'].get('intermission')), pic_driving=bool(getattr(self, 'pic_on', False)),
+                        picture_on=bool(self.state['settings'].get('movie')),
                         level=round(float(getattr(self.palette, 'music_env', 0.0) or 0.0), 3),
                         audio=self.audioshow.snapshot(),
                         live_key=(self.livekey.status if getattr(self, 'livekey', None) is not None else 'off'),
@@ -1432,7 +1436,8 @@ class Hub:
                              music_ch=str, music_floor_db=float, music_top_db=float, music_attack=float,
                              music_release=float, music_base=float, music_boost=float, music_period=float,
                              music_spread=float, music_hold=bool, dmx_on=bool, dmx_strobe=str,
-                             music_sat=float, music_idle=float, sync_idle=float, dmx_movie=bool, dmx_movie_level=float)
+                             music_sat=float, music_idle=float, sync_idle=float, dmx_movie=bool, dmx_movie_level=float,
+                             intermission=bool, intermission_level=float)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (

@@ -12,6 +12,10 @@
 #   cozy         warm white, 60%
 #   off / rest   lights off, hub and fades stopped
 #   status       what's running right now
+#   movienight   movie lights (hub Movie vibe), ready for a film
+#   hub          the MOVIE HUB remote page (phone): services, play/pause, trackpad, typing,
+#                volume, lights.  Its buttons call /m/... (open, key, type, mouse, click, scroll,
+#                vol, lights, night, status) -- see movie_remote.py
 #
 # It answers straight away ("Switching to movie...") and does the work in the
 # background. Only one look at a time; a new one replaces the old.
@@ -129,6 +133,48 @@ def stop_all():
     stop_hub()
 
 
+def hub_vibe(name, energy=0.6):
+    for _ in range(30):                             # the hub may restart once to switch light areas
+        try:
+            return hub_api({'op': 'vibe', 'name': name, 'energy': energy})
+        except Exception:
+            time.sleep(1)
+    raise RuntimeError('the Hue Hub did not answer')
+
+
+def hub_setting(key, value):
+    for _ in range(20):
+        try:
+            return hub_api({'op': 'setting', 'key': key, 'value': value})
+        except Exception:
+            time.sleep(1)
+    raise RuntimeError('the Hue Hub did not answer')
+
+
+def movie_lights(what):
+    """Movie Hub lights: movie / intermission / resume / up / picture_on / picture_off."""
+    if what in ('movie', 'resume', 'intermission', 'picture_on', 'picture_off'):
+        stop_ambient()
+        if not hub_up():
+            start_hub('sync')
+        if what == 'movie':
+            hub_vibe('movie')
+            hub_setting('intermission', False)
+        elif what == 'resume':
+            hub_setting('intermission', False)
+        elif what == 'intermission':
+            hub_setting('intermission', True)
+        elif what == 'picture_on':
+            hub_setting('movie_src', 'camera')
+            hub_setting('movie', True)
+        elif what == 'picture_off':
+            hub_setting('movie', False)
+    elif what == 'up':
+        LOOKS['cozy'][1]()
+    else:
+        raise ValueError('unknown lights: %s' % what)
+
+
 LOOKS = {
     'movie': ('Movie mode', lambda: (stop_ambient(), start_hub('sync'))),
     'show': ('The light show', lambda: (stop_ambient(), start_hub('lava'))),
@@ -141,6 +187,7 @@ LOOKS = {
     'cozy': ('Cozy warm white', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 60.0},
                                                                  'color_temperature': {'mirek': 370},
                                                                  'dynamics': {'duration': 1500}}))),
+    'movienight': ('Movie night', lambda: movie_lights('movie')),
     'off': ('Lights off', lambda: (stop_all(), hue_lights({'on': {'on': False}, 'dynamics': {'duration': 1500}}))),
 }
 LOOKS['rest'] = ('Rest mode', LOOKS['off'][1])
@@ -170,13 +217,42 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def reply_json(self, code, obj):
+        body = json.dumps(obj).encode()
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def cookie_key(self):
+        for part in (self.headers.get('Cookie') or '').split(';'):
+            k, _, v = part.strip().partition('=')
+            if k == 'rig_key':
+                return v
+        return ''
+
     def handle_any(self):
         u = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(u.query)
-        tok = (q.get('token') or [self.headers.get('X-Token', '')])[0]
+        tok = (q.get('token') or [self.headers.get('X-Token', '')])[0] or self.cookie_key()
         if not hmac.compare_digest(tok, TOKEN):
             return self.reply(403, 'Not allowed.')
-        look = u.path.strip('/').lower()
+        path = u.path.strip('/')
+        if path == 'hub':                               # the Movie Hub remote (remembers the key in a cookie)
+            with open(os.path.join(HERE, 'movie_hub.html'), 'rb') as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Set-Cookie', 'rig_key=%s; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly' % TOKEN)
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
+        if path.startswith('m/'):
+            return self.movie(path[2:], q)
+        look = path.lower()
         if look == 'status':
             s = dict(STATE, hub=running('hue_hub.py'), rainbow_fade=running('ambient_fade.py'))
             return self.reply(200, json.dumps(s))
@@ -184,6 +260,66 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(404, 'Unknown look. Try: ' + ', '.join(sorted(LOOKS)))
         threading.Thread(target=apply, args=(look,), daemon=True).start()
         return self.reply(200, LOOKS[look][0] + ', coming up.')
+
+    def movie(self, what, q):
+        import movie_remote as mr
+        g = lambda k, d=None: (q.get(k) or [d])[0]
+        try:
+            if what == 'status':
+                return self.reply_json(200, dict(access=mr.trusted(), services={k: v[0] for k, v in mr.SERVICES.items()},
+                                                 screens=len(mr.displays()), sound=mr.volume(), look=STATE.get('look'),
+                                                 busy=STATE.get('busy'), error=STATE.get('last_error')))
+            if what == 'access':
+                return self.reply_json(200, dict(access=mr.ask_access()))
+            if what == 'vol':
+                if g('mute') is not None:
+                    return self.reply_json(200, mr.volume(mute=g('mute') == '1'))
+                return self.reply_json(200, mr.volume(delta=int(float(g('d', '0')))))
+            if what in ('lights', 'night'):
+                l = g('l', 'movie') if what == 'lights' else 'movie'
+                def work():
+                    with LOCK:
+                        STATE.update(busy=True, last_error=None)
+                        try:
+                            movie_lights(l)
+                            STATE.update(look='movie' if l != 'up' else 'cozy', since=time.strftime('%H:%M'))
+                            if what == 'night' and g('s') in mr.SERVICES:
+                                mr.open_service(g('s'))
+                        except Exception as e:
+                            STATE['last_error'] = 'lights %s: %s' % (l, e)
+                        finally:
+                            STATE['busy'] = False
+                threading.Thread(target=work, daemon=True).start()
+                return self.reply_json(200, dict(ok=True, lights=l))
+            if what == 'open':
+                sid = g('s', '')
+                if sid not in mr.SERVICES:
+                    return self.reply_json(404, dict(error='unknown service'))
+                threading.Thread(target=mr.open_service, args=(sid,), daemon=True).start()
+                return self.reply_json(200, dict(ok=True, opening=mr.SERVICES[sid][0], fullscreen=mr.trusted()))
+            if not mr.trusted():
+                return self.reply_json(200, dict(ok=False, need_access=True))
+            if what == 'key':
+                k = g('k', '')
+                if k not in mr.KEYS:
+                    return self.reply_json(404, dict(error='unknown key'))
+                flags = (mr.CMD if g('cmd') == '1' else 0) | (mr.SHIFT if g('shift') == '1' else 0)
+                mr.key(k, flags)
+            elif what == 'type':
+                n = min(int(self.headers.get('Content-Length', 0) or 0), 2000)
+                text = self.rfile.read(n).decode('utf-8', 'ignore') if n else g('t', '')
+                mr.type_text(text)
+            elif what == 'mouse':
+                mr.mouse_move(max(-400, min(400, float(g('dx', 0)))), max(-400, min(400, float(g('dy', 0)))))
+            elif what == 'click':
+                mr.click('right' if g('b') == 'right' else 'left')
+            elif what == 'scroll':
+                mr.scroll(max(-600, min(600, int(float(g('dy', 0))))))
+            else:
+                return self.reply_json(404, dict(error='unknown'))
+            return self.reply_json(200, dict(ok=True))
+        except Exception as e:
+            return self.reply_json(500, dict(error='%s: %s' % (type(e).__name__, e)))
 
     do_GET = do_POST = handle_any
 

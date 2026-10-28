@@ -286,8 +286,17 @@ class Palette:
         f = self.idle('sync', lvl, dt)
         if f > 0.0:
             v = max(v, float(st.get('sync_idle', 0.18)) * f * (0.92 + 0.08 * math.sin(2 * math.pi * now / 11.0)))
+        # PAUSE / INTERMISSION: silence (a paused film) eases the room into a warm amber glow; the desk's
+        # Intermission button does it on purpose (warm, 38%) until it's switched off again.
+        fi = getattr(self, 'inter_f', 0.0)
+        fi += ((1.0 if st.get('intermission') else 0.0) - fi) * (1.0 - math.exp(-dt / 1.5))
+        self.inter_f = fi
+        v = v * (1.0 - fi) + float(st.get('intermission_level', 0.38)) * fi
         self.sync_v = v
         c = self.sync_colour(now)
+        warm = max(f * 0.85, fi)
+        if warm > 0.001:
+            c = tuple(a_ + (b_ - a_) * warm for a_, b_ in zip(c, (1.0, 0.52, 0.18)))
         self.sync_c = c
         # SYNC BUFFER: the streamed bulbs wait sync_delay seconds so they land together with the Play
         # floor lamp, which is driven outside the stream and needs that long to catch up.
