@@ -14,6 +14,8 @@
     corners: [[0, 0], [1, 0], [1, 1], [0, 1]], // keystone corner pin (TL,TR,BR,BL), 0..1
     lines: 0.22,                       // constellation line strength (0 = off)
     maglim: 5.6,                       // faintest star shown
+    style: 'dream',                    // 'dream' = Pixar-ish puffy clouds + storybook moon; 'real' = realistic
+    balloons: true, bigMoon: true, shootingStars: true, // surreal touches (dream style)
     minClouds: 0.18, maxClouds: 0.8,   // keep some clouds even on clear days
     weather: true,                     // follow real cloud cover / wind (Open-Meteo)
     calib: false,                      // show grid + compass for aiming
@@ -98,7 +100,13 @@
 
   const SKY_FS = `precision highp float;` + VIEW + NOISE + `
     uniform vec3 u_sun; uniform vec3 u_moon; uniform float u_moonLit; uniform mat3 u_toGal; uniform float u_lst; uniform float u_lat;
-    uniform float u_gain; uniform vec3 u_tint; uniform float u_tintMix; uniform float u_calib;
+    uniform float u_gain; uniform vec3 u_tint; uniform float u_tintMix; uniform float u_calib; uniform float u_dream;
+    vec3 dreamZen(float h){
+      vec3 night=vec3(0.020,0.018,0.075), twi=vec3(0.16,0.10,0.36), sunset=vec3(0.36,0.30,0.70), day=vec3(0.30,0.62,0.98);
+      if(h<-14.0) return night; if(h<-4.0) return mix(night,twi,(h+14.0)/10.0); if(h<4.0) return mix(twi,sunset,(h+4.0)/8.0); return mix(sunset,day,clamp((h-4.0)/14.0,0.0,1.0)); }
+    vec3 dreamHor(float h){
+      vec3 night=vec3(0.10,0.05,0.20), twi=vec3(0.62,0.28,0.55), sunset=vec3(1.0,0.58,0.48), day=vec3(0.62,0.92,0.98);
+      if(h<-14.0) return night; if(h<-4.0) return mix(night,twi,(h+14.0)/10.0); if(h<4.0) return mix(twi,sunset,(h+4.0)/8.0); return mix(sunset,day,clamp((h-4.0)/14.0,0.0,1.0)); }
     vec3 lerp3(vec3 a, vec3 b, float t){ return mix(a,b,clamp(t,0.0,1.0)); }
     vec3 zenithCol(float h){
       vec3 night=vec3(0.004,0.007,0.022), astro=vec3(0.010,0.016,0.050), naut=vec3(0.035,0.055,0.17), civil=vec3(0.13,0.20,0.48), low=vec3(0.22,0.40,0.78), day=vec3(0.16,0.40,0.86);
@@ -119,6 +127,8 @@
       float toward = max(dot(normalize(v.xy+1e-5), normalize(u_sun.xy+1e-5)),0.0);
       float hz = pow(1.0-clamp(v.z,0.0,1.0), 2.2);
       vec3 col = mix(zenithCol(h), horizonCol(h), hz*(0.45+0.55*toward));
+      vec3 dcol = mix(dreamZen(h), dreamHor(h), pow(1.0-clamp(v.z,0.0,1.0),1.3)*(0.55+0.45*toward));
+      col = mix(col, dcol, u_dream);
       float cs = max(dot(v,u_sun),0.0);
       float warm = clamp(1.0-abs(h)/12.0,0.0,1.0);
       col += vec3(1.0,0.55,0.30)*pow(cs,6.0)*0.55*warm;          // sunset glow toward the sun
@@ -178,7 +188,7 @@
         outc += vec3(0.75,0.80,0.95)*glow; outa = max(outa, glow);
       }
       // clouds on a flat layer overhead
-      vec2 uv = v.xy/max(v.z,0.08)*0.9 + u_wind*u_time;
+      vec2 uv = v.xy/max(v.z,0.08)*0.9 + u_wind;
       float n = fbm(uv*1.1 + vec2(u_time*0.004, -u_time*0.003));
       n = n*0.75 + 0.25*fbm(uv*4.3 - vec2(u_time*0.01, 0.0));
       float th = 1.0-u_cover;
@@ -200,7 +210,175 @@
       gl_FragColor = vec4(outc*u_gain, outa);
     }`;
 
-  const STAR_VS = `attribute vec4 a_s; uniform float u_lst; uniform float u_lat; uniform float u_maglim; uniform float u_px; uniform float u_time;` + VIEW + `
+  // ---------- DREAM style: Pixar-ish puffy clouds, big storybook moon, drifting balloons ----------
+  const DREAM_FS = `precision highp float;` + VIEW + NOISE + `
+    uniform vec3 u_sun; uniform vec3 u_moon; uniform float u_moonLit; uniform float u_moonSize;
+    uniform float u_time; uniform vec2 u_wind; uniform float u_cover; uniform float u_gain; uniform vec3 u_tint; uniform float u_tintMix; uniform float u_pulse;
+    uniform float u_balloons; uniform vec4 u_shoot;
+    const float CELL = 0.95;
+    vec2 h2(vec2 p){ return fract(sin(vec2(dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3))))*43758.5453); }
+    vec3 lerp3(vec3 a, vec3 b, float t){ return mix(a,b,clamp(t,0.0,1.0)); }
+
+    // puffy heightfield: clusters of soft spheres. returns (height 0..1, normal.xy)
+    vec3 puffs(vec2 p){
+      vec2 cell = floor(p/CELL);
+      float best = 0.0, sumE = 0.0, add = 0.0; vec2 sumG = vec2(0.0), addG = vec2(0.0);
+      for(int j=-1;j<=1;j++) for(int i=-1;i<=1;i++){
+        vec2 c = cell + vec2(float(i),float(j));
+        vec2 r = h2(c);
+        if(r.x > u_cover) continue;
+        vec2 ctr = (c + 0.3 + 0.4*h2(c+3.7))*CELL;
+        float size = (0.62 + 0.38*h2(c+9.1).x)*CELL*0.36;
+        if(length(p-ctr) > size*2.3) continue;                          // cheap bounds check (Pi speed)
+        float ang = h2(c+1.3).y*6.2832; vec2 ax = vec2(cos(ang),sin(ang)); vec2 px = vec2(-ax.y,ax.x);
+        for(int n=0;n<13;n++){
+          float fn = float(n); vec2 rr = h2(c*7.0+fn*1.37);
+          vec2 off; float rad;
+          if(n < 7){                                                      // big body puffs along the cloud
+            float t = fn/3.0-1.0;
+            off = ax*t*size*1.05 + px*(rr.x-0.5)*size*0.8;
+            rad = size*(0.40 + 0.38*(1.0-abs(t)) + 0.18*rr.y);
+          } else {                                                        // small cauliflower bumps on top
+            float a2 = (fn-7.0)/6.0*6.2832 + rr.x*0.8; float d2 = size*(0.85+0.25*rr.y);
+            off = ax*cos(a2)*d2*1.45 + px*sin(a2)*d2*0.75;                 // around the rim -> lumpy silhouette
+            rad = size*(0.24 + 0.12*h2(c+fn*3.1).x);
+          }
+          rad *= 1.0 + 0.06*sin(u_time*0.045 + fn*1.7 + r.y*20.0);       // slow breathing
+          vec2 d = p - ctr - off; float hh = rad*rad - dot(d,d);
+          if(hh > 0.0){
+            float hg = sqrt(hh);
+            if(n < 7){ float e = exp(7.0*hg/size); sumE += e; sumG += e*(d/max(hg, 0.02*size)); best = max(best, hg/size); }
+            else { float e = exp(7.0*hg/size); sumE += e; sumG += e*(d/max(hg, 0.02*size)); best = max(best, hg/size); }
+          }
+        }
+      }
+      vec2 g = sumE > 0.0 ? sumG/sumE : vec2(0.0);
+      float body = smoothstep(0.0, 0.25, best);
+      g += addG*body; best += add*body;
+      float gl2 = length(g); if(gl2 > 6.0) g *= 6.0/gl2;
+      return vec3(best, g);
+    }
+    // a little striped hot-air balloon, upright on screen
+    vec4 balloon(vec2 q, vec3 c1, vec3 c2, vec3 L, float night){
+      // q: local coords, envelope radius 1, centre at origin, basket below
+      vec2 e = vec2(q.x, q.y*0.92 + 0.12*max(-q.y,0.0)*abs(q.y));   // slight teardrop
+      float r = length(e);
+      vec4 o = vec4(0.0);
+      if(r < 1.0){
+        float z = sqrt(1.0-r*r); vec3 n = normalize(vec3(e, z));
+        float lon = asin(clamp(e.x/max(sqrt(1.0-e.y*e.y),0.05),-1.0,1.0));
+        vec3 base = mod(floor(lon*3.2+3.0),2.0) < 1.0 ? c1 : c2;
+        float lit = 0.55 + 0.45*clamp(dot(n,normalize(L)),0.0,1.0);
+        vec3 col = base*lit + 0.12*pow(1.0-z,2.0);
+        col = mix(col, col*0.45 + vec3(0.25,0.22,0.35)*0.2, night);
+        o = vec4(col, smoothstep(1.0,0.96,r));
+      }
+      vec2 b = q - vec2(0.0,-1.42); vec2 bb = abs(b) - vec2(0.17,0.13);
+      if(max(bb.x,bb.y) < 0.0) o = vec4(mix(vec3(0.55,0.36,0.22), vec3(0.18,0.13,0.10), night), 1.0);
+      float ropeL = abs(q.x + 0.15 + (q.y+1.0)*0.25), ropeR = abs(q.x - 0.15 - (q.y+1.0)*0.25);
+      if(q.y < -0.85 && q.y > -1.3 && min(ropeL,ropeR) < 0.025) o = max(o, vec4(vec3(0.3,0.25,0.22)*(1.0-0.6*night),0.9));
+      // burner glow at night (steady, never flickers)
+      float bg = exp(-dot(q-vec2(0.0,-1.15),q-vec2(0.0,-1.15))*18.0)*night;
+      o.rgb += vec3(1.0,0.55,0.2)*bg*0.6; o.a = max(o.a, bg*0.5);
+      return o;
+    }
+    void main(){
+      vec3 v = screenToDir(gl_FragCoord.xy);
+      if(v.z < 0.02){ gl_FragColor = vec4(0.0); return; }
+      float h = degrees(asin(clamp(u_sun.z,-1.0,1.0)));
+      float night = clamp((-4.0-h)/8.0,0.0,1.0);
+      vec3 outc = vec3(0.0); float outa = 0.0;
+
+      // big storybook moon with its real phase + soft halo rings
+      vec3 m = normalize(u_moon); float R = u_moonSize;
+      float ang = acos(clamp(dot(v,m),-1.0,1.0));
+      if(m.z > -0.05 && ang < R*4.0){
+        vec3 e1 = normalize(cross(vec3(0.0,0.0,1.0), m)+vec3(1e-4,0.0,0.0)); vec3 e2 = cross(m,e1);
+        vec3 dd = v - m*dot(v,m); vec2 q = vec2(dot(dd,e1), dot(dd,e2))/sin(R); float rr = dot(q,q);
+        float halo = (exp(-pow((ang-R)/(R*0.9),2.0))*0.22 + exp(-pow((ang-R*2.2)/(R*0.25),2.0))*0.05)*step(R,ang)*(0.3+0.7*night);
+        outc = vec3(0.85,0.88,1.0); outa = halo;
+        if(rr < 1.0){
+          vec3 n = normalize(-m*sqrt(1.0-rr) + q.x*e1 + q.y*e2);
+          float lit = smoothstep(-0.03,0.08,dot(n,u_sun));
+          float crater = smoothstep(0.55,0.62,vnoise(q*4.0+11.0))*0.12 + smoothstep(0.6,0.7,vnoise(q*9.0+3.0))*0.06;
+          vec3 mc = mix(vec3(0.20,0.22,0.38), vec3(1.0,0.97,0.86)-crater, lit);   // dark side stays a soft blue, like a storybook
+          outc = mc; outa = smoothstep(1.0,0.97,rr);
+        }
+      }
+
+      // shooting star (night only, rare, soft) — u_shoot: xy start on the cloud plane, z angle, w phase 0..1
+      if(u_shoot.w > 0.0 && u_shoot.w < 1.0){
+        vec2 pp = v.xy/max(v.z,0.08);
+        vec2 dir = vec2(cos(u_shoot.z), sin(u_shoot.z));
+        vec2 head = u_shoot.xy + dir*u_shoot.w*1.4;
+        vec2 rel = pp - head; float along = dot(rel,-dir); float across = abs(dot(rel, vec2(-dir.y,dir.x)));
+        float tail = (along > 0.0 && along < 0.35) ? (1.0-along/0.35) : 0.0;
+        float s = tail*exp(-across*across*9000.0)*sin(3.14159*u_shoot.w)*0.55*night;
+        outc = mix(outc, vec3(0.9,0.92,1.0), clamp(s,0.0,1.0)); outa = max(outa, s);
+      }
+
+      // light: sun by day, moon (or a dreamy fill) at night
+      vec3 Ls = normalize(vec3(u_sun.xy+1e-4, 0.0))*0.85 + vec3(0.0,0.0,0.5);
+      vec3 Lm = normalize(vec3(m.xy+1e-4, 0.0))*0.85 + vec3(0.0,0.0,0.5);
+      vec3 L = normalize(mix(Ls, Lm, night));
+
+      // palette through the day (pastel, Pixar-ish)
+      vec3 hi, mid, sha, rim;
+      if(h > 12.0){ hi=vec3(1.0,0.99,0.96); mid=vec3(0.92,0.94,1.0); sha=vec3(0.62,0.69,0.95); rim=vec3(1.0); }
+      else if(h > 0.0){ float t=h/12.0; hi=lerp3(vec3(1.0,0.80,0.58),vec3(1.0,0.99,0.96),t); mid=lerp3(vec3(1.0,0.62,0.62),vec3(0.92,0.94,1.0),t); sha=lerp3(vec3(0.58,0.45,0.78),vec3(0.62,0.69,0.95),t); rim=lerp3(vec3(1.0,0.82,0.5),vec3(1.0),t); }
+      else if(h > -10.0){ float t=(h+10.0)/10.0; hi=lerp3(vec3(0.36,0.39,0.68),vec3(1.0,0.80,0.58),t); mid=lerp3(vec3(0.15,0.15,0.34),vec3(1.0,0.62,0.62),t); sha=lerp3(vec3(0.045,0.045,0.12),vec3(0.58,0.45,0.78),t); rim=lerp3(vec3(0.85,0.70,1.0),vec3(1.0,0.82,0.5),t); }
+      else { hi=vec3(0.27,0.29,0.52); mid=vec3(0.11,0.11,0.26); sha=vec3(0.035,0.035,0.09); rim=vec3(0.55,0.60,0.90); }
+
+      // clouds
+      vec2 uv = v.xy/max(v.z,0.08)*0.85 + u_wind;
+      uv += (vec2(vnoise(uv*6.0), vnoise(uv*6.0+5.2))-0.5)*0.025;    // soft, slightly hand-made edges
+      vec3 P = puffs(uv);
+      float ca = smoothstep(0.0, 0.07, P.x);
+      if(ca > 0.0){
+        vec3 n = normalize(vec3(P.yz, 1.0));
+        float diff = dot(n, L)*0.5 + 0.5;
+        float tone = mix(diff, 0.22 + 0.45*smoothstep(0.40,0.56,diff) + 0.33*smoothstep(0.72,0.86,diff), 0.4);
+        vec3 col = mix(sha, mid, smoothstep(0.05,0.55,tone)); col = mix(col, hi, smoothstep(0.55,0.95,tone));
+        float edge = pow(1.0-n.z, 2.5);
+        float facing = max(dot(normalize(n.xy+1e-4), normalize(L.xy+1e-4)), 0.0);
+        col += rim*edge*facing*0.55 + rim*edge*0.06;                 // silver lining
+        col *= 0.92 + 0.08*smoothstep(0.0,0.5,P.x);                  // a touch of depth in the creases
+        col *= 1.0 + 0.16*u_pulse;
+        col = mix(col, col*0.35 + u_tint*dot(col,vec3(0.33))*1.7, u_tintMix);
+        outc = mix(outc, col, ca); outa = max(outa, ca);
+      }
+
+      // drifting hot-air balloons (a few, slow, below the clouds)
+      if(u_balloons > 0.5){
+        vec2 pb = v.xy/max(v.z,0.08);
+        for(int i=0;i<3;i++){
+          float fi = float(i);
+          float period = 260.0 + fi*97.0; float ph = fract(u_time/period + fi*0.37);
+          float seed = floor(u_time/period + fi*0.37) + fi*13.0;
+          vec2 rs = h2(vec2(seed, fi));
+          float a0 = rs.x*6.2832; vec2 dir = vec2(cos(a0), sin(a0));
+          vec2 pos = -dir*1.6 + vec2(-dir.y,dir.x)*(rs.y-0.5)*1.4 + dir*3.2*ph;
+          pos.y += 0.03*sin(u_time*0.21+fi);                           // gentle bob
+          float sz = 0.055 + 0.03*h2(vec2(seed,7.0)).x;
+          // keep them upright on the screen: work in screen-aligned axes
+          vec2 sp = pb - pos;
+          float cr = cos(u_rot), sr = sin(u_rot);
+          vec2 q = vec2(-(sp.x*cr - sp.y*sr)*u_flip, sp.y*cr + sp.x*sr)/sz;   // screen-aligned so balloons stay upright
+          if(abs(q.x) < 1.3 && q.y > -1.7 && q.y < 1.2){
+            vec3 c1 = i==1 ? vec3(0.25,0.45,0.85) : vec3(0.92,0.25,0.22);
+            vec3 c2 = i==2 ? vec3(1.0,0.82,0.30) : vec3(0.97,0.95,0.92);
+            vec4 b = balloon(q, c1, c2, L, night);
+            float fade = smoothstep(0.0,0.08,ph)*smoothstep(1.0,0.92,ph);
+            b.a *= fade;
+            b.rgb = mix(b.rgb, b.rgb*0.4 + u_tint*dot(b.rgb,vec3(0.33))*1.5, u_tintMix*0.6);
+            outc = mix(outc, b.rgb, b.a); outa = max(outa, b.a);
+          }
+        }
+      }
+      gl_FragColor = vec4(outc*u_gain, outa);
+    }`;
+
+  const STAR_VS = `attribute vec4 a_s; uniform float u_lst; uniform float u_lat; uniform float u_maglim; uniform float u_px; uniform float u_time; uniform float u_dreamV; varying float v_g;` + VIEW + `
     varying vec3 v_c; varying float v_a;
     vec3 bvRgb(float bv){ float t = clamp((bv+0.4)/2.4,0.0,1.0);
       return mix(mix(vec3(0.65,0.75,1.0), vec3(1.0,0.98,0.95), smoothstep(0.0,0.35,t)), vec3(1.0,0.70,0.45), smoothstep(0.35,0.9,t)); }
@@ -212,10 +390,12 @@
       v_a = (a_s.z>u_maglim || v.z<0.03) ? 0.0 : clamp(0.38+flux*1.1,0.0,1.6)*tw*smoothstep(0.03,0.15,v.z);
       v_c = bvRgb(a_s.w);
       gl_Position = vec4(dirToClip(v), 0.0, 1.0);
-      gl_PointSize = u_px*clamp(3.0+3.2*sqrt(flux), 3.0, 11.0);
+      v_g = u_dreamV*smoothstep(0.35,1.6,flux);
+      gl_PointSize = u_px*clamp(3.0+3.2*sqrt(flux), 3.0, 11.0)*(1.0+1.6*v_g);
     }`;
-  const STAR_FS = `precision mediump float; varying vec3 v_c; varying float v_a; uniform float u_vis; uniform float u_gain;
-    void main(){ vec2 d = gl_PointCoord-0.5; float r = dot(d,d)*4.0; float a = (exp(-r*9.0) + 0.18*exp(-r*2.0))*v_a*u_vis; gl_FragColor = vec4(v_c*a*u_gain, 1.0); }`;
+  const STAR_FS = `precision mediump float; varying vec3 v_c; varying float v_a; varying float v_g; uniform float u_vis; uniform float u_gain;
+    void main(){ vec2 d = gl_PointCoord-0.5; float r = dot(d,d)*4.0; float k = 1.0+1.6*v_g; float a = (exp(-r*9.0*k*k) + 0.18*exp(-r*2.0*k*k))*v_a*u_vis;
+      a += v_g*(exp(-abs(d.x)*70.0)*exp(-abs(d.y)*7.0) + exp(-abs(d.y)*70.0)*exp(-abs(d.x)*7.0))*0.7*v_a*u_vis; gl_FragColor = vec4(v_c*a*u_gain, 1.0); }`;
   const LINE_VS = `attribute vec2 a_p; uniform float u_lst; uniform float u_lat;` + VIEW + ` varying float v_a;
     void main(){ float ra=radians(a_p.x), dec=radians(a_p.y); float H=u_lst-ra;
       vec3 v = vec3(-cos(dec)*sin(H), sin(dec)*cos(u_lat)-cos(dec)*cos(H)*sin(u_lat), sin(dec)*sin(u_lat)+cos(dec)*cos(H)*cos(u_lat));
@@ -223,7 +403,7 @@
   const LINE_FS = `precision mediump float; varying float v_a; uniform float u_a; uniform float u_gain; uniform vec3 u_col;
     void main(){ gl_FragColor = vec4(u_col*v_a*u_a*u_gain, 1.0); }`;
 
-  const P = { sky: prog(QUAD_VS, SKY_FS), cloud: prog(QUAD_VS, CLOUD_FS), star: prog(STAR_VS, STAR_FS), line: prog(LINE_VS, LINE_FS) };
+  const P = { sky: prog(QUAD_VS, SKY_FS), cloud: prog(QUAD_VS, CLOUD_FS), star: prog(STAR_VS, STAR_FS), line: prog(LINE_VS, LINE_FS), dream: prog(QUAD_VS, DREAM_FS) };
   const quad = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quad); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
   const stars = new Float32Array(window.SKY_STARS || []);
   const starBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, starBuf); gl.bufferData(gl.ARRAY_BUFFER, stars, gl.STATIC_DRAW);
@@ -280,8 +460,19 @@
   function resize() { const s = cfg.scale; canvas.width = Math.round(innerWidth * s); canvas.height = Math.round(innerHeight * s); stage.style.width = innerWidth + 'px'; stage.style.height = innerHeight + 'px'; }
   resize(); applyCorners();
 
+  // rare, soft shooting stars at night (dream style): ~1 every 45-150 s, 1.6 s long
+  let shoot = { next: performance.now() + 20000, start: 0, x: 0, y: 0, a: 0 };
+  function shootUniform(sunAlt) {
+    const t = performance.now();
+    if (!cfg.shootingStars || sunAlt > -12) return [0, 0, 0, -1];
+    if (t > shoot.next) { shoot = { start: t, x: Math.random() * 1.6 - 0.8, y: Math.random() * 1.6 - 0.8, a: Math.random() * 6.283, next: t + 45000 + Math.random() * 105000 }; }
+    const ph = (t - shoot.start) / 1600;
+    return ph >= 0 && ph < 1 ? [shoot.x, shoot.y, shoot.a, ph] : [0, 0, 0, -1];
+  }
   // ---------- frame ----------
   let lastF = 0, lastT = performance.now(), simT = 0;
+  const seed0 = (Math.floor(Date.now() / 86400000) * 7.31) % 50;  // fresh sky each day
+  const drift = { x: seed0, y: seed0 * 0.6, vx: 0, vy: 0, cover: -1 };
   function frame(tp) {
     requestAnimationFrame(frame);
     if (tp - lastF < 1000 / cfg.fps - 2) return; lastF = tp;
@@ -292,15 +483,22 @@
     const kT = 1 - Math.exp(-dt / 1.5); live.tintMix += (M.tint - live.tintMix) * kT; for (let i = 0; i < 3; i++) live.tint[i] += (target.tint[i] - live.tint[i]) * kT;
     const lvT = target.mode === 'music' ? target.level : 0; live.level += (lvT - live.level) * (1 - Math.exp(-dt / (lvT > live.level ? 0.25 : 1.2)));
 
+    const dreamOn = cfg.style !== 'real';
     const ms = now(), lat = cfg.lat * D2R, lst = lstDeg(ms, cfg.lon) * D2R;
     const [sra, sdec] = sunRaDec(ms), [mra, mdec] = moonRaDec(ms);
     const sun = enu(sra, sdec, lst, lat), moon = enu(mra, mdec, lst, lat);
     const sunAlt = Math.asin(sun[2]) * R2D;
     const elong = Math.acos(Math.cos(sdec) * Math.cos(mdec) * Math.cos(sra - mra) + Math.sin(sdec) * Math.sin(mdec));
     const moonLit = (1 - Math.cos(elong)) / 2;
-    let cover = wx.cover == null ? dailyCover(ms) : wx.cover; cover = cfg.minClouds + (cfg.maxClouds - cfg.minClouds) * cover;
-    const wDir = (wx.windDir + 180) * D2R, wSpd = 0.0025 + 0.00025 * Math.min(40, wx.windKmh);
-    const wind = [-Math.sin(wDir) * wSpd * speed ** 0.5, Math.cos(wDir) * wSpd * speed ** 0.5];
+    // weather changes ease in over minutes (no clouds popping in or out)
+    let coverT = wx.cover == null ? dailyCover(ms) : wx.cover; coverT = cfg.minClouds + (cfg.maxClouds - cfg.minClouds) * coverT;
+    if (drift.cover < 0) drift.cover = coverT; drift.cover += (coverT - drift.cover) * (1 - Math.exp(-dt / 60));
+    const cover = drift.cover;
+    // clouds travel downwind: toward (wind-from + 180 deg); offset integrated so wind shifts never jump
+    const wTo = (wx.windDir + 180) * D2R, wSpd = (0.0025 + 0.00025 * Math.min(40, wx.windKmh)) * speed ** 0.5;
+    const kW = 1 - Math.exp(-dt / 30); drift.vx += (-Math.sin(wTo) * wSpd - drift.vx) * kW; drift.vy += (-Math.cos(wTo) * wSpd - drift.vy) * kW;
+    drift.x += drift.vx * dt; drift.y += drift.vy * dt;
+    const wind = [drift.x, drift.y];
     const starVis = Math.max(0, Math.min(1, (-4 - sunAlt) / 9)) * (1 - 0.35 * Math.max(0, Math.min(1, moon[2] * 4)) * moonLit);
     const W = canvas.width, H = canvas.height, hf = cfg.fov / 2 * D2R, rot = cfg.rot * D2R, flip = cfg.flip ? -1 : 1;
     gl.viewport(0, 0, W, H);
@@ -310,19 +508,21 @@
       u.u_tint && gl.uniform3fv(u.u_tint, live.tint); u.u_tintMix && gl.uniform1f(u.u_tintMix, live.tintMix); }
     function quadDraw(p) { const loc = gl.getAttribLocation(p.p, 'a'); gl.bindBuffer(gl.ARRAY_BUFFER, quad); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); gl.disableVertexAttribArray(loc); }
     // 1 sky
-    gl.disable(gl.BLEND); common(P.sky); gl.uniformMatrix3fv(P.sky.u.u_toGal, false, TOGAL); gl.uniform1f(P.sky.u.u_calib, cfg.calib ? 1 : 0); quadDraw(P.sky);
+    gl.disable(gl.BLEND); common(P.sky); gl.uniformMatrix3fv(P.sky.u.u_toGal, false, TOGAL); gl.uniform1f(P.sky.u.u_calib, cfg.calib ? 1 : 0); gl.uniform1f(P.sky.u.u_dream, dreamOn ? 1 : 0); quadDraw(P.sky);
     // 2 stars + constellation lines (additive)
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
     if (starVis > 0.001) {
-      common(P.star); gl.uniform1f(P.star.u.u_maglim, cfg.maglim); gl.uniform1f(P.star.u.u_px, Math.max(1, H / 720)); gl.uniform1f(P.star.u.u_vis, starVis);
+      common(P.star); gl.uniform1f(P.star.u.u_maglim, cfg.maglim); gl.uniform1f(P.star.u.u_px, Math.max(1, H / 720)); gl.uniform1f(P.star.u.u_vis, starVis); gl.uniform1f(P.star.u.u_dreamV, dreamOn ? 1 : 0);
       let loc = gl.getAttribLocation(P.star.p, 'a_s'); gl.bindBuffer(gl.ARRAY_BUFFER, starBuf); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 0, 0); gl.drawArrays(gl.POINTS, 0, stars.length / 4); gl.disableVertexAttribArray(loc);
       if (cfg.lines > 0 && lv.length) { common(P.line); gl.uniform1f(P.line.u.u_a, cfg.lines * starVis); gl.uniform3f(P.line.u.u_col, 0.45, 0.55, 0.85);
         loc = gl.getAttribLocation(P.line.p, 'a_p'); gl.bindBuffer(gl.ARRAY_BUFFER, lineBuf); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0); gl.drawArrays(gl.LINES, 0, lv.length / 2); gl.disableVertexAttribArray(loc); }
     }
     // 3 moon + clouds (alpha over)
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); common(P.cloud);
-    gl.uniform1f(P.cloud.u.u_moonSize, 0.26 * D2R * 8.0); gl.uniform2fv(P.cloud.u.u_wind, wind); gl.uniform1f(P.cloud.u.u_cover, cover); gl.uniform1f(P.cloud.u.u_pulse, live.level);
-    quadDraw(P.cloud);
+    const CP = dreamOn ? P.dream : P.cloud;
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); common(CP);
+    gl.uniform1f(CP.u.u_moonSize, 0.26 * D2R * (dreamOn && cfg.bigMoon ? 10.0 : 8.0)); gl.uniform2fv(CP.u.u_wind, wind); gl.uniform1f(CP.u.u_cover, cover); gl.uniform1f(CP.u.u_pulse, live.level);
+    if (dreamOn) { gl.uniform1f(CP.u.u_balloons, cfg.balloons ? 1 : 0); gl.uniform4fv(CP.u.u_shoot, shootUniform(sunAlt)); }
+    quadDraw(CP);
     if (cfg.calib) drawCompass(rot, flip);
     window.SKY_DEBUG = { sunAlt, moonAlt: Math.asin(moon[2]) * R2D, moonLit, cover, mode: target.mode, gain: live.gain };
   }
