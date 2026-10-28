@@ -1437,7 +1437,7 @@ class Hub:
                              music_release=float, music_base=float, music_boost=float, music_period=float,
                              music_spread=float, music_hold=bool, dmx_on=bool, dmx_strobe=str,
                              music_sat=float, music_idle=float, sync_idle=float, dmx_movie=bool, dmx_movie_level=float,
-                             intermission=bool, intermission_level=float)
+                             intermission=bool, intermission_level=float, heads_pending=dict)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (

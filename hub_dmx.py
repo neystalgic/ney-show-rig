@@ -99,10 +99,34 @@ class Heads:
                         self.node_cfg = json.loads(r.read())
                     with urllib.request.urlopen('http://%s:%d/status' % (self.ip or h, NODE_PORT), timeout=2) as r:
                         self.node_status = json.loads(r.read())
+                    self._push_pending(h)
                 except Exception as e:
                     self.node_status = None
                     self.status = 'cannot reach the DMX node on %s (%s)' % (h, e.__class__.__name__)
             time.sleep(3.0)
+
+    def _push_pending(self, h):
+        """Head settings waiting for the Zephyrus (setting 'heads_pending' = {"0": {...}}): sent as soon as the
+        node answers, then cleared. Lets safety limits be set while the Zephyrus is asleep."""
+        pend = dict(self.settings().get('heads_pending') or {})
+        if not pend or not self.node_cfg:
+            return
+        done = []
+        for k, vals in pend.items():
+            i = int(k)
+            if not 0 <= i < len(self.node_cfg.get('heads', [])) or not isinstance(vals, dict):
+                done.append(k)
+                continue
+            rq = urllib.request.Request('http://%s:%d/head' % (self.ip or h, NODE_PORT),
+                                        data=json.dumps(dict(vals, head=i)).encode(), headers={'Content-Type': 'text/plain'})
+            with urllib.request.urlopen(rq, timeout=3) as r:
+                self.node_cfg['heads'][i] = json.loads(r.read())
+            done.append(k)
+        if done:
+            with self.hub.lock:
+                left = {k: v for k, v in (self.settings().get('heads_pending') or {}).items() if k not in done}
+                self.settings()['heads_pending'] = left
+                self.hub.save_soon()
 
     def heads(self):
         hs = (self.node_cfg or {}).get('heads') or DEFAULT_HEADS
