@@ -26,3 +26,5 @@ ambient.stop
 
 # --- rig control (Siri Shortcuts) secret ---
 rig_control.token
+pi/sky/sky_config.json
+pi/sky/sky_config.json.tmp

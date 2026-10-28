@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aim the Sky</title>
+<style>
+  :root{--bg:#0d0f1a;--panel:#171a2b;--ink:#e8e9f3;--muted:#9aa0b8;--accent:#ffb347;--line:#2a2f48}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,sans-serif;padding:16px;max-width:560px;margin-inline:auto}
+  h1{font-size:20px;margin:4px 0 2px} p.sub{color:var(--muted);margin:0 0 14px;font-size:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .card h2{font-size:15px;margin:0 0 8px}
+  #pad{position:relative;width:100%;aspect-ratio:16/9;background:#05060c;border:1px dashed var(--line);border-radius:8px;touch-action:none}
+  #pad svg{position:absolute;inset:0;width:100%;height:100%}
+  .h{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:var(--accent);opacity:.9;touch-action:none;display:grid;place-items:center;font-weight:700;font-size:12px;color:#000}
+  label{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:14px}
+  label span{min-width:96px;color:var(--muted)} label output{min-width:44px;text-align:right}
+  input[type=range]{flex:1}
+  .row{display:flex;flex-wrap:wrap;gap:8px}
+  button{background:#232845;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;min-height:44px}
+  button.on{background:var(--accent);color:#000;border-color:var(--accent)}
+  #msg{color:var(--muted);font-size:13px;min-height:1.2em}
+</style>
+</head>
+<body>
+<h1>Aim the Sky</h1>
+<p class="sub">Changes show up on the ceiling within a few seconds.</p>
+
+<div class="card">
+  <h2>1 · Point north</h2>
+  <button id="calib">Show aiming grid</button>
+  <label><span>Turn</span><input id="rot" type="range" min="0" max="359" step="1"><output id="rotO"></output></label>
+  <div class="row"><button data-rot="-5">◀ 5°</button><button data-rot="-1">◀ 1°</button><button data-rot="1">1° ▶</button><button data-rot="5">5° ▶</button><button id="flip">Mirror</button></div>
+  <p class="sub" style="margin-top:8px">Turn until the red N on the ceiling points toward real north (your phone's compass app helps). If E and W are swapped, tap Mirror.</p>
+</div>
+
+<div class="card">
+  <h2>2 · Square it up</h2>
+  <p class="sub">Drag the corners until the grid's orange border looks rectangular on the ceiling.</p>
+  <div id="pad"><svg viewBox="0 0 160 90" preserveAspectRatio="none"><polygon id="poly" fill="rgba(255,179,71,.12)" stroke="#ffb347" stroke-width=".6"/></svg></div>
+  <div class="row" style="margin-top:8px"><button id="resetC">Reset corners</button></div>
+</div>
+
+<div class="card">
+  <h2>3 · Look</h2>
+  <label><span>Sky width</span><input id="fov" type="range" min="60" max="160" step="1"><output id="fovO"></output></label>
+  <label><span>Constellations</span><input id="lines" type="range" min="0" max="0.6" step="0.01"><output id="linesO"></output></label>
+  <label><span>Faintest stars</span><input id="maglim" type="range" min="3" max="6" step="0.1"><output id="maglimO"></output></label>
+  <label><span>Min clouds</span><input id="minClouds" type="range" min="0" max="0.8" step="0.01"><output id="minCloudsO"></output></label>
+  <button id="weather">Real Burbank weather</button>
+</div>
+
+<div class="card">
+  <h2>Preview a mode</h2>
+  <div class="row" id="modes"><button data-m="sky">Sky</button><button data-m="music">Music</button><button data-m="movie">Movie</button><button data-m="rest">Rest</button><button data-m="off">Off</button></div>
+</div>
+<div id="msg"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let cfg = {fov:110, rot:0, flip:false, lines:0.22, maglim:5.6, minClouds:0.18, weather:true, calib:false, corners:[[0,0],[1,0],[1,1],[0,1]]};
+let timer = null;
+function save(){ clearTimeout(timer); timer = setTimeout(async () => {
+  try { const r = await fetch('config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(cfg)});
+    $('msg').textContent = r.ok ? 'Saved ✓' : 'Could not save'; } catch(e){ $('msg').textContent = 'Sky server not reachable'; } }, 200); }
+function render(){
+  for (const k of ['rot','fov','lines','maglim','minClouds']) { $(k).value = cfg[k]; $(k+'O').textContent = (+cfg[k]).toFixed(k==='rot'||k==='fov'?0:2).replace(/\.00$/,''); }
+  $('flip').classList.toggle('on', !!cfg.flip); $('calib').classList.toggle('on', !!cfg.calib); $('weather').classList.toggle('on', !!cfg.weather);
+  $('calib').textContent = cfg.calib ? 'Hide aiming grid' : 'Show aiming grid';
+  const pad = $('pad'), W = pad.clientWidth, H = pad.clientHeight;
+  cfg.corners.forEach((p,i) => { let h = $('h'+i); if(!h){ h = document.createElement('div'); h.className='h'; h.id='h'+i; h.textContent=['TL','TR','BR','BL'][i]; pad.appendChild(h); drag(h,i); }
+    h.style.left = (p[0]*W)+'px'; h.style.top = (p[1]*H)+'px'; });
+  $('poly').setAttribute('points', cfg.corners.map(p => (p[0]*160)+','+(p[1]*90)).join(' '));
+}
+function drag(h,i){
+  h.addEventListener('pointerdown', e => { h.setPointerCapture(e.pointerId); e.preventDefault(); });
+  h.addEventListener('pointermove', e => { if(!h.hasPointerCapture(e.pointerId)) return; const r = $('pad').getBoundingClientRect();
+    cfg.corners[i] = [Math.max(-0.2,Math.min(1.2,(e.clientX-r.left)/r.width)), Math.max(-0.2,Math.min(1.2,(e.clientY-r.top)/r.height))]; render(); save(); });
+}
+for (const k of ['rot','fov','lines','maglim','minClouds']) $(k).addEventListener('input', e => { cfg[k] = +e.target.value; render(); save(); });
+document.querySelectorAll('[data-rot]').forEach(b => b.onclick = () => { cfg.rot = ((cfg.rot + +b.dataset.rot) % 360 + 360) % 360; render(); save(); });
+$('flip').onclick = () => { cfg.flip = !cfg.flip; render(); save(); };
+$('calib').onclick = () => { cfg.calib = !cfg.calib; render(); save(); };
+$('weather').onclick = () => { cfg.weather = !cfg.weather; render(); save(); };
+$('resetC').onclick = () => { cfg.corners = [[0,0],[1,0],[1,1],[0,1]]; render(); save(); };
+document.querySelectorAll('[data-m]').forEach(b => b.onclick = async () => {
+  document.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x===b));
+  try { await fetch('state', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mode:b.dataset.m, tint:[0.55,0.25,1.0], level:0.4})}); } catch(e){} });
+addEventListener('resize', render);
+fetch('config').then(r => r.json()).then(c => { cfg = Object.assign(cfg, c); render(); }).catch(() => { render(); $('msg').textContent = 'Sky server not reachable'; });
+</script>
+</body>
+</html>

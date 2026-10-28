@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ney Sky</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none}
+  #stage{position:absolute;left:0;top:0;transform-origin:0 0}
+  #sky{display:block;width:100%;height:100%}
+  #compass{display:none;position:absolute;inset:0;pointer-events:none}
+  #compass b{position:absolute;transform:translate(-50%,-50%);font:700 6vmin system-ui,sans-serif;color:#ffb347}
+  #compass #cN{color:#ff5a5a}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="sky"></canvas>
+  <div id="compass"><b id="cN">N</b><b id="cE">E</b><b id="cS">S</b><b id="cW">W</b></div>
+</div>
+<script src="sky_data.js"></script>
+<script src="sky.js"></script>
+</body>
+</html>
