@@ -8,7 +8,7 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-py -m pip install --upgrade ftd2xx pyserial
+py -3.12 -m pip install --upgrade ftd2xx pyserial
 echo.
 echo Done. Now double-click "Start DMX Node.bat".
 echo The first time, Windows asks about the firewall: allow it on PRIVATE networks.
