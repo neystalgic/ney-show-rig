@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07080d">
+<title>Ney Light Desk</title>
+<style>
+:root{
+  --bg:#07080d; --bg2:#0b0d15; --panel:#10131d; --panel2:#151927; --line:#1f2436; --line2:#2a3048;
+  --ink:#eef0f8; --muted:#8a90a8; --dim:#5c6280;
+  --a1:#7b8cff; --a2:#c38bff; --a3:#ff9ad5;          /* the active vibe's colours */
+  --ok:#4fd18b; --warn:#ffb347; --bad:#ff5d6c;
+  --r:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+body{background:radial-gradient(1200px 600px at 70% -10%,color-mix(in srgb,var(--a2) 14%,transparent),transparent 60%),radial-gradient(900px 500px at -10% 110%,color-mix(in srgb,var(--a1) 10%,transparent),transparent 60%),var(--bg)}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:12px 20px;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.14em;font-size:13px;white-space:nowrap}
+.beat{width:10px;height:10px;border-radius:50%;background:var(--dim);transition:background .08s,box-shadow .08s}
+.beat.on{background:var(--a2);box-shadow:0 0 14px var(--a2)}
+.chips{display:flex;gap:8px;flex:1;min-width:0;overflow:hidden}
+.chip{display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font-size:12.5px;white-space:nowrap}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--dim);flex:none}
+.chip.ok i{background:var(--ok);box-shadow:0 0 8px var(--ok)} .chip.warn i{background:var(--warn)} .chip.bad i{background:var(--bad)}
+.chip b{color:var(--ink);font-weight:600}
+.meter{width:54px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.meter span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a1),var(--a3));transition:width .06s linear}
+.master{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px}
+.master input{width:130px}
+.blk{padding:9px 16px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);font-weight:700;letter-spacing:.06em;font-size:12.5px;cursor:pointer}
+.blk.on{background:var(--bad);border-color:var(--bad);color:#1a0004;box-shadow:0 0 24px color-mix(in srgb,var(--bad) 50%,transparent)}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:200px 1fr;min-height:calc(100% - 60px)}
+nav{padding:18px 12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+nav button{display:flex;align-items:center;gap:12px;padding:11px 14px;border:0;border-radius:12px;background:transparent;color:var(--muted);cursor:pointer;text-align:left;font-weight:550}
+nav button svg{width:19px;height:19px;flex:none}
+nav button:hover{background:var(--panel);color:var(--ink)}
+nav button.on{background:var(--panel2);color:var(--ink);box-shadow:inset 3px 0 0 var(--a2)}
+nav .soon{margin-top:auto;padding:12px 14px;color:var(--dim);font-size:12px;line-height:1.5}
+main{padding:22px 26px 40px;min-width:0}
+.page{display:none} .page.on{display:block}
+h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:650;margin:0 0 12px}
+.card{background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 80%,var(--bg)));border:1px solid var(--line);border-radius:var(--r);padding:18px}
+
+/* ---------- perform ---------- */
+.perform{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.vibes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.vibe{position:relative;border:1px solid var(--line);border-radius:18px;padding:14px 14px 13px;background:var(--panel);cursor:pointer;text-align:left;overflow:hidden;min-height:132px;display:flex;flex-direction:column;justify-content:flex-end;transition:transform .15s,border-color .15s,box-shadow .2s}
+.vibe:hover{transform:translateY(-2px);border-color:var(--line2)}
+.vibe .sw{position:absolute;inset:0;opacity:.55;transition:opacity .2s}
+.vibe:hover .sw{opacity:.75}
+.vibe .sw::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 15%,rgba(7,8,13,.88) 92%)}
+.vibe b{position:relative;font-size:16px;letter-spacing:.01em}
+.vibe small{position:relative;color:#c9cde0;font-size:12px;line-height:1.35;margin-top:3px}
+.vibe.on{border-color:transparent;box-shadow:0 0 0 2px var(--ink),0 12px 40px -10px var(--a2)}
+.vibe.on .sw{opacity:.95}
+.vibe .live{position:absolute;top:10px;right:10px;font-size:10.5px;letter-spacing:.12em;font-weight:700;padding:3px 7px;border-radius:6px;background:rgba(0,0,0,.45);display:none}
+.vibe.on .live{display:block}
+.room{position:relative}
+#room{width:100%;aspect-ratio:16/8;display:block;border-radius:14px;background:radial-gradient(ellipse at 50% 60%,#0d1020,#06070c)}
+.room .legend{position:absolute;left:16px;bottom:12px;color:var(--dim);font-size:12px;display:flex;gap:14px}
+.ctl{display:grid;gap:16px}
+.slider{display:grid;gap:7px}
+.slider .l{display:flex;justify-content:space-between;color:var(--muted);font-size:12.5px}
+.slider .l b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:var(--trk,linear-gradient(90deg,var(--a1),var(--a2),var(--a3)))}
+input[type=range]::-moz-range-track{height:8px;border-radius:5px;background:var(--trk,linear-gradient(90deg,var(--a1),var(--a2),var(--a3)))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-7px;border-radius:50%;background:#fff;border:0;box-shadow:0 2px 10px rgba(0,0,0,.6)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:0}
+input.plain{--trk:linear-gradient(90deg,var(--line2),var(--line2))}
+input.hue{--trk:linear-gradient(90deg,#ff4d4d,#ffb84d,#ffff4d,#4dff7a,#4dd2ff,#6a4dff,#d24dff,#ff4d4d)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;color:var(--muted);padding:8px 6px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12.5px}
+.seg button.on{background:var(--panel2);color:var(--ink);box-shadow:0 1px 0 var(--line2) inset}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:12.5px}
+.sw2{width:44px;height:26px;border-radius:13px;background:var(--line2);position:relative;border:0;cursor:pointer;transition:background .2s;flex:none}
+.sw2::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}
+.sw2.on{background:var(--ok)} .sw2.on::after{left:21px}
+.note{color:var(--dim);font-size:12px;line-height:1.5}
+.btn{padding:9px 14px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);cursor:pointer;font-weight:600;font-size:13px}
+.btn:hover{border-color:var(--a1)}
+.btn.primary{background:var(--ink);color:#07080d;border-color:var(--ink)}
+.btn.on{background:var(--ok);color:#03140a;border-color:var(--ok)}
+.btn.danger{background:var(--bad);color:#1a0004;border-color:var(--bad)}
+.busy{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);padding:10px 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s;z-index:50}
+.busy.on{opacity:1}
+
+/* ---------- heads ---------- */
+.heads{display:grid;grid-template-columns:240px minmax(0,1fr) 320px;gap:18px;align-items:start}
+.hl{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer;background:var(--panel2)}
+.hl.sel{border-color:var(--a1);box-shadow:inset 0 0 0 1px var(--a1)}
+.hl .d{width:22px;height:22px;border-radius:50%;border:1px solid #333;flex:none}
+.hl .m{flex:1;min-width:0} .hl .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.tag{font-size:11px;padding:1px 7px;border-radius:5px;font-weight:600}
+.tag.ok{background:#12301f;color:var(--ok)} .tag.no{background:#33270f;color:var(--warn)}
+#pad{width:100%;display:block;border-radius:12px;background:#05060b;border:1px solid var(--line);cursor:crosshair;touch-action:none}
+.ro{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);margin-top:10px;font-size:12.5px} .ro b{color:var(--ink);font-variant-numeric:tabular-nums}
+kbd{background:var(--panel2);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:0 5px;font:11.5px ui-monospace,monospace;color:var(--ink)}
+.num{width:74px;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:6px 8px}
+.fld{display:grid;grid-template-columns:96px 1fr 74px;gap:10px;align-items:center;margin:8px 0;color:var(--muted);font-size:12.5px}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+
+/* ---------- setup ---------- */
+.setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;font-size:13px} .kv span{color:var(--muted)}
+.txt{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:8px 10px}
+code{font:12px ui-monospace,monospace;color:var(--a3);word-break:break-all}
+
+/* ---------- phone ---------- */
+@media (max-width:1180px){ .vibes{grid-template-columns:repeat(3,minmax(0,1fr))} .perform{grid-template-columns:1fr} .heads{grid-template-columns:1fr} }
+@media (max-width:760px){
+  .top{padding:10px 14px;gap:10px} .chips .chip:not(.keep){display:none} .master input{width:90px} .master span{display:none} .brand .t{display:none}
+  .shell{grid-template-columns:1fr} nav{position:fixed;bottom:0;left:0;right:0;z-index:30;flex-direction:row;justify-content:space-around;border-right:0;border-top:1px solid var(--line);background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(14px);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  nav button{flex-direction:column;gap:3px;font-size:11px;padding:7px 10px} nav button.on{box-shadow:none;background:transparent;color:var(--ink)} nav .soon{display:none}
+  main{padding:16px 14px 100px} .vibes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px} .vibe{min-height:104px}
+  #room{aspect-ratio:16/10}
+}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><span class="beat" id="beat"></span><span class="t">NEY · LIGHT DESK</span></div>
+  <div class="chips">
+    <div class="chip keep" id="cLights"><i></i><span>Lights</span></div>
+    <div class="chip" id="cHeads"><i></i><span>Heads</span></div>
+    <div class="chip" id="cSound"><i></i><span>Sound</span><div class="meter"><span id="lvl"></span></div></div>
+    <div class="chip" id="cTempo"><span><b id="bpm">–</b> BPM</span></div>
+  </div>
+  <div class="master"><span>Master</span><input type="range" id="master" min="0" max="1" step="0.01"></div>
+  <button class="blk" id="blackout" title="B">BLACKOUT</button>
+</div>
+
+<div class="shell">
+  <nav>
+    <button data-p="perform" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>Perform</button>
+    <button data-p="heads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 20h10M9 20l1-5h4l1 5"/><rect x="7" y="5" width="10" height="9" rx="3"/><path d="M12 5V2.5"/></svg>Heads</button>
+    <button data-p="setup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Setup</button>
+    <div class="soon">Coming next:<br>· Live board (scenes &amp; effects)<br>· Song builder (cue timelines)</div>
+  </nav>
+
+  <main>
+    <!-- PERFORM -->
+    <section class="page on" id="p-perform">
+      <div class="perform">
+        <div>
+          <h2>Vibe</h2>
+          <div class="vibes" id="vibes"></div>
+          <div class="card room">
+            <h2>The room, live</h2>
+            <canvas id="room" width="1200" height="600"></canvas>
+            <div class="legend"><span>● Hue lamps</span><span>▲ Moving heads</span></div>
+          </div>
+        </div>
+        <div class="ctl">
+          <div class="card ctl">
+            <h2>Shape it</h2>
+            <div class="slider"><div class="l">Energy <b id="vEnergy">–</b></div><input type="range" id="energy" min="0" max="1" step="0.01"></div>
+            <div class="slider"><div class="l">Colour <b id="vTint">–</b></div><input type="range" id="tint" class="hue" min="-180" max="180" step="1"></div>
+            <div class="tog">Hold this colour<button class="sw2" id="hold"></button></div>
+            <div class="slider"><div class="l">Speed <b id="vSpeed">–</b></div><input type="range" id="speed" class="plain" min="0.25" max="4" step="0.05"></div>
+          </div>
+          <div class="card ctl">
+            <h2>Moving heads</h2>
+            <div class="tog">Heads on<button class="sw2" id="headsOn"></button></div>
+            <div class="slider"><div class="l">Brightness <b id="vHl">–</b></div><input type="range" id="hlevel" min="0" max="1" step="0.01"></div>
+            <div class="slider"><div class="l">Movement <b id="vHm">–</b></div><input type="range" id="hmove" min="0" max="1" step="0.01"></div>
+            <div class="slider"><div class="l">Strobe hits</div>
+              <div class="seg" id="strobe"><button data-v="off">Off</button><button data-v="drop">When drops land</button><button data-v="phrase">+ every 4 bars</button></div></div>
+            <p class="note">Hits are in colour, max 3 a second, and only from heads pointing up at the ceiling. Heads go dark in Movie and Rest.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HEADS -->
+    <section class="page" id="p-heads">
+      <div class="heads">
+        <div class="card">
+          <h2>Heads</h2>
+          <div id="hlist"></div>
+          <p class="note" id="nodeInfo"></p>
+        </div>
+        <div class="card">
+          <h2 id="aimTitle">Aim</h2>
+          <canvas id="pad" width="900" height="440"></canvas>
+          <div class="ro"><span>Pan <b id="rPan">–</b></span><span>Tilt <b id="rTilt">–</b></span><span>Lean <b id="rLean">–</b></span><span>Output <b id="rOut">–</b></span></div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" id="steer">Steer (Space)</button>
+            <button class="btn" id="free">Free aim</button>
+            <button class="btn danger" id="allDark">All dark (Esc)</button>
+          </div>
+          <p class="note" style="margin-top:10px">Drag the pad or use <kbd>←→</kbd> pan <kbd>↑↓</kbd> tilt, <kbd>Shift</kbd> big, <kbd>Alt</kbd> tiny, <kbd>U</kbd> straight up. Steering lights the head dim blue. Keep faces out of the beam.</p>
+        </div>
+        <div class="card">
+          <h2 id="calTitle">Calibrate</h2>
+          <div class="fld">Address<input type="range" class="plain" id="addr" min="1" max="499" step="1"><input class="num" id="addrN" type="number" min="1" max="499"></div>
+          <div class="row"><button class="btn" id="setUp">Straight up = here</button><button class="btn" id="flipDir">Flip lean</button></div>
+          <div class="fld">Max lean<input type="range" class="plain" id="lean" min="5" max="60" step="1"><input class="num" id="leanN" type="number" min="5" max="60"></div>
+          <hr>
+          <div class="row"><button class="btn" id="panA">Pan limit A</button><button class="btn" id="panB">Pan limit B</button><button class="btn" id="panAll">Any pan</button></div>
+          <p class="note" id="panInfo"></p>
+          <hr>
+          <h2>Avoid directions</h2>
+          <div class="fld">Zone width<input type="range" class="plain" id="avw" min="10" max="120" step="5" value="60"><input class="num" id="avwN" type="number" min="10" max="120" step="5" value="60"></div>
+          <div class="row"><button class="btn" id="avAdd">Avoid where it points</button><button class="btn" id="avClear">Clear</button></div>
+          <div id="avList" class="note"></div>
+          <hr>
+          <div class="fld">Brightness cap<input type="range" class="plain" id="cap" min="0.1" max="1" step="0.05"><input class="num" id="capN" type="number" min="10" max="100" step="5"></div>
+          <button class="btn" id="calibrated" style="width:100%;margin-top:8px">Mark calibrated</button>
+          <p class="note" id="calInfo"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETUP -->
+    <section class="page" id="p-setup">
+      <div class="setup">
+        <div class="card">
+          <h2>Connections</h2>
+          <div class="kv">
+            <span>Hue lights</span><div id="sBridge">–</div>
+            <span>Moving heads</span><div id="sHeads">–</div>
+            <span>Sound in</span><div id="sAudio">–</div>
+            <span>Heads computer</span><div><input class="txt" id="dmxHost" placeholder="zephyrus"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Listening</h2>
+          <div class="slider"><div class="l">Input sensitivity <b id="vSens">–</b></div><input type="range" class="plain" id="sens" min="0.4" max="2.5" step="0.05"></div>
+          <div class="slider"><div class="l">Music mode: quietest sound that lights up <b id="vFloor">–</b></div><input type="range" class="plain" id="floor" min="-70" max="-25" step="1"></div>
+          <div class="slider"><div class="l">Music mode: full brightness at <b id="vTop">–</b></div><input type="range" class="plain" id="topdb" min="-30" max="0" step="1"></div>
+          <p class="note">If the lamps barely move, lower "full brightness at". If they flicker in silence, raise "quietest sound".</p>
+        </div>
+        <div class="card">
+          <h2>Phone</h2>
+          <p class="note" id="phoneNote">Open this link on your phone (Tailscale on) to use the desk there. It remembers the key after the first visit.</p>
+          <div class="row"><code id="phoneLink">–</code></div>
+          <div class="row" style="margin-top:10px"><button class="btn" id="copyLink">Copy link</button></div>
+        </div>
+        <div class="card">
+          <h2>Everything else</h2>
+          <p class="note">Looks, pads, songs, Ableton, Push 2, colour match and timing are still on the classic desk while they move over here.</p>
+          <a class="btn" href="/classic" style="display:inline-block;text-decoration:none">Open the classic desk</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="busy" id="busy"></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+let S = null, L = null, H = null, HC = null;         // hub state, live snapshot, heads status, heads config
+const api = async (cmd) => { try { const r = await fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cmd) }); const j = await r.json(); return j.result; } catch (e) { toast('Hub not reachable'); } };
+const setting = (key, value) => api({ op: 'setting', key, value });
+const live = (key, value) => api({ op: 'live', key, value });
+let toastT = null;
+function toast(t, ms = 2200) { const b = $('busy'); b.textContent = t; b.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => b.classList.remove('on'), ms); }
+function debounce(fn, ms = 120) { let t = null; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+const pct = v => Math.round(v * 100) + '%';
+
+// ---------- navigation ----------
+document.querySelectorAll('nav button[data-p]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button[data-p]').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + b.dataset.p));
+  if (b.dataset.p === 'heads') { loadHeads(); }
+  try { localStorage.setItem('deskPage', b.dataset.p); } catch (e) {}
+});
+try { const p = localStorage.getItem('deskPage'); if (p) document.querySelector(`nav button[data-p="${p}"]`)?.click(); } catch (e) {}
+
+// ---------- vibes ----------
+function applyAccent(v) {
+  const c = (v && v.colours) || ['#7b8cff', '#c38bff', '#ff9ad5'];
+  const r = document.documentElement.style;
+  r.setProperty('--a1', c[0]); r.setProperty('--a2', c[1 % c.length]); r.setProperty('--a3', c[2 % c.length]);
+}
+function renderVibes() {
+  const el = $('vibes'); el.innerHTML = '';
+  const cur = S.settings.vibe;
+  (S.vibes || []).forEach(v => {
+    const b = document.createElement('button'); b.className = 'vibe' + (v.id === cur ? ' on' : '');
+    const sw = document.createElement('div'); sw.className = 'sw';
+    sw.style.background = v.colours.length > 1 ? `linear-gradient(135deg,${v.colours.join(',')})` : v.colours[0];
+    const live = document.createElement('div'); live.className = 'live'; live.textContent = 'LIVE';
+    const t = document.createElement('b'); t.textContent = v.label;
+    const s = document.createElement('small'); s.textContent = v.blurb;
+    b.append(sw, live, t, s);
+    b.onclick = async () => {
+      toast(v.label + ' — coming up' + (needsSwitch(v.id) ? ' (the lights re-connect for a few seconds)' : ''), 3500);
+      const r = await api({ op: 'vibe', name: v.id, energy: +$('energy').value });
+      if (r) { S.settings.vibe = v.id; renderVibes(); applyAccent(v); }
+      setTimeout(loadState, needsSwitch(v.id) ? 6000 : 400);
+    };
+    el.appendChild(b);
+    if (v.id === cur) applyAccent(v);
+  });
+}
+function needsSwitch(id) {   // music-area vibes vs show-area vibes: the hub reconnects the lights in between
+  const musicArea = p => p === 'music' || p === 'sync';
+  const pal = { dreamy: 'music', hype: 'music', movie: 'sync', chill: 'lava', rainbow: 'spectrum', rest: S.settings.palette };
+  return musicArea(pal[id]) !== musicArea(S.settings.palette);
+}
+
+// ---------- controls ----------
+function syncControls() {
+  const st = S.settings, lv = S.live;
+  $('energy').value = st.energy ?? 0.6; $('vEnergy').textContent = pct(st.energy ?? 0.6);
+  $('tint').value = lv.tint ?? 0; $('vTint').textContent = (Math.round(lv.tint ?? 0) > 0 ? '+' : '') + Math.round(lv.tint ?? 0) + '°';
+  $('speed').value = lv.speed ?? 1; $('vSpeed').textContent = (+(lv.speed ?? 1)).toFixed(2) + '×';
+  $('hold').classList.toggle('on', !!st.music_hold);
+  $('master').value = lv.master ?? 1;
+  $('headsOn').classList.toggle('on', st.dmx_on !== false);
+  $('hlevel').value = st.dmx_level ?? 0.8; $('vHl').textContent = pct(st.dmx_level ?? 0.8);
+  $('hmove').value = st.dmx_move ?? 1; $('vHm').textContent = pct(st.dmx_move ?? 1);
+  const sm = st.dmx_strobe === true ? 'phrase' : st.dmx_strobe === false ? 'off' : (st.dmx_strobe || 'phrase');
+  document.querySelectorAll('#strobe button').forEach(b => b.classList.toggle('on', b.dataset.v === sm));
+  $('sens').value = st.audio_sens ?? 1; $('vSens').textContent = (+(st.audio_sens ?? 1)).toFixed(2) + '×';
+  $('floor').value = st.music_floor_db ?? -50; $('vFloor').textContent = (st.music_floor_db ?? -50) + ' dB';
+  $('topdb').value = st.music_top_db ?? -10; $('vTop').textContent = (st.music_top_db ?? -10) + ' dB';
+  if (document.activeElement !== $('dmxHost')) $('dmxHost').value = st.dmx_host || '';
+}
+const sendEnergy = debounce(v => api({ op: 'vibe', name: S.settings.vibe || 'dreamy', energy: v }), 150);
+$('energy').oninput = e => { $('vEnergy').textContent = pct(+e.target.value); S.settings.energy = +e.target.value; if (S.settings.vibe && S.settings.vibe !== 'rest') sendEnergy(+e.target.value); };
+const sendTint = debounce(v => live('tint', v), 60);
+$('tint').oninput = e => { const v = +e.target.value; $('vTint').textContent = (v > 0 ? '+' : '') + v + '°'; sendTint(v); };
+$('tint').ondblclick = () => { $('tint').value = 0; $('vTint').textContent = '0°'; live('tint', 0); };
+const sendSpeed = debounce(v => live('speed', v), 80);
+$('speed').oninput = e => { $('vSpeed').textContent = (+e.target.value).toFixed(2) + '×'; sendSpeed(+e.target.value); };
+$('hold').onclick = () => { const on = !$('hold').classList.contains('on'); $('hold').classList.toggle('on', on); S.settings.music_hold = on; setting('music_hold', on); };
+const sendMaster = debounce(v => live('master', v), 40);
+$('master').oninput = e => sendMaster(+e.target.value);
+$('blackout').onclick = async () => { const r = await api({ op: 'blackout' }); $('blackout').classList.toggle('on', !!r); };
+$('headsOn').onclick = () => { const on = !$('headsOn').classList.contains('on'); $('headsOn').classList.toggle('on', on); setting('dmx_on', on); };
+const sendHL = debounce(v => setting('dmx_level', v), 100);
+$('hlevel').oninput = e => { $('vHl').textContent = pct(+e.target.value); sendHL(+e.target.value); };
+const sendHM = debounce(v => setting('dmx_move', v), 100);
+$('hmove').oninput = e => { $('vHm').textContent = pct(+e.target.value); sendHM(+e.target.value); };
+document.querySelectorAll('#strobe button').forEach(b => b.onclick = () => { document.querySelectorAll('#strobe button').forEach(x => x.classList.toggle('on', x === b)); setting('dmx_strobe', b.dataset.v); });
+const sendSens = debounce(v => setting('audio_sens', v), 120);
+$('sens').oninput = e => { $('vSens').textContent = (+e.target.value).toFixed(2) + '×'; sendSens(+e.target.value); };
+const sendFloor = debounce(v => setting('music_floor_db', v), 120);
+$('floor').oninput = e => { $('vFloor').textContent = e.target.value + ' dB'; sendFloor(+e.target.value); };
+const sendTop = debounce(v => setting('music_top_db', v), 120);
+$('topdb').oninput = e => { $('vTop').textContent = e.target.value + ' dB'; sendTop(+e.target.value); };
+$('dmxHost').onchange = e => { setting('dmx_host', e.target.value.trim()); toast('Heads computer saved'); };
+addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; if ((e.key === 'b' || e.key === 'B') && !onHeads()) $('blackout').click(); });
+
+// ---------- live room view ----------
+const rc = $('room'), rx = rc.getContext('2d');
+let beatFlash = 0, lastBeat = -1;
+function lampPositions() {
+  // the lamps' places from the Light Desk layout (u, v in 0..1), spread a little so stacked zones don't overlap
+  return (S.segs || []).map(s => ({ ch: s.ch, u: s.u, v: s.v, name: (S.rig[s.lamp] || {}).name || s.key, of: s.of, index: s.index }));
+}
+function headSpots(n) { // until heads have places on the plan: along the lower edge
+  return Array.from({ length: n }, (_, i) => ({ u: 0.18 + i * 0.64 / Math.max(1, n - 1), v: 0.86 }));
+}
+function drawRoom(t) {
+  const W = rc.width, Hh = rc.height; rx.clearRect(0, 0, W, Hh);
+  rx.strokeStyle = 'rgba(120,130,170,.10)'; rx.lineWidth = 1;
+  for (let x = 0; x <= W; x += 60) { rx.beginPath(); rx.moveTo(x, 0); rx.lineTo(x, Hh); rx.stroke(); }
+  for (let y = 0; y <= Hh; y += 60) { rx.beginPath(); rx.moveTo(0, y); rx.lineTo(W, y); rx.stroke(); }
+  if (!S) return;
+  const pad = 70, X = u => pad + u * (W - 2 * pad), Y = v => pad + v * (Hh - 2 * pad);
+  // heads: beams first (under the lamps)
+  const hs = (H && H.heads) || [];
+  headSpots(hs.length).forEach((p, i) => {
+    const h = hs[i]; const lit = h && h.master > 0 ? (h.master - 8) / 126 : 0;
+    const c = h ? h.rgbw : [0, 0, 0, 0];
+    const col = `rgb(${[0, 1, 2].map(k => Math.min(255, c[k] + c[3] * 0.6)).join(',')})`;
+    const ang = h ? ((h.pan / 65535) * 540) * Math.PI / 180 : 0;
+    if (lit > 0.01) {
+      const len = 160 + 120 * lit, x0 = X(p.u), y0 = Y(p.v);
+      const g = rx.createRadialGradient(x0, y0, 4, x0, y0, len);
+      g.addColorStop(0, col.replace('rgb', 'rgba').replace(')', `,${0.55 * lit + 0.15})`)); g.addColorStop(1, 'rgba(0,0,0,0)');
+      rx.fillStyle = g; rx.beginPath(); rx.moveTo(x0, y0);
+      rx.arc(x0, y0, len, -Math.PI / 2 + Math.sin(ang) * 0.6 - 0.22, -Math.PI / 2 + Math.sin(ang) * 0.6 + 0.22); rx.closePath(); rx.fill();
+    }
+  });
+  // lamps
+  const cols = (L && L.cols) || {};
+  lampPositions().forEach(p => {
+    const hex = cols[String(p.ch)] || '#000000';
+    const x = X(p.u) + (p.of > 1 ? (p.index - (p.of - 1) / 2) * 16 : 0), y = Y(p.v);
+    const rgb = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+    const bri = Math.max(...rgb) / 255;
+    const g = rx.createRadialGradient(x, y, 2, x, y, 30 + 70 * bri);
+    g.addColorStop(0, `rgba(${rgb.join(',')},${0.9 * bri + 0.08})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    rx.fillStyle = g; rx.beginPath(); rx.arc(x, y, 30 + 70 * bri, 0, 6.283); rx.fill();
+    rx.fillStyle = bri > 0.02 ? hex : '#20243a'; rx.beginPath(); rx.arc(x, y, 9, 0, 6.283); rx.fill();
+    rx.strokeStyle = 'rgba(255,255,255,.25)'; rx.lineWidth = 1; rx.stroke();
+    if (p.index === 0) { rx.fillStyle = '#6f7696'; rx.font = '600 15px system-ui'; rx.textAlign = 'center'; rx.fillText(p.name, x, y + 30); }
+  });
+  headSpots(hs.length).forEach((p, i) => {
+    const h = hs[i], x = X(p.u), y = Y(p.v);
+    rx.fillStyle = h && h.master > 0 ? '#e9ebf5' : '#3a4060';
+    rx.beginPath(); rx.moveTo(x, y - 12); rx.lineTo(x - 11, y + 9); rx.lineTo(x + 11, y + 9); rx.closePath(); rx.fill();
+    rx.fillStyle = '#6f7696'; rx.font = '600 14px system-ui'; rx.textAlign = 'center';
+    rx.fillText('Head ' + (i + 1) + (h && !h.calibrated ? ' · not calibrated' : ''), x, y + 30);
+  });
+  if (L && L.blackout) { rx.fillStyle = 'rgba(0,0,0,.55)'; rx.fillRect(0, 0, W, Hh); rx.fillStyle = '#ff5d6c'; rx.font = '700 28px system-ui'; rx.textAlign = 'center'; rx.fillText('BLACKOUT', W / 2, Hh / 2); }
+}
+function frame(t) { drawRoom(t); requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+
+// ---------- live data ----------
+function onLive(j) {
+  L = j;
+  $('blackout').classList.toggle('on', !!j.blackout);
+  const ok = /stream/.test(j.bridge || '');
+  $('cLights').className = 'chip keep ' + (ok ? 'ok' : 'bad'); $('cLights').querySelector('span').textContent = ok ? 'Lights' : 'Lights offline';
+  $('sBridge').textContent = j.bridge || '–';
+  const hd = String(j.heads || 'off');
+  $('cHeads').className = 'chip ' + (/sending/.test(hd) ? 'ok' : /off/.test(hd) ? '' : 'warn'); $('sHeads').textContent = hd;
+  $('lvl').style.width = Math.round(Math.min(1, j.level || 0) * 100) + '%';
+  $('cSound').className = 'chip ' + ((j.level || 0) > 0.03 ? 'ok' : '');
+  $('sAudio').textContent = (j.audio && (j.audio.status || j.audio.input)) || (typeof j.audio === 'string' ? j.audio : 'listening');
+  if (j.clock) { $('bpm').textContent = Math.round(j.clock.tempo || 0);
+    if (j.clock.beat !== lastBeat) { lastBeat = j.clock.beat; const b = $('beat'); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 90); } }
+  if (S && j.vibe && j.vibe !== S.settings.vibe) { S.settings.vibe = j.vibe; renderVibes(); }
+}
+function openStream() {
+  const es = new EventSource('/api/stream');
+  es.onmessage = e => { try { onLive(JSON.parse(e.data)); } catch (x) {} };
+  es.onerror = () => { es.close(); $('cLights').className = 'chip keep bad'; $('cLights').querySelector('span').textContent = 'Hub offline'; setTimeout(openStream, 3000); };
+}
+async function loadState() { try { S = await (await fetch('/api/state', { cache: 'no-store' })).json(); renderVibes(); syncControls(); } catch (e) { setTimeout(loadState, 3000); } }
+async function pollHeads() { try { const r = await fetch('/heads/status', { cache: 'no-store' }); H = r.ok ? await r.json() : null; } catch (e) { H = null; }
+  if (onHeads()) { renderHeadList(); drawPad(); } }
+loadState(); openStream(); pollHeads(); setInterval(pollHeads, 700);
+fetch('/api/phone').then(r => r.ok ? r.json() : null).then(j => { if (j && j.url) { $('phoneLink').textContent = j.url; } else { $('phoneNote').textContent = 'You are on your phone already. The link is on the Mac\'s Setup page.'; } }).catch(() => {});
+$('copyLink').onclick = () => { navigator.clipboard?.writeText($('phoneLink').textContent).then(() => toast('Link copied')); };
+
+// ---------- HEADS: aim + calibration (through the hub to the DMX node) ----------
+const PAN_DEG = 540, TILT_DEG = 180, MAXV = 65535, AVOID_LEAN = 4;
+let sel = 0, pos = { pan: 32768, tilt: 32768 }, steering = false, free = false, lastSend = 0, keepT = null;
+const onHeads = () => $('p-heads').classList.contains('on');
+const hpost = async (p, b) => { const r = await fetch('/heads' + p, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(b) }); return r.json(); };
+const hd = () => HC.heads[sel];
+const leanDeg = (p, h) => (p.tilt - h.tilt_up) * h.tilt_dir * TILT_DEG / MAXV;
+const azOf = (p, h) => ((p.pan / MAXV * PAN_DEG) + (leanDeg(p, h) < 0 ? 180 : 0)) % 360;
+function inAvoid(p, h) { if (Math.abs(leanDeg(p, h)) <= AVOID_LEAN) return false; const az = azOf(p, h);
+  return (h.avoid || []).some(z => Math.abs(((az - z.az + 540) % 360) - 180) < z.width / 2); }
+async function loadHeads() {
+  try { const r = await fetch('/heads/config', { cache: 'no-store' }); if (!r.ok) throw 0; HC = await r.json(); if (sel >= HC.heads.length) sel = 0;
+    pos.tilt = hd().tilt_up; renderHeadList(); renderCal(); drawPad(); $('nodeInfo').textContent = '';
+  } catch (e) { $('nodeInfo').textContent = 'Can\'t reach the DMX node — is "Ney DMX Node" running on the Zephyrus?'; }
+}
+function inWindow(p) {
+  const h = hd(); if (free || !h.calibrated) return p;
+  const span = h.tilt_max_deg / TILT_DEG * MAXV;
+  const q = { pan: Math.max(h.pan_min, Math.min(h.pan_max, p.pan)), tilt: Math.max(h.tilt_up - span, Math.min(h.tilt_up + span, p.tilt)) };
+  if (inAvoid(q, h)) q.tilt = h.tilt_up + Math.sign(q.tilt - h.tilt_up) * AVOID_LEAN / TILT_DEG * MAXV;
+  return q;
+}
+function sendSteer(force) {
+  if (!steering) return; const now = performance.now(); if (!force && now - lastSend < 50) return; lastSend = now;
+  pos = inWindow(pos); pos.pan = Math.round(pos.pan); pos.tilt = Math.round(pos.tilt);
+  hpost('/calib', { head: sel, pan: pos.pan, tilt: pos.tilt }).catch(() => toast('DMX node not reachable'));
+}
+function setSteer(on) {
+  steering = on; $('steer').classList.toggle('on', on); $('steer').textContent = on ? 'Steering · Space to stop' : 'Steer (Space)';
+  clearInterval(keepT);
+  if (on) { sendSteer(true); keepT = setInterval(() => sendSteer(true), 2000); } else { hpost('/calib', { head: sel, stop: true }).catch(() => {}); }
+  drawPad();
+}
+function stopAll() { steering = false; clearInterval(keepT); $('steer').classList.remove('on'); $('steer').textContent = 'Steer (Space)';
+  if (HC) HC.heads.forEach((_, i) => hpost('/calib', { head: i, stop: true }).catch(() => {})); toast('All steering stopped'); drawPad(); }
+const pc = $('pad'), px = pc.getContext('2d');
+const toXY = p => [p.pan / MAXV * pc.width, p.tilt / MAXV * pc.height];
+const fromXY = (x, y) => ({ pan: Math.max(0, Math.min(MAXV, x / pc.width * MAXV)), tilt: Math.max(0, Math.min(MAXV, y / pc.height * MAXV)) });
+function drawPad() {
+  const W = pc.width, Hh = pc.height; px.clearRect(0, 0, W, Hh);
+  px.strokeStyle = '#161b2e'; px.lineWidth = 1;
+  for (let d = 0; d <= PAN_DEG; d += 45) { const x = d / PAN_DEG * W; px.beginPath(); px.moveTo(x, 0); px.lineTo(x, Hh); px.stroke(); }
+  for (let d = 0; d <= TILT_DEG; d += 15) { const y = d / TILT_DEG * Hh; px.beginPath(); px.moveTo(0, y); px.lineTo(W, y); px.stroke(); }
+  px.fillStyle = '#4c5375'; px.font = '12px system-ui'; px.textAlign = 'left';
+  for (let d = 0; d <= PAN_DEG; d += 90) px.fillText(d + '°', d / PAN_DEG * W + 4, Hh - 6);
+  if (!HC) return;
+  const h = hd(), span = h.tilt_max_deg / TILT_DEG * MAXV;
+  const x0 = h.pan_min / MAXV * W, x1 = h.pan_max / MAXV * W, yA = (h.tilt_up - span) / MAXV * Hh, yB = (h.tilt_up + span) / MAXV * Hh;
+  px.fillStyle = 'rgba(79,209,139,.10)'; px.fillRect(x0, yA, x1 - x0, yB - yA); px.strokeStyle = 'rgba(79,209,139,.45)'; px.strokeRect(x0, yA, x1 - x0, yB - yA);
+  const lim = AVOID_LEAN / TILT_DEG * MAXV;
+  (h.avoid || []).forEach(z => [[1, 0], [-1, 180]].forEach(([side, off]) => {
+    const yN = (h.tilt_up + side * h.tilt_dir * lim) / MAXV * Hh, yF = (h.tilt_up + side * h.tilt_dir * MAXV) / MAXV * Hh;
+    for (let c = z.az + off - 720; c <= PAN_DEG + 360; c += 360) { const a = Math.max(0, c - z.width / 2), b = Math.min(PAN_DEG, c + z.width / 2); if (b <= a) continue;
+      px.fillStyle = 'rgba(255,93,108,.20)'; px.fillRect(a / PAN_DEG * W, Math.min(yN, yF), (b - a) / PAN_DEG * W, Math.abs(yF - yN)); }
+  }));
+  const yu = h.tilt_up / MAXV * Hh; px.strokeStyle = '#7b8cff'; px.setLineDash([6, 5]); px.beginPath(); px.moveTo(0, yu); px.lineTo(W, yu); px.stroke(); px.setLineDash([]);
+  px.fillStyle = '#7b8cff'; px.fillText('straight up', 6, yu - 6);
+  const s = H && H.heads && H.heads[sel];
+  if (s) { const [ox, oy] = toXY(s); px.strokeStyle = '#ffb347'; px.lineWidth = 2; px.beginPath(); px.arc(ox, oy, 9, 0, 6.283); px.stroke(); }
+  const [tx, ty] = toXY(pos); px.strokeStyle = steering ? '#eef0f8' : '#535a7c'; px.lineWidth = 1.5;
+  px.beginPath(); px.moveTo(tx - 14, ty); px.lineTo(tx + 14, ty); px.moveTo(tx, ty - 14); px.lineTo(tx, ty + 14); px.stroke();
+  $('rPan').textContent = (pos.pan / MAXV * PAN_DEG).toFixed(1) + '°'; $('rTilt').textContent = (pos.tilt / MAXV * TILT_DEG).toFixed(1) + '°';
+  $('rLean').textContent = Math.abs(leanDeg(pos, h)).toFixed(1) + '°';
+  $('rOut').textContent = (s ? (s.master ? 'lit' : 'dark') + (s.calibrating ? ' · steering' : '') : '–') + (inAvoid(pos, h) ? ' · avoid zone' : '');
+}
+let dragging = false;
+function padEvt(e) { const r = pc.getBoundingClientRect(); pos = fromXY((e.clientX - r.left) * pc.width / r.width, (e.clientY - r.top) * pc.height / r.height); if (!steering) setSteer(true); sendSteer(); drawPad(); }
+pc.addEventListener('pointerdown', e => { if (!HC) return; dragging = true; pc.setPointerCapture(e.pointerId); padEvt(e); });
+pc.addEventListener('pointermove', e => { if (dragging) padEvt(e); });
+pc.addEventListener('pointerup', () => { dragging = false; sendSteer(true); });
+addEventListener('keydown', e => {
+  if (!onHeads() || e.target.tagName === 'INPUT' || !HC) return;
+  if (e.key === 'Escape') { stopAll(); e.preventDefault(); return; }
+  if (e.key === ' ') { setSteer(!steering); e.preventDefault(); return; }
+  const step = e.shiftKey ? 1024 : e.altKey ? 16 : 128;
+  const k = { ArrowLeft: ['pan', -step], ArrowRight: ['pan', step], ArrowUp: ['tilt', -step], ArrowDown: ['tilt', step] }[e.key];
+  if (k) { pos[k[0]] = Math.max(0, Math.min(MAXV, pos[k[0]] + k[1])); if (!steering) setSteer(true); sendSteer(true); drawPad(); e.preventDefault(); }
+  if (e.key === 'u' || e.key === 'U') { pos.tilt = hd().tilt_up; if (!steering) setSteer(true); sendSteer(true); drawPad(); }
+});
+async function saveHead(p) { try { const h = await hpost('/head', Object.assign({ head: sel }, p)); HC.heads[sel] = h; renderCal(); renderHeadList(); drawPad(); toast('Saved'); } catch (e) { toast('Could not save — is the DMX node running?'); } }
+function pair(r, n, key, toN = x => x, fromN = x => x) { $(r).oninput = () => { $(n).value = toN(+$(r).value); }; $(r).onchange = () => saveHead({ [key]: +$(r).value }); $(n).onchange = () => { const v = fromN(+$(n).value); $(r).value = v; saveHead({ [key]: v }); }; }
+pair('addr', 'addrN', 'addr'); pair('lean', 'leanN', 'tilt_max_deg'); pair('cap', 'capN', 'max_level', x => Math.round(x * 100), x => x / 100);
+$('avw').oninput = () => { $('avwN').value = $('avw').value; }; $('avwN').onchange = () => { $('avw').value = $('avwN').value; };
+$('setUp').onclick = () => saveHead({ tilt_up: Math.round(pos.tilt) });
+$('flipDir').onclick = () => saveHead({ tilt_dir: -hd().tilt_dir });
+$('panA').onclick = () => saveHead({ pan_min: Math.round(pos.pan) });
+$('panB').onclick = () => saveHead({ pan_max: Math.round(pos.pan) });
+$('panAll').onclick = () => saveHead({ pan_min: 0, pan_max: MAXV });
+$('avAdd').onclick = () => { const h = hd(); if (Math.abs(leanDeg(pos, h)) <= AVOID_LEAN) { toast('Lean the beam toward what to avoid first'); return; } saveHead({ avoid: (h.avoid || []).concat([{ az: Math.round(azOf(pos, h)), width: +$('avwN').value }]) }); };
+$('avClear').onclick = () => saveHead({ avoid: [] });
+$('calibrated').onclick = () => saveHead({ calibrated: !hd().calibrated });
+$('steer').onclick = () => setSteer(!steering);
+$('free').onclick = () => { free = !free; $('free').classList.toggle('on', free); toast(free ? 'Free aim: ignores the green window' : 'Aim stays inside the green window'); };
+$('allDark').onclick = stopAll;
+function renderHeadList() {
+  if (!HC) return; const el = $('hlist'); el.innerHTML = '';
+  HC.heads.forEach((h, i) => {
+    const s = H && H.heads && H.heads[i], m = s && s.master ? (s.master - 8) / 126 : 0, c = s ? s.rgbw : [0, 0, 0, 0];
+    const d = document.createElement('div'); d.className = 'hl' + (i === sel ? ' sel' : '');
+    const dot = document.createElement('div'); dot.className = 'd'; dot.style.background = `rgb(${[0, 1, 2].map(k => Math.round(Math.min(255, (c[k] + c[3] * 0.6) * m))).join(',')})`;
+    const meta = document.createElement('div'); meta.className = 'm';
+    const n = document.createElement('div'); n.className = 'n'; n.textContent = (i + 1) + ' · ' + h.name;
+    const sub = document.createElement('div'); sub.className = 'note'; sub.textContent = 'addr ' + h.addr + ' ';
+    const tg = document.createElement('span'); tg.className = 'tag ' + (h.calibrated ? 'ok' : 'no'); tg.textContent = h.calibrated ? 'ready' : 'not calibrated'; sub.appendChild(tg);
+    meta.append(n, sub); d.append(dot, meta);
+    d.onclick = () => { if (steering && i !== sel) setSteer(false); sel = i; pos = { pan: s ? s.pan : 32768, tilt: h.tilt_up }; renderHeadList(); renderCal(); drawPad(); };
+    el.appendChild(d);
+  });
+}
+function renderCal() {
+  const h = hd(); $('calTitle').textContent = 'Calibrate · ' + h.name; $('aimTitle').textContent = 'Aim · head ' + (sel + 1);
+  $('addr').value = h.addr; $('addrN').value = h.addr; $('lean').value = h.tilt_max_deg; $('leanN').value = h.tilt_max_deg;
+  $('cap').value = h.max_level; $('capN').value = Math.round(h.max_level * 100);
+  $('calibrated').classList.toggle('on', !!h.calibrated); $('calibrated').textContent = h.calibrated ? 'Calibrated ✓ (click to undo)' : 'Mark calibrated';
+  $('panInfo').textContent = `Pan window ${(h.pan_min / MAXV * PAN_DEG).toFixed(0)}°–${(h.pan_max / MAXV * PAN_DEG).toFixed(0)}°`;
+  $('calInfo').textContent = `Straight up = ${h.tilt_up} · max lean ${h.tilt_max_deg}°`;
+  const al = $('avList'); al.innerHTML = '';
+  (h.avoid || []).forEach((z, i) => { const d = document.createElement('div'); d.className = 'row'; d.style.margin = '6px 0';
+    const t = document.createElement('span'); t.textContent = `Around ${Math.round(z.az)}° (±${z.width / 2}°)`;
+    const b = document.createElement('button'); b.className = 'btn'; b.textContent = 'Remove'; b.onclick = () => saveHead({ avoid: (h.avoid || []).filter((_, j) => j !== i) });
+    d.append(t, b); al.appendChild(d); });
+}
+addEventListener('beforeunload', () => { if (steering) navigator.sendBeacon && navigator.sendBeacon('/heads/calib', JSON.stringify({ head: sel, stop: true })); });
+</script>
+</body>
+</html>

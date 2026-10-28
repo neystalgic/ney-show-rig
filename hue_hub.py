@@ -49,9 +49,12 @@ import hub_fx                                               # noqa: E402  (Push'
 import hub_palette                                          # noqa: E402  (the room's colours: spectrum / triad / degree)
 import hub_gradlamp                                         # noqa: E402  (the Play floor lamp's gradient, outside the stream)
 import hub_dmx                                              # noqa: E402  (the moving heads, through the Zephyrus' Enttec)
+import hub_vibes                                            # noqa: E402  (one-tap auto shows for the Light Desk)
 
 STATE_PATH = os.path.join(HERE, 'hub_state.json')
-DESK_PATH = os.path.join(HERE, 'desk.html')
+DESK_PATH = os.path.join(HERE, 'desk.html')                 # the classic desk (at /classic while the Light Desk takes over)
+LIGHT_DESK_PATH = os.path.join(HERE, 'light_desk.html')     # the Light Desk: lamps + moving heads in one
+TOKEN_PATH = os.path.join(HERE, 'rig_control.token')        # phones / other computers need this key once
 FEED_PORT = 7011
 DESK_PORT = 7020
 FPS = 50.0
@@ -1231,6 +1234,9 @@ class Hub:
                         ableton=self.ableton.describe() if self.ableton else 'off',
                         relay=self.relay.describe() if self.relay else 'off',
                         heads=self.dmx.describe() if getattr(self, 'dmx', None) else 'off',
+                        vibe=self.state['settings'].get('vibe'), energy=self.state['settings'].get('energy', 0.6),
+                        palette=self.state['settings'].get('palette'),
+                        level=round(float(getattr(self.palette, 'music_env', 0.0) or 0.0), 3),
                         audio=self.audioshow.snapshot(),
                         live_key=(self.livekey.status if getattr(self, 'livekey', None) is not None else 'off'),
                         brain=(self.audio.brain.snapshot() if self.audio is not None and getattr(self.audio, 'brain', None)
@@ -1257,7 +1263,10 @@ class Hub:
                         geo_forms=geo.FORMS, harmonies=geo.HARMONIES,
                         settings=self.state['settings'], motions=MOTIONS,
                         speeds=[dict(label=a, value=b) for a, b in SPEEDS], active=self.active,
-                        area=self.area_name)
+                        area=self.area_name,
+                        vibes=[dict(id=k, label=hub_vibes.VIBES[k]['label'], blurb=hub_vibes.VIBES[k]['blurb'],
+                                    colours=hub_vibes.VIBES[k]['colours'], heads=hub_vibes.VIBES[k]['heads'])
+                               for k in hub_vibes.ORDER])
 
     # -- commands from the desk / Push --
     def command(self, c):
@@ -1352,6 +1361,29 @@ class Hub:
                 self.live[k] = clamp(float(c['value']), *lim)
                 self.save_soon()
                 return True
+            if op == 'vibe':                         # Light Desk > Perform: one tap = a whole auto show
+                name = c.get('name', self.state['settings'].get('vibe', 'dreamy'))
+                if name not in hub_vibes.VIBES:
+                    return False
+                e = clamp(float(c.get('energy', self.state['settings'].get('energy', 0.6))))
+                st_, lv_ = hub_vibes.recipe(name, e)
+                st = self.state['settings']
+                old_pal = st.get('palette')
+                if name == st.get('vibe'):              # same vibe, new energy: keep the Colour knob where it is
+                    lv_.pop('tint', None)
+                st.update(st_)
+                st['vibe'], st['energy'] = name, e
+                st['dmx_on'] = bool(hub_vibes.VIBES[name]['heads'])
+                for k_, v_ in lv_.items():
+                    self.live[k_] = v_
+                self.blackout = (name == 'rest')
+                if st.get('palette') != old_pal and not self.args.rehearse and not self.args.area:
+                    want = self.wanted_area() or (self.cfg or {}).get('area_name')
+                    if want and want != self.area_name:
+                        say('Switching the lights to "%s" -- restarting the hub (a few seconds)...' % want)
+                        self.area_reload = True
+                self.save_soon()
+                return dict(vibe=name, energy=e)
             if op == 'blackout':
                 self.blackout = (not self.blackout) if c.get('on') is None else bool(c['on'])
                 return self.blackout
@@ -1399,7 +1431,8 @@ class Hub:
                              relay_diffuse_bars=float, dmx_host=str, dmx_level=float, dmx_move=float,
                              music_ch=str, music_floor_db=float, music_top_db=float, music_attack=float,
                              music_release=float, music_base=float, music_boost=float, music_period=float,
-                             music_spread=float)
+                             music_spread=float, music_hold=bool, dmx_on=bool, dmx_strobe=str,
+                             music_sat=float)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (
@@ -1581,14 +1614,85 @@ def make_handler(hub):
             self.end_headers()
             self.wfile.write(b)
 
+        # -- who may use the desk: this Mac always; a phone / other computer once it has the key --
+        def _allowed(self):
+            ip = self.client_address[0]
+            if ip in ('127.0.0.1', '::1') or ip.startswith('::ffff:127.'):
+                return True
+            try:
+                with open(TOKEN_PATH) as f:
+                    key = f.read().strip()
+            except OSError:
+                return False
+            if not key:
+                return False
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            if q.get('key', [''])[0] == key:
+                self._set_cookie = 'ney_key=%s; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly' % key
+                return True
+            for part in (self.headers.get('Cookie') or '').split(';'):
+                k_, _, v_ = part.strip().partition('=')
+                if k_ == 'ney_key' and v_ == key:
+                    return True
+            return False
+
+        def end_headers(self):
+            ck = getattr(self, '_set_cookie', None)
+            if ck:
+                self.send_header('Set-Cookie', ck)
+                self._set_cookie = None
+            BaseHTTPRequestHandler.end_headers(self)
+
+        def _proxy_heads(self, method):
+            """/heads/... -> the DMX node on the Zephyrus, so the Light Desk (and your phone) only talk to the hub."""
+            hst = str(hub.state['settings'].get('dmx_host', '') or '').strip()
+            if not hst:
+                return self._send(503, json.dumps({'error': 'no dmx_host set'}))
+            sub = self.path[len('/heads'):] or '/'
+            import urllib.request
+            try:
+                data = None
+                if method == 'POST':
+                    n = min(int(self.headers.get('Content-Length', 0) or 0), 20000)
+                    data = self.rfile.read(n)
+                rq = urllib.request.Request('http://%s:7060%s' % (hst, sub), data=data, method=method,
+                                            headers={'Content-Type': 'text/plain'})
+                with urllib.request.urlopen(rq, timeout=3) as r:
+                    return self._send(r.status, r.read(), r.headers.get('Content-Type', 'application/json'))
+            except Exception as e:
+                return self._send(502, json.dumps({'error': 'DMX node not reachable (%s)' % e.__class__.__name__}))
+
         def do_GET(self):
             path = urllib.parse.urlparse(self.path).path
-            if path in ('/', '/desk', '/index.html'):
+            if not self._allowed():
+                return self._send(403, 'This desk needs its key: open the link with ?key=... once (ask Claude).', 'text/plain')
+            if path.startswith('/heads/'):
+                return self._proxy_heads('GET')
+            if path == '/api/phone':                # the phone link (with the key) -- only shown on this Mac
+                ip = self.client_address[0]
+                if not (ip in ('127.0.0.1', '::1') or ip.startswith('::ffff:127.')):
+                    return self._send(403, '{}')
+                name = 'neystalgic'
                 try:
-                    with open(DESK_PATH, 'rb') as f:
+                    import subprocess
+                    out = subprocess.run(['/Applications/Tailscale.app/Contents/MacOS/Tailscale', 'status', '--json'],
+                                         capture_output=True, text=True, timeout=3).stdout
+                    name = (json.loads(out).get('Self', {}).get('DNSName', '') or name).split('.')[0] or name
+                except Exception:
+                    pass
+                try:
+                    with open(TOKEN_PATH) as f:
+                        key = f.read().strip()
+                except OSError:
+                    return self._send(200, '{}')
+                return self._send(200, json.dumps({'url': 'http://%s:%d/?key=%s' % (name, self.server.server_address[1], key)}))
+            if path in ('/', '/desk', '/index.html', '/classic'):
+                fp = DESK_PATH if path == '/classic' or not os.path.exists(LIGHT_DESK_PATH) else LIGHT_DESK_PATH
+                try:
+                    with open(fp, 'rb') as f:
                         return self._send(200, f.read(), 'text/html; charset=utf-8')
                 except OSError:
-                    return self._send(500, 'desk.html is missing next to hue_hub.py', 'text/plain')
+                    return self._send(500, 'the desk page is missing next to hue_hub.py', 'text/plain')
             if path == '/api/state':
                 return self._send(200, json.dumps(hub.full_state()))
             if path == '/api/live':
@@ -1609,6 +1713,10 @@ def make_handler(hub):
             self._send(404, 'not found', 'text/plain')
 
         def do_POST(self):
+            if not self._allowed():
+                return self._send(403, 'not allowed', 'text/plain')
+            if urllib.parse.urlparse(self.path).path.startswith('/heads/'):
+                return self._proxy_heads('POST')
             if urllib.parse.urlparse(self.path).path != '/api':
                 return self._send(404, 'not found', 'text/plain')
             try:
@@ -1637,7 +1745,7 @@ def lan_ip():
 # the hub restarts itself when its code is updated (no more running yesterday's version by mistake)
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
               'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py',
-              'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py', 'hub_dmx.py']
+              'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py', 'hub_dmx.py', 'hub_vibes.py']
 
 
 class Reload(Exception):
@@ -1671,7 +1779,7 @@ def main():
     ap.add_argument('--feed-port', type=int, default=FEED_PORT)
     args = ap.parse_args()
 
-    host = '0.0.0.0' if args.phone else '127.0.0.1'
+    host = '0.0.0.0'                           # other devices need the desk key (rig_control.token) -- see _allowed
     running = False
     for _ in range(5):                         # is another hub answering? (a just-stopped one may need a moment)
         try:

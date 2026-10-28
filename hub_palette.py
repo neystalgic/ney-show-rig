@@ -222,7 +222,9 @@ class Palette:
         avg += (env - avg) * (1.0 - math.exp(-dt / 4.0))
         self.music_avg = avg
         period = max(10.0, float(st.get('music_period', 90.0)))
-        self.music_hue = (getattr(self, 'music_hue', 0.0) + dt * 360.0 / period * (1.0 + 3.0 * avg)) % 360.0
+        if not st.get('music_hold'):                            # Hold colour: stop the drift
+            self.music_hue = (getattr(self, 'music_hue', 0.0) + dt * 360.0 / period * (1.0 + 3.0 * avg)) % 360.0
+        tint = float(self.hub.live.get('tint', 0.0)) if st.get('music_tint', True) else 0.0   # the desk's Colour knob
         base = max(0.0, min(1.0, float(st.get('music_base', 0.06))))
         boost = max(0.0, min(1.0, float(st.get('music_boost', 0.74))))
         v = max(0.0, min(1.0, base + boost * env))
@@ -234,7 +236,14 @@ class Palette:
         for i in range(n):
             r = segs[i].get('ord', i) if i < len(segs) else i
             off = ((r / float(n - 1)) - 0.5) * spread if n > 1 else 0.0
-            out.append(tuple(x * v for x in vivid((self.music_hue + off) % 360.0)))
+            h = getattr(self, 'music_hue', 0.0)
+            lo, hi = st.get('music_from'), st.get('music_to')
+            if lo is not None and hi is not None:          # sway inside a hue range (e.g. Dreamy: blue -> violet -> pink)
+                h = float(lo) + ((float(hi) - float(lo)) % 360.0) * (0.5 - 0.5 * math.cos(math.radians(h)))
+            c = vivid((h + off + tint) % 360.0)
+            sat = max(0.0, min(1.0, float(st.get('music_sat', 1.0))))
+            c = tuple(x * sat + (1.0 - sat) for x in c)    # below 1 = pastel (towards white)
+            out.append(tuple(x * v for x in c))
         return out
 
     def sync_spread(self):

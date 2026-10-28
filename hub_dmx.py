@@ -121,7 +121,7 @@ class Heads:
         self.t_send = now
         s = self.settings()
         live = self.hub.live
-        dark = (self.hub.blackout or bool(s.get('movie')) or pmode == 'sync' or not cols)
+        dark = (self.hub.blackout or bool(s.get('movie')) or pmode == 'sync' or not cols or not s.get('dmx_on', True))
         level = clamp(float(s.get('dmx_level', 0.8))) * clamp(float(live.get('master', 1.0)))
         move = clamp(float(s.get('dmx_move', 1.0)))
         section = getattr(getattr(self.hub, 'audioshow', None), 'section', 'groove')
