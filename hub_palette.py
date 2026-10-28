@@ -7,6 +7,11 @@
 #               (default 30%) and is pushed up by the sound on one Scarlett input (sync_ch,
 #               default input 2) by up to sync_boost (default +45%). The Play floor lamp
 #               shows the same colour with its two rainbow neighbours either side.
+#   'music'     EVERY BULB follows the Scarlett's TOTAL sound (every input it hears + the Mac's playback,
+#               setting music_ch, default all): louder = brighter, quick to rise and gentle to fall
+#               (music_attack / music_release), resting at music_base, up to base + music_boost (80%).
+#               The colour travels round the rainbow -- faster when the music has been busy -- with a
+#               little spread across the room (music_spread degrees). The flicker protection still applies.
 #   'lava'      (default) EVERY BULB TOGETHER, walking the rainbow in order -- red, orange,
 #               yellow, green, blue, indigo, violet, red ... one step a bar, gliding into the
 #               next over the first half of the bar. The wall is a lava-lamp rainbow centred on
@@ -31,7 +36,7 @@ import collections
 import math
 
 SPAN = {'quiet': 90.0, 'breakdown': 120.0, 'groove': 220.0, 'drop': 330.0}   # degrees of the wheel
-MODES = ('sync', 'lava', 'spectrum', 'triad', 'degree')
+MODES = ('sync', 'music', 'lava', 'spectrum', 'triad', 'degree')
 LAVA_SPAN = {'quiet': 240.0, 'breakdown': 180.0, 'groove': 270.0, 'drop': 360.0}
 LAVA_WALL_SPAN = 270.0           # how much rainbow the wall (and the floor lamp's zones) spreads round the room colour
 # the rainbow in order, as OKLCH hues of the degree colours: red orange yellow green blue indigo violet
@@ -198,6 +203,39 @@ class Palette:
             tri = 0.5 - 0.5 * math.cos(2 * math.pi * ((now / period) % 1.0))
             return deep_colour(tri + offset)
         return vivid((self.sync_hue(now) + offset * 360.0) % 360.0)
+
+    def render_music(self, cols, now, dt, rms):
+        """MUSIC mode: every lamp follows the Scarlett's total loudness; the colour drifts round the rainbow."""
+        st = self.hub.state['settings']
+        db = 20.0 * math.log10(max(rms, 1e-6))
+        lo_db = float(st.get('music_floor_db', -50.0))          # at or below this = silence
+        hi_db = float(st.get('music_top_db', -10.0))            # at or above this = full
+        lvl = max(0.0, min(1.0, (db - lo_db) / max(1.0, hi_db - lo_db)))
+        env = getattr(self, 'music_env', 0.0)
+        att = max(0.01, float(st.get('music_attack', 0.04)))
+        rel = max(0.01, float(st.get('music_release', 0.35)))
+        env += (lvl - env) * (1.0 - math.exp(-dt / (att if lvl > env else rel)))
+        if lvl <= 0.0 and env < 0.01:
+            env = 0.0
+        self.music_env = env
+        avg = getattr(self, 'music_avg', 0.0)                   # how busy the last few seconds were
+        avg += (env - avg) * (1.0 - math.exp(-dt / 4.0))
+        self.music_avg = avg
+        period = max(10.0, float(st.get('music_period', 90.0)))
+        self.music_hue = (getattr(self, 'music_hue', 0.0) + dt * 360.0 / period * (1.0 + 3.0 * avg)) % 360.0
+        base = max(0.0, min(1.0, float(st.get('music_base', 0.06))))
+        boost = max(0.0, min(1.0, float(st.get('music_boost', 0.74))))
+        v = max(0.0, min(1.0, base + boost * env))
+        self.music_v = v
+        spread = float(st.get('music_spread', 30.0))
+        segs = self.hub.rig.segs
+        n = len(cols)
+        out = []
+        for i in range(n):
+            r = segs[i].get('ord', i) if i < len(segs) else i
+            off = ((r / float(n - 1)) - 0.5) * spread if n > 1 else 0.0
+            out.append(tuple(x * v for x in vivid((self.music_hue + off) % 360.0)))
+        return out
 
     def sync_spread(self):
         st = self.hub.state['settings']

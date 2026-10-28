@@ -576,7 +576,7 @@ class Hub:
         """Movie / sync mode streams EVERY lamp, floor lamp included, in one area (setting 'movie_area',
         default "Music area") so they all land on the same frame. Other modes use the show's area."""
         st = self.state['settings']
-        if st.get('palette') == 'sync' and st.get('movie_area', 'Music area'):
+        if st.get('palette') in ('sync', 'music') and st.get('movie_area', 'Music area'):
             return st.get('movie_area', 'Music area')
         return None
 
@@ -987,6 +987,13 @@ class Hub:
                 ch = int(self.state['settings'].get('sync_ch', 2))
                 rms = float(getattr(self.audio, 'ch_rms', {}).get(ch, 0.0)) if self.audio is not None else 0.0
                 cols = self.palette.render_sync(cols, now, dt, rms)
+            elif pmode == 'music' and not self.blackout and self.calib_test is None:
+                # the Scarlett's TOTAL sound: every channel it hears (setting music_ch, default all) combined
+                chr_ = dict(getattr(self.audio, 'ch_rms', {}) or {}) if self.audio is not None else {}
+                want = str(self.state['settings'].get('music_ch', 'all'))
+                chans = list(chr_) if want == 'all' else [int(c) for c in want.split(',') if c.strip().isdigit()]
+                tot = math.sqrt(sum(float(chr_.get(c_, 0.0)) ** 2 for c_ in chans))
+                cols = self.palette.render_music(cols, now, dt, tot)
             elif pmode == 'lava' and not self.blackout and self.calib_test is None:
                 cols = self.palette.render_lava(cols, beats, now, dt, getattr(self.audioshow, 'section', 'groove'),
                                                 kick=float(getattr(self.audioshow, 'env', {}).get('kick', 0.0)))
@@ -1020,7 +1027,7 @@ class Hub:
             # (not in sync / movie mode: there every bulb must match exactly -- a capped bulb dips below
             #  its lowest dim level at a different moment and looks out of sync)
             caps = [self.rig.lamps[sg['lamp']].get('cap', 1.0) for sg in self.rig.segs]
-            if pmode != 'sync' and any(k < 0.999 for k in caps):
+            if pmode not in ('sync', 'music') and any(k < 0.999 for k in caps):
                 cols = [scale(c_, k) if k < 0.999 else c_ for c_, k in zip(cols, caps)]
             idt = getattr(self, 'ident', None)
             if idt is not None:
@@ -1388,7 +1395,10 @@ class Hub:
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,
                              movie=bool, movie_src=str,
                              relay_on=bool, relay_port=str, relay_build_bars=float, relay_diffuse=float,
-                             relay_diffuse_bars=float, dmx_host=str, dmx_level=float, dmx_move=float)
+                             relay_diffuse_bars=float, dmx_host=str, dmx_level=float, dmx_move=float,
+                             music_ch=str, music_floor_db=float, music_top_db=float, music_attack=float,
+                             music_release=float, music_base=float, music_boost=float, music_period=float,
+                             music_spread=float)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (

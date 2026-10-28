@@ -132,6 +132,7 @@ def stop_all():
 LOOKS = {
     'movie': ('Movie mode', lambda: (stop_ambient(), start_hub('sync'))),
     'show': ('The light show', lambda: (stop_ambient(), start_hub('lava'))),
+    'music': ('Music mode', lambda: (stop_ambient(), start_hub('music'))),
     'rainbow': ('Rainbow fade, every lamp together', lambda: (stop_all(), start_ambient(70, 90, 0))),
     'rainbowroom': ('Rainbow across the room', lambda: (stop_all(), start_ambient(70, 120, 240))),
     'bright': ('Bright white', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 100.0},
