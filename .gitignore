@@ -23,3 +23,6 @@ td_snaps/
 pi/config.json
 pi/backup.log
 ambient.stop
+
+# --- rig control (Siri Shortcuts) secret ---
+rig_control.token
