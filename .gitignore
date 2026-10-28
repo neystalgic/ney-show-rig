@@ -28,3 +28,5 @@ ambient.stop
 rig_control.token
 pi/sky/sky_config.json
 pi/sky/sky_config.json.tmp
+dmx/heads_config.json
+dmx/heads_config.json.tmp

@@ -48,6 +48,7 @@ import hub_geometry as geo                                  # noqa: E402  (sacre
 import hub_fx                                               # noqa: E402  (Push's freestyle light effects)
 import hub_palette                                          # noqa: E402  (the room's colours: spectrum / triad / degree)
 import hub_gradlamp                                         # noqa: E402  (the Play floor lamp's gradient, outside the stream)
+import hub_dmx                                              # noqa: E402  (the moving heads, through the Zephyrus' Enttec)
 
 STATE_PATH = os.path.join(HERE, 'hub_state.json')
 DESK_PATH = os.path.join(HERE, 'desk.html')
@@ -421,6 +422,7 @@ class Hub:
         self.fx = hub_fx.LightFX(self)
         self.palette = hub_palette.Palette(self)
         self.gradlamp = hub_gradlamp.GradLamp(self)
+        self.dmx = hub_dmx.Heads(self)          # the moving heads (setting dmx_host = the Zephyrus)
         self.movie_prev = None                  # Movie mode: the lamps' colours from the picture (smoothed)
         self.movie_status = 'off'
         self.message = ('', 0.0)
@@ -1038,6 +1040,12 @@ class Hub:
                 if now - getattr(self, '_gl_err_t', 0.0) > 30.0:
                     self._gl_err_t = now
                     say('Floor lamp gradient: %s' % e)
+            try:                                  # the moving heads follow the lamps AFTER the flicker protection
+                self.dmx.frame(now, dt, beats, ordered, pmode)
+            except Exception as e:
+                if now - getattr(self, '_dmx_err_t', 0.0) > 30.0:
+                    self._dmx_err_t = now
+                    say('Moving heads: %s' % e)
             self.held = self.held * 0.97 + (0.03 if self.lim.held else 0.0)
             self.out = ordered
             self.out_hist.append((now, ordered))
@@ -1121,6 +1129,7 @@ class Hub:
         beat = dict(t=now, bridge=self.bridge_status, feed=(now - self.feed['t'] < 3.0),
                     audio=(self.audio.status if self.audio is not None else 'off'),
                     push=(self.push.status if self.push else 'off'),
+                    heads=(self.dmx.describe() if getattr(self, 'dmx', None) else 'off'),
                     brain=(self.audio.brain.snapshot() if self.audio is not None and getattr(self.audio, 'brain', None)
                            is not None else None))
 
@@ -1213,6 +1222,7 @@ class Hub:
                         push=self.push.status if self.push else 'off', live=self.live, message=msg,
                         ableton=self.ableton.describe() if self.ableton else 'off',
                         relay=self.relay.describe() if self.relay else 'off',
+                        heads=self.dmx.describe() if getattr(self, 'dmx', None) else 'off',
                         audio=self.audioshow.snapshot(),
                         live_key=(self.livekey.status if getattr(self, 'livekey', None) is not None else 'off'),
                         brain=(self.audio.brain.snapshot() if self.audio is not None and getattr(self.audio, 'brain', None)
@@ -1378,7 +1388,7 @@ class Hub:
                              a_phrase=int, a_style=str, a_cue=str, a_vis_bars=int,
                              movie=bool, movie_src=str,
                              relay_on=bool, relay_port=str, relay_build_bars=float, relay_diffuse=float,
-                             relay_diffuse_bars=float)
+                             relay_diffuse_bars=float, dmx_host=str, dmx_level=float, dmx_move=float)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (
@@ -1394,6 +1404,10 @@ class Hub:
                     return False
                 if k == 'audio_sens':
                     v = clamp(float(v), 0.4, 2.5)
+                if k in ('dmx_level', 'dmx_move'):
+                    v = clamp(float(v))
+                if k == 'dmx_host':
+                    v = str(v).strip()[:80]
                 if k == 'trig_map':
                     v = {str(ch): vo for ch, vo in v.items() if vo in ('kick', 'snare', 'hats') and str(ch).isdigit()}
                 if k == 'a_voices':
@@ -1612,7 +1626,7 @@ def lan_ip():
 # the hub restarts itself when its code is updated (no more running yesterday's version by mistake)
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
               'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py',
-              'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py']
+              'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py', 'hub_dmx.py']
 
 
 class Reload(Exception):

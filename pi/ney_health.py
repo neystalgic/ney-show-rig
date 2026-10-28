@@ -19,9 +19,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CFG_PATH = os.path.join(HERE, 'config.json')
-DEFAULTS = dict(port=7030, quiet_after=60, ntfy_topic='', ntfy_server='https://ntfy.sh', show_name='Ney show')
+DEFAULTS = dict(port=7030, quiet_after=60, ntfy_topic='', ntfy_server='https://ntfy.sh', show_name='Ney show',
+                machines={})        # name -> status URL to keep an eye on, e.g. {"Zephyrus DMX node": "http://zephyrus:7060/status"}
 
-state = {'last': None, 't': 0.0, 'alerts': {}, 'log': []}
+state = {'last': None, 't': 0.0, 'alerts': {}, 'log': [], 'machines': {}}
 lock = threading.Lock()
 
 
@@ -94,6 +95,28 @@ def watch():
         time.sleep(5)
 
 
+def machines():
+    """Every 30 s: is each machine in config 'machines' answering? (shown on the status page, no phone alerts --
+    the Zephyrus is allowed to sleep when there's no show)"""
+    while True:
+        res = {}
+        for name, url in (cfg().get('machines') or {}).items():
+            try:
+                with urllib.request.urlopen(url, timeout=4) as r:
+                    j = json.loads(r.read() or b'{}')
+                res[name] = 'up' + ((' -- ' + j['output']) if isinstance(j, dict) and j.get('output') else '') + (
+                    (' -- hub connected' if j.get('hub_alive') else ' -- hub not sending') if isinstance(j, dict) and 'hub_alive' in j else '')
+            except Exception as e:
+                res[name] = 'not answering (%s)' % e.__class__.__name__
+        with lock:
+            was = dict(state['machines'])
+            state['machines'] = res
+        for k, v in res.items():
+            if was.get(k, '')[:2] != v[:2]:
+                log('%s: %s' % (k, v))
+        time.sleep(30)
+
+
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -113,9 +136,10 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         with lock:
             beat, t, alerts, lg = state['last'], state['t'], dict(state['alerts']), list(state['log'][-30:])
+            mach = dict(state['machines'])
         age = int(time.time() - t) if t else None
         body = {'heartbeat_age_s': age, 'problems': {k: v[1] for k, v in alerts.items()}, 'last_beat': beat,
-                'log': lg}
+                'machines': mach, 'log': lg}
         data = json.dumps(body, indent=1).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
@@ -126,6 +150,7 @@ class H(BaseHTTPRequestHandler):
 def main():
     c = cfg()
     threading.Thread(target=watch, daemon=True).start()
+    threading.Thread(target=machines, daemon=True).start()
     log('Ney Pi health watch on port %d' % c['port'])
     ThreadingHTTPServer(('0.0.0.0', c['port']), H).serve_forever()
 
