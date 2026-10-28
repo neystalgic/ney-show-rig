@@ -16,10 +16,10 @@ VIBES = {
                  colours=['#ff3b6b', '#ffb02e', '#3bd5ff'], heads=True),
     'chill': dict(label='Chill', blurb='The lava rainbow, calm and steady', palette='lava', colours=['#ff8a3d', '#ffd23d', '#56d18b'],
                   heads=True),
-    'rainbow': dict(label='Rainbow', blurb='The whole spectrum across the room', palette='spectrum',
+    'rainbow': dict(label='Rainbow', blurb='The whole spectrum across the room, pulsing with the music', palette='music',
                     colours=['#ff4d4d', '#ffe14d', '#4dff88', '#4db8ff', '#b84dff'], heads=True),
-    'movie': dict(label='Movie', blurb='Lamps follow the picture, heads off', palette='sync', colours=['#2a3cff', '#7a2aff', '#ff2a7a'],
-                  heads=False),
+    'movie': dict(label='Movie', blurb='Lamps and a soft ceiling wash follow the film', palette='sync', colours=['#2a3cff', '#7a2aff', '#ff2a7a'],
+                  heads=True),
     'rest': dict(label='Rest', blurb='Everything dark', palette=None, colours=['#14161f', '#1d2030'], heads=False),
 }
 ORDER = ['dreamy', 'hype', 'chill', 'rainbow', 'movie', 'rest']
@@ -46,9 +46,11 @@ def recipe(name, e):
         s.update(palette='lava', dmx_level=lerp(0.25, 0.55, e), dmx_move=lerp(0.25, 0.5, e), dmx_strobe='off')
         live.update(speed=lerp(0.25, 0.5, e))
     elif name == 'rainbow':
-        s.update(palette='spectrum', dmx_level=lerp(0.4, 0.85, e), dmx_move=lerp(0.4, 0.85, e), dmx_strobe='off')
-        live.update(speed=lerp(0.25, 1.0, e))
+        s.update(palette='music', music_attack=0.05, music_release=lerp(0.6, 0.35, e), music_base=0.12,
+                 music_boost=lerp(0.5, 0.66, e), music_spread=lerp(240, 330, e), music_period=lerp(90, 40, e),
+                 music_from=None, music_to=None, music_sat=1.0,
+                 dmx_level=lerp(0.4, 0.85, e), dmx_move=lerp(0.4, 0.85, e), dmx_strobe='off')
     elif name == 'movie':
-        s.update(palette='sync', dmx_strobe='off')
+        s.update(palette='sync', dmx_strobe='off', dmx_movie=True, dmx_movie_level=lerp(0.3, 0.6, e), sync_idle=0.18)
     live['tint'] = 0.0                           # each vibe starts from its own colours (the Colour knob shifts them)
     return s, live

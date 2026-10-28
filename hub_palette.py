@@ -204,6 +204,17 @@ class Palette:
             return deep_colour(tri + offset)
         return vivid((self.sync_hue(now) + offset * 360.0) % 360.0)
 
+    def idle(self, key, lvl, dt):
+        """0..1: eases up over a few seconds once there has been no sound for 4 s; eases off as soon as it's back."""
+        q = getattr(self, key + '_quiet', 0.0)
+        q = q + dt if lvl <= 0.0 else 0.0
+        setattr(self, key + '_quiet', q)
+        f = getattr(self, key + '_idlef', 0.0)
+        tgt = 1.0 if q > 4.0 else 0.0
+        f += (tgt - f) * (1.0 - math.exp(-dt / (1.2 if tgt > f else 0.4)))
+        setattr(self, key + '_idlef', f)
+        return f
+
     def render_music(self, cols, now, dt, rms):
         """MUSIC mode: every lamp follows the Scarlett's total loudness; the colour drifts round the rainbow."""
         st = self.hub.state['settings']
@@ -228,6 +239,9 @@ class Palette:
         base = max(0.0, min(1.0, float(st.get('music_base', 0.06))))
         boost = max(0.0, min(1.0, float(st.get('music_boost', 0.74))))
         v = max(0.0, min(1.0, base + boost * env))
+        f = self.idle('music', lvl, dt)                          # no sound for a while: a calm glow, never "dead"
+        if f > 0.0:
+            v = max(v, float(st.get('music_idle', 0.35)) * f * (0.9 + 0.1 * math.sin(2 * math.pi * now / 9.0)))
         self.music_v = v
         spread = float(st.get('music_spread', 30.0))
         segs = self.hub.rig.segs
@@ -269,6 +283,9 @@ class Palette:
         base = max(0.0, min(1.0, float(st.get('sync_base', 0.30))))
         boost = max(0.0, min(1.0, float(st.get('sync_boost', 0.45))))
         v = max(0.0, min(1.0, base + boost * env))
+        f = self.idle('sync', lvl, dt)
+        if f > 0.0:
+            v = max(v, float(st.get('sync_idle', 0.18)) * f * (0.92 + 0.08 * math.sin(2 * math.pi * now / 11.0)))
         self.sync_v = v
         c = self.sync_colour(now)
         self.sync_c = c

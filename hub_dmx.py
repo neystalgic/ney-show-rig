@@ -89,15 +89,15 @@ class Heads:
         while self.run:
             h = self.host()
             if h:
-                try:
-                    self.ip = socket.gethostbyname(h)
-                except Exception:
+                try:                                         # IPv4 on purpose: by name the Zephyrus also answers on
+                    self.ip = socket.getaddrinfo(h, NODE_PORT, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
+                except Exception as e:                       # IPv6, where Windows drops it and each call stalls ~3 s
                     self.ip = None
-                    self.status = 'cannot find %s on the network' % h
+                    self.status = 'cannot find %s on the network (%s)' % (h, e.__class__.__name__)
                 try:
-                    with urllib.request.urlopen('http://%s:%d/config' % (h, NODE_PORT), timeout=2) as r:
+                    with urllib.request.urlopen('http://%s:%d/config' % (self.ip or h, NODE_PORT), timeout=2) as r:
                         self.node_cfg = json.loads(r.read())
-                    with urllib.request.urlopen('http://%s:%d/status' % (h, NODE_PORT), timeout=2) as r:
+                    with urllib.request.urlopen('http://%s:%d/status' % (self.ip or h, NODE_PORT), timeout=2) as r:
                         self.node_status = json.loads(r.read())
                 except Exception as e:
                     self.node_status = None
@@ -121,7 +121,8 @@ class Heads:
         self.t_send = now
         s = self.settings()
         live = self.hub.live
-        dark = (self.hub.blackout or bool(s.get('movie')) or pmode == 'sync' or not cols or not s.get('dmx_on', True))
+        movie = pmode == 'sync' or bool(s.get('movie'))
+        dark = (self.hub.blackout or not cols or not s.get('dmx_on', True) or (movie and not s.get('dmx_movie', True)))
         level = clamp(float(s.get('dmx_level', 0.8))) * clamp(float(live.get('master', 1.0)))
         move = clamp(float(s.get('dmx_move', 1.0)))
         section = getattr(getattr(self.hub, 'audioshow', None), 'section', 'groove')
@@ -131,7 +132,7 @@ class Heads:
         cone = clamp(float(s.get('strobe_cone', 45.0)), 0.0, 45.0)
         smode = s.get('dmx_strobe', 'phrase')
         smode = 'phrase' if smode is True else 'off' if smode in (False, None) else str(smode)
-        strobe_on = smode in ('phrase', 'drop') and section == 'drop' and not dark
+        strobe_on = smode in ('phrase', 'drop') and section == 'drop' and not dark and not movie
         bpb = int(s.get('beats_per_bar', 4) or 4)
         phrase = int(math.floor(beats / (bpb * 4.0)))           # a 4-bar phrase
         landed = section == 'drop' and self.sec_prev != 'drop'
@@ -152,13 +153,16 @@ class Heads:
             ss = max(ss, 0.55)                                  # never white
             r, g, b = colorsys.hsv_to_rgb(hh, ss, 1.0)
             w = (1.0 - ss) * 0.35
-            want = 0.0 if dark else vv * level
-            k = 1 - math.exp(-dt / (0.06 if want > st['lvl'] else 0.25))
+            # MOVIE: a soft ceiling wash in the lamps' colour (which follows the film's sound), slow and calm
+            want = 0.0 if dark else vv * level * (float(s.get('dmx_movie_level', 0.5)) if movie else 1.0)
+            k = 1 - math.exp(-dt / ((0.35 if want > st['lvl'] else 1.4) if movie else (0.06 if want > st['lvl'] else 0.25)))
             st['lvl'] += (want - st['lvl']) * k
             # movement: slow, beat-locked; lean only inside the calibrated window
             lean_max = clamp(float(hd.get('tilt_max_deg', 35.0)), 0.0, 60.0) * 0.95
             if dark:
                 th_t = 0.0
+            elif movie:
+                th_t = min(lean_max, 6.0 + 5.0 * math.sin(now / 23.0 + i * 1.7))   # near-vertical: the ceiling, not the screen
             else:
                 wave = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 8.0 + i * 0.3))
                 th_t = lean_max * move * spread * (0.35 + 0.65 * wave)
@@ -169,7 +173,10 @@ class Heads:
             step = MAX_DEG_S * dt
             st['theta'] += clamp(th_t - st['theta'], -step, step)
             pmin, pmax = int(hd.get('pan_min', 0)), int(hd.get('pan_max', 65535))
-            u = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 32.0 + i / 4.0)) * (move if not dark else 0.0)
+            if movie:
+                u = 0.5 + 0.25 * math.sin(2 * math.pi * (now / 180.0 + i / 4.0))          # a very slow drift
+            else:
+                u = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 32.0 + i / 4.0)) * (move if not dark else 0.0)
             p_t = pmin + u * (pmax - pmin)
             if st['pan'] is None:
                 st['pan'] = p_t
@@ -204,8 +211,8 @@ class Heads:
             ns = self.node_status
             if ns:
                 ready = sum(1 for x in ns.get('heads', []) if x.get('calibrated'))
-                self.status = 'sending to %s -- %s, %d of %d heads calibrated%s' % (
-                    h, ns.get('output', '?'), ready, len(ns.get('heads', [])), (' -- ' + ns['error']) if ns.get('error') else '')
+                self.status = 'sending to %s (%s) -- %s, %d of %d heads calibrated%s' % (
+                    h, self.ip, ns.get('output', '?'), ready, len(ns.get('heads', [])), (' -- ' + ns['error']) if ns.get('error') else '')
             elif not self.status.startswith('cannot'):
                 self.status = 'sending to %s' % h
         except Exception as e:

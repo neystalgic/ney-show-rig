@@ -306,7 +306,7 @@ function renderVibes() {
 }
 function needsSwitch(id) {   // music-area vibes vs show-area vibes: the hub reconnects the lights in between
   const musicArea = p => p === 'music' || p === 'sync';
-  const pal = { dreamy: 'music', hype: 'music', movie: 'sync', chill: 'lava', rainbow: 'spectrum', rest: S.settings.palette };
+  const pal = { dreamy: 'music', hype: 'music', movie: 'sync', chill: 'lava', rainbow: 'music', rest: S.settings.palette };
   return musicArea(pal[id]) !== musicArea(S.settings.palette);
 }
 
@@ -422,7 +422,8 @@ function onLive(j) {
   const hd = String(j.heads || 'off');
   $('cHeads').className = 'chip ' + (/sending/.test(hd) ? 'ok' : /off/.test(hd) ? '' : 'warn'); $('sHeads').textContent = hd;
   $('lvl').style.width = Math.round(Math.min(1, j.level || 0) * 100) + '%';
-  $('cSound').className = 'chip ' + ((j.level || 0) > 0.03 ? 'ok' : '');
+  const heard = (j.level || 0) > 0.03 || /sound OK/.test((j.audio && j.audio.status) || '');
+  $('cSound').className = 'chip keep ' + (heard ? 'ok' : 'warn'); $('cSound').querySelector('span').textContent = heard ? 'Sound' : 'No sound in';
   $('sAudio').textContent = (j.audio && (j.audio.status || j.audio.input)) || (typeof j.audio === 'string' ? j.audio : 'listening');
   if (j.clock) { $('bpm').textContent = Math.round(j.clock.tempo || 0);
     if (j.clock.beat !== lastBeat) { lastBeat = j.clock.beat; const b = $('beat'); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 90); } }

@@ -1432,7 +1432,7 @@ class Hub:
                              music_ch=str, music_floor_db=float, music_top_db=float, music_attack=float,
                              music_release=float, music_base=float, music_boost=float, music_period=float,
                              music_spread=float, music_hold=bool, dmx_on=bool, dmx_strobe=str,
-                             music_sat=float)
+                             music_sat=float, music_idle=float, sync_idle=float, dmx_movie=bool, dmx_movie_level=float)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (
@@ -1655,7 +1655,8 @@ def make_handler(hub):
                 if method == 'POST':
                     n = min(int(self.headers.get('Content-Length', 0) or 0), 20000)
                     data = self.rfile.read(n)
-                rq = urllib.request.Request('http://%s:7060%s' % (hst, sub), data=data, method=method,
+                ip_ = getattr(getattr(hub, 'dmx', None), 'ip', None) or hst      # IPv4: the bare name stalls ~3 s on IPv6
+                rq = urllib.request.Request('http://%s:7060%s' % (ip_, sub), data=data, method=method,
                                             headers={'Content-Type': 'text/plain'})
                 with urllib.request.urlopen(rq, timeout=3) as r:
                     return self._send(r.status, r.read(), r.headers.get('Content-Type', 'application/json'))
