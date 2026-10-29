@@ -66,7 +66,11 @@ def in_avoid(h, pan16, lean_deg):
     if abs(lean_deg) <= AVOID_LEAN:
         return False
     az = (pan16 * PAN_DEG / 65535.0 + (180.0 if lean_deg < 0 else 0.0)) % 360.0
-    return any(abs((az - float(z['az']) + 180.0) % 360.0 - 180.0) < float(z['width']) / 2.0 for z in h.get('avoid') or [])
+    for z in h.get('avoid') or []:                  # a zone may allow a small lean ('lean': ceiling only, above a screen)
+        if abs((az - float(z['az']) + 180.0) % 360.0 - 180.0) < float(z['width']) / 2.0:
+            if abs(lean_deg) > max(AVOID_LEAN, min(30.0, float(z.get('lean', AVOID_LEAN) or AVOID_LEAN))):
+                return True
+    return False
 
 
 def load_cfg():
@@ -381,7 +385,8 @@ def make_handler(node):
                     if 'tilt_dir' in b:
                         h['tilt_dir'] = 1 if int(b['tilt_dir']) >= 0 else -1
                     if isinstance(b.get('avoid'), list):
-                        h['avoid'] = [dict(az=float(z['az']) % 360.0, width=max(5.0, min(180.0, float(z.get('width', 60)))))
+                        h['avoid'] = [dict(az=float(z['az']) % 360.0, width=max(5.0, min(180.0, float(z.get('width', 60)))),
+                                           lean=max(AVOID_LEAN, min(30.0, float(z.get('lean', AVOID_LEAN) or AVOID_LEAN))))
                                       for z in b['avoid'][:6] if isinstance(z, dict) and 'az' in z]
                     if 'calibrated' in b:
                         h['calibrated'] = bool(b['calibrated'])

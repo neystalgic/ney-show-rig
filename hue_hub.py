@@ -1440,7 +1440,7 @@ class Hub:
                              music_sat=float, music_idle=float, sync_idle=float, dmx_movie=bool, dmx_movie_level=float,
                              intermission=bool, intermission_level=float, heads_pending=dict,
                              dmx_gain=list, dmx_gamma=float, dmx_proof=bool,
-                             movie_spots=dict, movie_sweep=float)
+                             movie_spots=dict, movie_sweep=float, movie_volume_bri=float)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (
@@ -1709,6 +1709,15 @@ def make_handler(hub):
                         return self._send(200, f.read(), 'text/html; charset=utf-8')
                 except OSError:
                     return self._send(500, 'the desk page is missing next to hue_hub.py', 'text/plain')
+            if path.startswith('/kit/'):             # the Zephyrus fetches DMX node updates from here (allowed devices only)
+                name = path[5:]
+                if name not in ('dmx_node.py', 'node_page.html', 'heads_desk.html'):
+                    return self._send(404, 'not found', 'text/plain')
+                try:
+                    with open(os.path.join(HERE, 'dmx', 'app', name), 'rb') as f:
+                        return self._send(200, f.read(), 'text/plain; charset=utf-8')
+                except OSError:
+                    return self._send(404, 'not found', 'text/plain')
             if path == '/api/state':
                 return self._send(200, json.dumps(hub.full_state()))
             if path == '/api/live':

@@ -33,7 +33,7 @@ import urllib.request
 ARTNET_PORT = 6454
 NODE_PORT = 7060
 SEND_HZ = 40.0
-SWEEP_DEG_S = 120.0              # movie sweeps only: a quick swing out and back on a loud moment
+SWEEP_DEG_S = 150.0              # movie sweeps only: a quick swing out and back on a loud moment
 MAX_DEG_S = 25.0                 # fastest a beam may swing (degrees a second): quiet motors, no whip pans
 MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range only (135-239 = built-in strobe, never used)
 CH = dict(pan=0, pan_fine=1, tilt=2, tilt_fine=3, speed=4, master=5, r=6, g=7, b=8, w=9)
@@ -45,11 +45,16 @@ AVOID_LEAN = 4.0
 
 
 def in_avoid(hd, pan16, lean_deg, margin=0.0):
-    """The node's rule: a beam leaning more than AVOID_LEAN toward one of the head's avoid zones (pan degrees)."""
+    """The node's rule: a beam leaning toward one of the head's avoid zones (pan degrees) more than the zone allows
+    (AVOID_LEAN, or the zone's own 'lean' -- e.g. 25 = ceiling only, the beam stays above the screen)."""
     if abs(lean_deg) <= AVOID_LEAN:
         return False
     az = (pan16 * 540.0 / 65535.0 + (180.0 if lean_deg < 0 else 0.0)) % 360.0
-    return any(abs((az - float(z['az']) + 180.0) % 360.0 - 180.0) < float(z['width']) / 2.0 + margin for z in hd.get('avoid') or [])
+    for z in hd.get('avoid') or []:
+        if abs((az - float(z['az']) + 180.0) % 360.0 - 180.0) < float(z['width']) / 2.0 + margin:
+            if abs(lean_deg) > max(AVOID_LEAN, float(z.get('lean', AVOID_LEAN) or AVOID_LEAN)):
+                return True
+    return False
 
 
 def clamp(x, lo=0.0, hi=1.0):
@@ -73,6 +78,7 @@ class Heads:
         self.ip = None                     # the node's address (looked up off the show thread)
         self.st = []                       # per head: dict(theta, pan, lvl, flash)
         self.mv_fast = self.mv_slow = 0.0     # movie loudness (fast / slow) for the sweeps
+        self.mv_bri = 0.0                     # movie loudness for the heads' brightness (soft: never a flash)
         self.sweep_t, self.sweep_n, self.sweep_amp = -10.0, 0, 0.0
         self.sec_prev = ''
         self.phrase_prev = None
@@ -187,31 +193,34 @@ class Heads:
         # MOVIE SWEEPS: a sudden jump in the film's loudness swings the spot heads out and back
         sweep_e, sweep_kind, sweep_amp = 0.0, 0, 0.0
         if movie and not dark:
-            try:
-                ch = int(s.get('sync_ch', 2))
-                rms = float((getattr(getattr(self.hub, 'audio', None), 'ch_rms', {}) or {}).get(ch, 0.0))
+            try:                                                 # the Scarlett's total sound (PlayStation in + the Mac's loopback)
+                chr_ = dict(getattr(getattr(self.hub, 'audio', None), 'ch_rms', {}) or {})
+                rms = math.sqrt(sum(float(v) ** 2 for v in chr_.values()))
             except (TypeError, ValueError):
                 rms = 0.0
             db = 20.0 * math.log10(max(rms, 1e-6))
             lo, hi = float(s.get('sync_floor_db', -48.0)), float(s.get('sync_top_db', -12.0))
             lv_ = clamp((db - lo) / max(1.0, hi - lo))
             self.mv_fast += (lv_ - self.mv_fast) * (1 - math.exp(-dt / 0.08))
+            self.mv_bri += (lv_ - self.mv_bri) * (1 - math.exp(-dt / (0.15 if lv_ > self.mv_bri else 0.8)))
             self.mv_slow += (lv_ - self.mv_slow) * (1 - math.exp(-dt / 1.5))
             sens = clamp(float(s.get('movie_sweep', 0.5)))
             jump = self.mv_fast - self.mv_slow
-            if sens > 0 and jump > 0.30 - 0.20 * sens and now - self.sweep_t > 2.5:
+            busy = now - self.sweep_t < (3.7 if self.sweep_n % 3 == 2 else 2.5)
+            if sens > 0 and jump > 0.30 - 0.20 * sens and not busy:
                 self.sweep_t, self.sweep_n = now, self.sweep_n + 1
                 self.sweep_amp = clamp(0.45 + (jump - (0.30 - 0.20 * sens)) * 2.0, 0.45, 1.0)
             t_ = now - self.sweep_t
-            if t_ < 0.35:
-                sweep_e = t_ / 0.35                              # out, fast
-            elif t_ < 0.65:
+            sweep_kind, sweep_amp = self.sweep_n % 3, self.sweep_amp
+            t_out, t_hold, t_back = (1.3, 0.4, 2.0) if sweep_kind == 2 else (0.35, 0.3, 1.6)
+            if t_ < t_out:
+                sweep_e = t_ / t_out                             # out, fast
+            elif t_ < t_out + t_hold:
                 sweep_e = 1.0                                    # hold a beat
-            elif t_ < 2.25:
-                sweep_e = 0.5 + 0.5 * math.cos(math.pi * (t_ - 0.65) / 1.6)   # ease back home
-            sweep_kind, sweep_amp = self.sweep_n % 2, self.sweep_amp
+            elif t_ < t_out + t_hold + t_back:
+                sweep_e = 0.5 + 0.5 * math.cos(math.pi * (t_ - t_out - t_hold) / t_back)   # ease back home
         else:
-            self.mv_fast = self.mv_slow = 0.0
+            self.mv_fast = self.mv_slow = self.mv_bri = 0.0
         spots = s.get('movie_spots') or {}
         data = bytearray(512)
         hs = self.heads()
@@ -231,8 +240,15 @@ class Heads:
             r, g, b = self.match(colorsys.hsv_to_rgb(hh, ss, 1.0), s)
             w = (1.0 - ss) * 0.35
             # MOVIE: a soft ceiling wash in the lamps' colour (which follows the film's sound), slow and calm
-            want = 0.0 if dark else vv * level * (float(s.get('dmx_movie_level', 0.5)) if movie else 1.0)
-            k = 1 - math.exp(-dt / ((0.35 if want > st['lvl'] else 1.4) if movie else (0.06 if want > st['lvl'] else 0.25)))
+            if dark:
+                want = 0.0
+            elif movie:                                          # MOVIE: brightness follows the film's loudness
+                vol_k = clamp(float(s.get('movie_volume_bri', 0.85)))
+                want = level * float(s.get('dmx_movie_level', 0.5)) * clamp(
+                    (1.0 - vol_k) * vv + vol_k * (0.12 + 0.88 * self.mv_bri))
+            else:
+                want = vv * level
+            k = 1 - math.exp(-dt / ((0.12 if want > st['lvl'] else 0.8) if movie else (0.06 if want > st['lvl'] else 0.25)))
             st['lvl'] += (want - st['lvl']) * k
             # movement: slow, beat-locked; lean only inside the calibrated window
             lean_max = clamp(float(hd.get('tilt_max_deg', 35.0)), 0.0, 60.0) * 0.95
@@ -252,14 +268,28 @@ class Heads:
             if movie and not dark and isinstance(spot, dict):
                 try:                                             # MOVIE SPOT: hold the beam over one place (az = pan heading)
                     s_lean = min(lean_max, max(0.0, float(spot.get('lean', 30.0))))
-                    s_az = float(spot.get('az', 45.0)) % 360.0
-                    s_az += -float(spot.get('sweep_deg', 40.0)) * sweep_amp * sweep_e if sweep_kind == 1 else 0.0
-                    th_s = s_lean * (1.0 - 0.6 * sweep_amp * sweep_e) if sweep_kind == 0 else s_lean
+                    home = float(spot.get('az', 45.0)) % 360.0
+                    s_az, th_s = home, s_lean
+                    far = abs(float(spot.get('sweep_deg', 40.0)))
+                    if sweep_kind == 0:                          # dip toward straight up and back
+                        th_s = s_lean * (1.0 - 0.6 * sweep_amp * sweep_e)
+                    elif sweep_kind == 1:                        # quick swing toward the kitchen side
+                        s_az = home - far * sweep_amp * sweep_e
+                    else:                                        # CEILING SWEEP: along the ceiling toward the walls
+                        c_lean = min(lean_max, float(spot.get('ceiling_lean', 25.0)))
+                        end = home
+                        for a_ in range(int(home) + 5, int(float(spot.get('wall_az', 225.0))) + 1, 5):
+                            if in_avoid(hd, a_ / 540.0 * 65535.0, c_lean) or a_ / 540.0 * 65535.0 > int(hd.get('pan_max', 65535)):
+                                break                            # stop where the zones say the screen starts
+                            end = float(a_)
+                        s_az = home + (end - home) * sweep_e
+                        th_s = s_lean + (c_lean - s_lean) * min(1.0, sweep_e * 3.0)
+                        far = max(far, end - home)
                     p16 = (s_az % 360.0) / 540.0 * 65535.0
                     if not in_avoid(hd, p16, th_s) and int(hd.get('pan_min', 0)) <= p16 <= int(hd.get('pan_max', 65535)):
                         th_t, spot_p = th_s, p16
-                        home16 = (float(spot.get('az', 45.0)) % 360.0) / 540.0 * 65535.0
-                        reach = (abs(float(spot.get('sweep_deg', 40.0))) + 8.0) / 540.0 * 65535.0
+                        home16 = home / 540.0 * 65535.0
+                        reach = (far + 8.0) / 540.0 * 65535.0
                         if st['pan'] is not None and (abs(st['pan'] - home16) > reach or in_avoid(hd, st['pan'], th_s, margin=30.0)):
                             th_t = AVOID_LEAN * 0.9              # still turning toward the spot: travel upright
                 except (TypeError, ValueError):
