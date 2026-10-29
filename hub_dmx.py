@@ -33,7 +33,8 @@ import urllib.request
 ARTNET_PORT = 6454
 NODE_PORT = 7060
 SEND_HZ = 40.0
-SWEEP_DEG_S = 150.0              # movie sweeps only: a quick swing out and back on a loud moment
+SWEEP_DEG_S = 150.0
+MUSIC_SWEEP_DEG_S = 240.0        # music sweeps: as quick as the motors go              # movie sweeps only: a quick swing out and back on a loud moment
 MAX_DEG_S = 25.0                 # fastest a beam may swing (degrees a second): quiet motors, no whip pans
 MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range only (135-239 = built-in strobe, never used)
 CH = dict(pan=0, pan_fine=1, tilt=2, tilt_fine=3, speed=4, master=5, r=6, g=7, b=8, w=9)
@@ -205,29 +206,31 @@ class Heads:
         if fire:
             self.last_flash = now
             self.flashes += 1
-        # MOVIE SWEEPS: a sudden jump in the film's loudness swings the spot heads out and back
+        # SWEEPS: a sudden jump in loudness swings the heads out and back -- movie: calm spot sweeps;
+        # music: rapid sweeps, every head together, alternating direction
         sweep_e, sweep_kind, sweep_amp = 0.0, 0, 0.0
-        if movie and not dark:
+        if not dark:
             try:                                                 # the Scarlett's total sound (PlayStation in + the Mac's loopback)
                 chr_ = dict(getattr(getattr(self.hub, 'audio', None), 'ch_rms', {}) or {})
                 rms = math.sqrt(sum(float(v) ** 2 for v in chr_.values()))
             except (TypeError, ValueError):
                 rms = 0.0
             db = 20.0 * math.log10(max(rms, 1e-6))
-            lo, hi = float(s.get('sync_floor_db', -48.0)), float(s.get('sync_top_db', -12.0))
+            lo, hi = ((float(s.get('sync_floor_db', -48.0)), float(s.get('sync_top_db', -12.0))) if movie else
+                      (float(s.get('music_floor_db', -50.0)), float(s.get('music_top_db', -10.0))))
             lv_ = clamp((db - lo) / max(1.0, hi - lo))
             self.mv_fast += (lv_ - self.mv_fast) * (1 - math.exp(-dt / 0.08))
             self.mv_bri += (lv_ - self.mv_bri) * (1 - math.exp(-dt / (0.15 if lv_ > self.mv_bri else 0.8)))
             self.mv_slow += (lv_ - self.mv_slow) * (1 - math.exp(-dt / 1.5))
-            sens = clamp(float(s.get('movie_sweep', 0.5)))
+            sens = clamp(float(s.get('movie_sweep', 0.5) if movie else s.get('dmx_sweep', 0.6)))
             jump = self.mv_fast - self.mv_slow
-            busy = now - self.sweep_t < (3.7 if self.sweep_n % 3 == 2 else 2.5)
+            busy = now - self.sweep_t < ((3.7 if self.sweep_n % 3 == 2 else 2.5) if movie else 1.0)
             if sens > 0 and jump > 0.30 - 0.20 * sens and not busy:
                 self.sweep_t, self.sweep_n = now, self.sweep_n + 1
                 self.sweep_amp = clamp(0.45 + (jump - (0.30 - 0.20 * sens)) * 2.0, 0.45, 1.0)
             t_ = now - self.sweep_t
             sweep_kind, sweep_amp = self.sweep_n % 3, self.sweep_amp
-            t_out, t_hold, t_back = (1.3, 0.4, 2.0) if sweep_kind == 2 else (0.35, 0.3, 1.6)
+            t_out, t_hold, t_back = ((1.3, 0.4, 2.0) if sweep_kind == 2 else (0.35, 0.3, 1.6)) if movie else (0.22, 0.12, 0.6)
             if t_ < t_out:
                 sweep_e = t_ / t_out                             # out, fast
             elif t_ < t_out + t_hold:
@@ -310,7 +313,8 @@ class Heads:
                 except (TypeError, ValueError):
                     spot_p = None
             fast = spot_p is not None and sweep_e > 0.0
-            step = (SWEEP_DEG_S if fast else MAX_DEG_S) * dt
+            mfast = (not movie) and sweep_e > 0.0                 # a music sweep is under way
+            step = (MUSIC_SWEEP_DEG_S if mfast else SWEEP_DEG_S if fast else MAX_DEG_S) * dt
             st['theta'] += clamp(th_t - st['theta'], -step, step)
             pmin, pmax = int(hd.get('pan_min', 0)), int(hd.get('pan_max', 65535))
             if movie:
@@ -320,9 +324,12 @@ class Heads:
             p_t = pmin + u * (pmax - pmin)
             if spot_p is not None:
                 p_t = spot_p
+            if mfast:                                            # music sweep: all heads swing the same way, then back
+                sd = float(s.get('dmx_sweep_deg', 70.0)) * sweep_amp * sweep_e * (1.0 if self.sweep_n % 2 else -1.0)
+                p_t = clamp(p_t + sd / 540.0 * 65535.0, pmin, pmax)
             if st['pan'] is None:
                 st['pan'] = p_t
-            pstep = (SWEEP_DEG_S if fast else MAX_DEG_S) / 540.0 * 65535.0 * dt
+            pstep = (MUSIC_SWEEP_DEG_S if mfast else SWEEP_DEG_S if fast else MAX_DEG_S) / 540.0 * 65535.0 * dt
             if not dark:
                 st['pan'] += clamp(p_t - st['pan'], -pstep, pstep)
             tilt = int(hd.get('tilt_up', 32768)) + int(hd.get('tilt_dir', 1)) * st['theta'] / 180.0 * 65535.0

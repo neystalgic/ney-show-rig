@@ -39,7 +39,7 @@ def recipe(name, e):
                  dmx_level=lerp(0.35, 0.7, e), dmx_move=lerp(0.35, 0.7, e), dmx_strobe='off')
     elif name == 'hype':
         s.update(palette='music', music_attack=0.03, music_release=lerp(0.4, 0.22, e), music_base=0.04,
-                 music_boost=lerp(0.6, 0.76, e), music_spread=lerp(30, 55, e), music_period=lerp(70, 40, e),
+                 music_boost=lerp(0.6, 0.76, e), music_spread=0, music_period=lerp(70, 40, e),
                  music_from=None, music_to=None, music_sat=1.0,                          # the whole rainbow, full colour
                  dmx_level=lerp(0.7, 1.0, e), dmx_move=lerp(0.6, 1.0, e), dmx_strobe='phrase' if e >= 0.5 else 'drop')
     elif name == 'chill':
