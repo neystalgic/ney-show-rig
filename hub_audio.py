@@ -638,8 +638,8 @@ class AudioIn:
 
     def clock(self, now):
         """(beats, bpm) from the gear's MIDI clock while it's running, else None"""
-        if self.clk_bpm is None or now - self.clk_t > 0.5:
-            return None
+        if self.clk_bpm is None or now - self.clk_t > 0.5 or not self.clk_run:
+            return None                                    # stopped gear still sends ticks: only follow it while playing
         return self.ticks / 24.0, self.clk_bpm
 
     def clock_info(self):

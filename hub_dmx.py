@@ -79,6 +79,7 @@ class Heads:
         self.st = []                       # per head: dict(theta, pan, lvl, flash)
         self.mv_fast = self.mv_slow = 0.0     # movie loudness (fast / slow) for the sweeps
         self.mv_bri = 0.0                     # movie loudness for the heads' brightness (soft: never a flash)
+        self.k_prev, self.k_last, self.k_target, self.k_tm = 0.0, -10.0, 0.0, 0.0   # kick lock
         self.sweep_t, self.sweep_n, self.sweep_amp = -10.0, 0, 0.0
         self.sec_prev = ''
         self.phrase_prev = None
@@ -176,6 +177,20 @@ class Heads:
         section = getattr(getattr(self.hub, 'audioshow', None), 'section', 'groove')
         spread = {'breakdown': 0.3, 'quiet': 0.45, 'groove': 0.75, 'drop': 1.0}.get(section, 0.75)
         tm = float(getattr(self.hub, 't_motion', beats / 4.0))
+        # KICK LOCK: while kicks are coming in, the heads' motion steps one beat per kick (eased), so the
+        # moves land on the music actually playing -- not on a clock that may be in another tempo.
+        aus = getattr(self.hub, 'audioshow', None)
+        kick = float((getattr(aus, 'env', None) or {}).get('kick', 0.0)) if aus is not None else 0.0
+        if kick > 0.55 and self.k_prev <= 0.55 and now - self.k_last > 0.22:
+            if now - self.k_last > 2.5:
+                self.k_target = self.k_tm = tm               # (re)join from wherever the clock had them
+            self.k_target += 1.0
+            self.k_last = now
+        self.k_prev = kick
+        if s.get('dmx_kick_lock', True) and now - self.k_last < 2.5:
+            self.k_tm += (self.k_target - self.k_tm) * (1 - math.exp(-dt / 0.12))
+            tm = self.k_tm
+        uni = clamp(float(s.get('dmx_unison', 0.8)))         # 1 = all heads move together, 0 = each its own phase
         # STROBE HITS: when a drop lands (+ each 4-bar phrase in it), only heads in the ceiling cone, max 3 a second
         cone = clamp(float(s.get('strobe_cone', 45.0)), 0.0, 45.0)
         smode = s.get('dmx_strobe', 'phrase')
@@ -228,7 +243,7 @@ class Heads:
         for i, hd in enumerate(hs):
             st = self.st[i]
             # colour: a lamp spread across the room for each head
-            src = cols[int(round(i * (len(cols) - 1) / max(1, n - 1)))] if cols else (0.0, 0.0, 0.0)
+            src = cols[int(round(i * (1.0 - uni) * (len(cols) - 1) / max(1, n - 1)))] if cols else (0.0, 0.0, 0.0)
             hh, ss, vv = colorsys.rgb_to_hsv(*[clamp(x) for x in src])
             pf = getattr(self, 'proof', None)
             if pf is not None and s.get('dmx_proof', True) and vv > 0.004:
@@ -257,7 +272,7 @@ class Heads:
             elif movie:
                 th_t = min(lean_max, 6.0 + 5.0 * math.sin(now / 23.0 + i * 1.7))   # near-vertical: the ceiling, not the screen
             else:
-                wave = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 8.0 + i * 0.3))
+                wave = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 8.0 + i * 0.3 * (1.0 - uni)))
                 th_t = lean_max * move * spread * (0.35 + 0.65 * wave)
                 if strobe_on:
                     th_t = min(th_t, cone * 0.8)                 # in drops, stay inside the strobe cone
@@ -301,7 +316,7 @@ class Heads:
             if movie:
                 u = 0.5 + 0.25 * math.sin(2 * math.pi * (now / 180.0 + i / 4.0))          # a very slow drift
             else:
-                u = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 32.0 + i / 4.0)) * (move if not dark else 0.0)
+                u = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 32.0 + i / 4.0 * (1.0 - uni))) * (move if not dark else 0.0)
             p_t = pmin + u * (pmax - pmin)
             if spot_p is not None:
                 p_t = spot_p
