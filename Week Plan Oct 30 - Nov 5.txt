@@ -1,0 +1,98 @@
+WEEK PLAN  Fri Oct 30 - Thu Nov 5, 2026
+Built from: Arrivals Schedule.txt + work (Fri 3-5:30, Mon 3-8, Wed 3-7:45)
+Times are rough. Deliveries can land any time of day, so each delivery task has a fallback.
+"Me" = what Claude does. Start me off before you leave and I'll work while you're out.
+==========================================================================================
+
+FRI OCT 30  -- DMX DAY  (work 3:00-5:30)          arriving: DMX cables + terminator, 2x Cat6,
+                                                    USB-C hub, ORICO enclosure
+  Morning (no deliveries needed)
+    [ ] Best Buy: micro-HDMI to HDMI (Insignia 8 ft, check "Pickup today")      ~45 min
+    [ ] Order command hooks (Amazon / Target)                                    5 min
+    [ ] Mac: System Settings > Privacy & Security > Accessibility > Python ON    5 min
+    [ ] Pi: sudo systemctl restart ney-health  (you type the password)           2 min
+    [ ] Plan the cable routes along the walls (no walkways, west door clear)     15 min
+    [ ] Set the head addresses now, before cables come:                          15 min
+          Head 2 = 015, Head 3 = 029, Head 4 = 043 (Head 1 stays on 085)
+  2:30  head out.  Me: check that Head 1's queued limits reach the node once the Zephyrus is on
+  After work (~6:00-10:00)
+    [ ] Cat6: router -> Mac. USB-C hub on the Mac                                15 min
+    [ ] DMX chain: Enttec -> H1 -> H2 -> H3 -> H4, terminator in H4's DMX OUT    30 min
+          lay cables loose along the walls tonight; tape goes down Saturday
+    [ ] Start the DMX node FIRST, then power the heads                           -
+    [ ] Finish Head 1: lean direction, max lean, mark calibrated                 20 min
+    [ ] Calibrate Head 2                                                         25 min
+    STOP there. Heads 3-4 are Saturday's job.
+  If the DMX box is late: do Cat6 + hub tonight, and everything moves to Saturday morning.
+
+SAT OCT 31  -- HALLOWEEN, FIRST FULL-RIG SHOW       arriving: gaffer tape + shelf liner
+  Late morning (~10:30-1:00)
+    [ ] Calibrate Heads 3 and 4                                                  ~1 hr
+    [ ] Check avoid zones on all 4: mirror, glass door, screen/projection,
+        no beams at eye level, none touching the projector stand                 20 min
+  Afternoon (~2:00-5:00, once the tape shows up)
+    [ ] Tape DMX + Cat6 runs along the baseboards; shelf liner under heads/gear  ~1 hr
+    [ ] Rehearsal: every vibe at low/high Energy; strobe set to "Drop lands"
+        (heads only fire when they're within 45 deg of vertical)                 ~1 hr
+    [ ] GitHub Desktop: push (40+ commits waiting)                               5 min
+  Evening
+    [ ] First full-rig show. Ceiling fan off. Flicker guard stays on (3/s).
+        If friends come over: ask about photosensitivity before strobes.
+    [ ] Power off: heads first, then close the node.
+
+SUN NOV 1  -- SKY + MOVIE HUB DAY   (clocks fall back 1 hr at 2 AM; Mac + Pi adjust themselves)
+  Morning (~10:30-12:30)
+    [ ] Pi to the cloud projector with the micro-HDMI, Pi on Wi-Fi               20 min
+    [ ] Run install_sky.sh on the Pi (you type the password)                     20 min
+    [ ] Calibrate the sky from your phone (/calibrate, corner pin)               30 min
+        Doing this before Monday means the SSD copy includes the sky.
+  Afternoon (~2:00-5:00)
+    [ ] Safari: sign into Max, Netflix, Hulu, Disney+, Prime, YouTube (you)      45 min
+    [ ] Import the Siri shortcuts from the Finder folder                         15 min
+    [ ] Projector on: Movie Night from the phone, full screen, trackpad, typing  30 min
+    [ ] MacBook camera on the wall: frame "Match the picture"                    20 min
+  Evening
+    [ ] Real movie night: Movie lights, Intermission, Lights up
+
+MON NOV 2  -- (work 3:00-8:00)                    arriving: 1 TB SSD
+  Morning (~10:00-2:00)
+    [ ] Ableton: open the Lightshow Stems Template, drop in a bounced track,
+        check that the 4 groups move the visuals                                 ~1 hr
+    [ ] If the SSD came already: put it in the ORICO enclosure, plug it into the Pi,
+        start the copy (SD Card Copier)                                          10 min + ~30 min copying
+  2:30  head out.  Me: build Light Desk phase 2 (live board)
+  After work (~8:30)
+    [ ] Light night. If the SSD came late: start the copy, then bed.
+
+TUE NOV 3  -- ELECTION DAY, CURTAINS              arriving: curtains
+  Morning
+    [ ] Vote
+    [ ] SSD: out of the ORICO, into the M.2 HAT, boot from it, check that
+        beat / health / sky all come back                                        ~1 hr
+  Midday (when the curtains come)
+    [ ] Hang them over the clip track (drape method, no drilling), west door clear  ~1 hr
+  Afternoon
+    [ ] Time Machine for the Mac onto the Pi's SSD (you approve the install)     ~1 hr
+        first backup runs overnight on Ethernet
+  Evening (dark room test)
+    [ ] Sky + projector + full movie night with the curtains closed. Note any light leaks.
+
+WED NOV 4  -- (work 3:00-7:45)
+  Morning (~10:00-2:00)
+    [ ] Try Light Desk phase 2 (live board) on the Mac + phone; list fixes       1-2 hr
+    [ ] Back up the Zephyrus calibration to the repo, push                       10 min
+  2:30  head out.  Me: phase 2 fixes + start phase 3 (song builder)
+  After work
+    [ ] Rest. At most, a quick vibe check.
+
+THU NOV 5  -- CATCH-UP + DRESS REHEARSAL
+  Morning
+    [ ] Anything that slipped this week goes here first
+    [ ] Command hooks (if they came): cable run around the bedroom door frame    30 min
+  Afternoon
+    [ ] Song builder (phase 3) first try with one bounced track                  1-2 hr
+  Evening
+    [ ] Full dress rehearsal: sky + heads + Hue + projector, curtains closed
+
+NOT THIS WEEK
+  Hue Smart Plugs for the heads, laser bar profile, Rest mode phases, extra speaker

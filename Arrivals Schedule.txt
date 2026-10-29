@@ -1,0 +1,28 @@
+ARRIVALS SCHEDULE  (set Thu Oct 29, 2026, updated same day -- the plan unless shipping estimates change)
+===================================================================================
+
+Fri Oct 30   DMX cables (4 x 15 ft) + terminator (Amazon)  [ARRIVED Thu Oct 29 afternoon, a day early]
+             -> address heads 2-4 (14CH: 015 / 029 / 043; head 1 is on 085 for now), wire the chain,
+                terminator in Head 4's DMX OUT, calibrate each head, first full-rig show
+             2 x 25 ft flat Cat6 (CableGeeker) + Anker 8-in-1 USB-C hub + ORICO M.2 NVMe enclosure (Amazon)
+             -> Cat6 #1: router -> Mac (makes the Pi's "wake the Mac" reliable for Movie Night)
+             -> Cat6 #2: spare / router -> Zephyrus if Tailscale over Wi-Fi ever lags the heads
+             -> USB-C hub: the Mac's extra ports (Ethernet in, Scarlett, projector HDMI) for show nights
+             -> NVMe enclosure: set up the 1 TB SSD over USB before it goes into the Pi's M.2 HAT Monday
+
+Sat Oct 31   Gaffer tape + shelf liner (Walmart)
+             -> tape the long DMX run along the baseboards; liner under the heads / gear
+
+Mon Nov 2    1 TB SSD for the Raspberry Pi
+             -> into the ORICO enclosure first (copy the Pi's system over USB), then into the M.2 HAT,
+                boot from it, then Time Machine for the Mac
+
+Tue Nov 3    The new curtains (Walmart)
+             -> hang over the clip track (drape method), check the room's darkness for the projector + sky
+
+STILL TO ORDER
+  [x] Micro-HDMI to HDMI cable -- GOT IT (Thu Oct 29). Pi 5 -> the cloud projector
+  [ ] Command hooks for the cable run around the bedroom door frame (Walmart was out)
+
+LATER (not yet)
+  [ ] Hue Smart Plugs for the 4 heads (fans only stop when power is cut) -- see Rest Mode Plan.txt

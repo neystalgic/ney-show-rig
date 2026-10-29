@@ -22,4 +22,57 @@ HEAD 1  (white desk side table, DMX 085)  -- calibrated Thu Oct 29, 2026, pose-b
   spills onto the screen (and "Match the picture" would read that blue).
   Straight up leaves a slight wash on the projector wall -> keep Head 1 dim in movie mode.
 
-HEADS 2-4: addresses 015 / 029 / 043, not calibrated yet (cables arrive Fri Oct 30).
+HEAD 2  (white shelf by the kitchen / bedroom doorways, DMX 015)  -- calibrated Thu Oct 29, 2026
+  Straight up      tilt 32768 (mid)                                   checked: vertical
+  Lean direction   tilt_dir -1        Max lean 30 deg        Pan: any
+  Zone             az 180 +/- 30, max 20 deg lean (ceiling only): at 45 deg toward the bedroom doorframe the
+                   glow touched the top-left of the projection -- 20 keeps it on the ceiling for movies
+  At 30 deg every direction lands on the ceiling or the wall right behind the shelf.
+     0   ceiling above the floor lamp, lights the hot air balloon      <- movie spot (az 0, lean 30)
+    45   ceiling between the head and the kitchen pass-through
+    90   ceiling in front of the desk
+   135   ceiling near the projector wall (still ceiling at 45 deg)
+   180   top of the bedroom doorframe; at 45 deg a slight splash on the projection's top-left
+   225   upper wall behind the shelf (cotton cloud, up to the ceiling)
+   270   right behind: smiley neon sign + thermostat (beam only crosses inches of air)
+   315   corner by the balloon lantern, up over the closet/vent toward the kitchen
+  Why 30 max: the bedroom doorway is right beside the shelf -- at 45 deg a beam toward it could cross a
+  passing person's eyes; at 30 it clears the top of the frame.
+
+HEAD 3  (side table at the end of the gray couch, DMX 029; base turned 45 deg toward the coffee table)
+  -- calibrated Thu Oct 29, 2026.  NOTE: its sticker still says "MH1 @ 57" -- relabel it "Head 3 - 029".
+  Straight up      tilt 32768 (mid)                checked: vertical
+  Lean direction   tilt_dir -1        Max lean 30 deg        Pan: any
+  Zones            az 150 +/- 40, max 20 deg: the gray-couch seat right beside it. At 30 deg a raised
+                   arm's wrist is in the beam (~1.5-2 ft over a seated head) -- 20 adds clearance.
+                   az 330 +/- 25, max 10 deg: the ceiling fan. A spinning fan chops a beam into a fast
+                   flicker (photosensitive range), so the head never aims at the blades.
+  At 30 deg (mirrored closet never hit):
+     0   tapestry, straight on (top part, into the ceiling corner)
+    45   ceiling over the blue couch, near the fan
+    90   ceiling directly above the blue couch
+   135   ceiling above the gray couch's left side, lights the red hot air balloon
+   180   tapestry, at an angle
+   225   tapestry on the wall behind the couch
+   270   floor lamp + red/white balloon + ceiling     <- movie spot (az 270, lean 25)
+   315   ceiling fan area
+  Safety briefing: the seat next to Head 3 -- stand up looking away from the head.
+
+HEAD 4  (white rolly desk at the end of the gray couch, by the studio and the Optoma, DMX 043)
+  -- calibrated Thu Oct 29, 2026
+  Straight up      tilt 32768 (mid)                checked: vertical
+  Lean direction   tilt_dir -1        Max lean 30 deg        Pan: any
+  Zone             az 290 +/- 40, max 15 deg: toward the Good Vibes sign / wall behind the gray couch -- the
+                   beam lands just above the couch arm, where a head leaning back on the end seat would be.
+  At 30 deg (curtains / glass door never reached):
+     0   above the studio (over the Poly D player -- the head sits in front of the synth, beam never reaches them)
+    45   ceiling + the orange-striped balloon, far above a raised hand       <- movie spot (az 45, lean 30)
+    90   high ceiling toward the Coexist flag (projection far below)
+   135   ceiling, toward the studio corner
+   180   clips the corner of the Poly D (nice synth backlight), then up
+   225   art wall behind the Optoma, up to the ceiling (the Optoma's lens faces away)
+   270   Good Vibes neon sign (capped at 15 deg -- see zone)
+   315   wall behind the gray couch (capped at 15 deg)
+
+MOVIE SPOTS (hub setting movie_spots): Head 1 coffee table, Head 2 blue/white balloon over the floor lamp,
+Head 3 floor lamp + red/white balloon, Head 4 orange-striped balloon.
