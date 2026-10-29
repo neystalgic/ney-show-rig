@@ -1619,11 +1619,18 @@ def make_handler(hub):
             self.end_headers()
             self.wfile.write(b)
 
-        # -- who may use the desk: this Mac always; a phone / other computer once it has the key --
+        # -- who may use the desk: this Mac + your Tailscale devices always; others once they have the key --
         def _allowed(self):
             ip = self.client_address[0]
             if ip in ('127.0.0.1', '::1') or ip.startswith('::ffff:127.'):
                 return True
+            try:                                # your own Tailscale devices (Zephyrus, Pi, phone): Tailscale
+                import ipaddress                # already proves who they are; home Wi-Fi still needs the key
+                a = ipaddress.ip_address(ip[7:] if ip.startswith('::ffff:') else ip)
+                if a in ipaddress.ip_network('100.64.0.0/10') or a in ipaddress.ip_network('fd7a:115c:a1e0::/48'):
+                    return True
+            except ValueError:
+                pass
             try:
                 with open(TOKEN_PATH) as f:
                     key = f.read().strip()
