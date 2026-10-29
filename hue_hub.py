@@ -1441,7 +1441,8 @@ class Hub:
                              intermission=bool, intermission_level=float, heads_pending=dict,
                              dmx_gain=list, dmx_gamma=float, dmx_proof=bool,
                              movie_spots=dict, movie_sweep=float, movie_volume_bri=float,
-                             dmx_unison=float, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float)
+                             dmx_unison=float, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float,
+                             head_targets=dict, dmx_cue=dict)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (

@@ -242,6 +242,13 @@ class Heads:
         else:
             self.mv_fast = self.mv_slow = self.mv_bri = 0.0
         spots = s.get('movie_spots') or {}
+        # SCENES (cues): saved per-head aims ("targets") -- hold one (every head that has it), or sweep A <-> B
+        cue = s.get('dmx_cue') if isinstance(s.get('dmx_cue'), dict) else None
+        tg = s.get('head_targets') if isinstance(s.get('head_targets'), dict) else {}
+        cue_f = 0.0
+        if cue and cue.get('a') in tg:
+            per = max(2.0, float(cue.get('period', 8.0) or 8.0))
+            cue_f = (0.5 - 0.5 * math.cos(2 * math.pi * (now - float(cue.get('t0', now))) / per)) if cue.get('b') in tg else 0.0
         data = bytearray(512)
         hs = self.heads()
         n = len(hs)
@@ -314,6 +321,21 @@ class Heads:
                             th_t = AVOID_LEAN * 0.9              # still turning toward the spot: travel upright
                 except (TypeError, ValueError):
                     spot_p = None
+            cue_p = None
+            if cue and not dark:
+                ta = (tg.get(cue.get('a')) or {}).get(str(i))
+                tb = (tg.get(cue.get('b')) or {}).get(str(i)) if cue.get('b') else None
+                if isinstance(ta, dict):
+                    if not isinstance(tb, dict):
+                        tb = ta
+                    try:
+                        pa, pb = float(ta['pan']), float(tb['pan'])
+                        la = (float(ta['tilt']) - int(hd.get('tilt_up', 32768))) * int(hd.get('tilt_dir', 1)) * 180.0 / 65535.0
+                        lb = (float(tb['tilt']) - int(hd.get('tilt_up', 32768))) * int(hd.get('tilt_dir', 1)) * 180.0 / 65535.0
+                        cue_p = pa + (pb - pa) * cue_f
+                        th_t = la + (lb - la) * cue_f               # the node still enforces every limit on top
+                    except (KeyError, TypeError, ValueError):
+                        cue_p = None
             fast = spot_p is not None and sweep_e > 0.0
             mfast = (not movie) and sweep_e > 0.0                 # a music sweep is under way
             step = (MUSIC_SWEEP_DEG_S if mfast else SWEEP_DEG_S if fast else MAX_DEG_S) * dt
@@ -326,7 +348,9 @@ class Heads:
             p_t = pmin + u * (pmax - pmin)
             if spot_p is not None:
                 p_t = spot_p
-            if mfast:                                            # music sweep: all heads swing the same way, then back
+            if cue_p is not None:
+                p_t = cue_p
+            if mfast and cue_p is None:                          # music sweep: all heads swing the same way, then back
                 sd = float(s.get('dmx_sweep_deg', 70.0)) * sweep_amp * sweep_e * (1.0 if self.sweep_n % 2 else -1.0)
                 p_t = clamp(p_t + sd / 540.0 * 65535.0, pmin, pmax)
             if st['pan'] is None:
@@ -338,7 +362,7 @@ class Heads:
             tilt = int(clamp(tilt, 0, 65535))
             pan = int(clamp(st['pan'], 0, 65535))
             lv = st['lvl']
-            if fire and st['theta'] <= cone:
+            if fire and abs(st['theta']) <= cone:
                 st['flash'] = now + 0.05
             if now < st['flash']:
                 lv = 1.0                                         # the hit: full, in the head's colour

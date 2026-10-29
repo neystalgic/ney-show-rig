@@ -212,6 +212,16 @@ code{font:12px var(--f-num);color:var(--ink-2);word-break:break-all}
               <div class="seg" id="strobe"><button data-v="off">Off</button><button data-v="drop">Drop lands</button><button data-v="phrase">+ every 4 bars</button></div></div>
             <p class="note">Hits are in colour, max 3 a second, and only from heads pointing up at the ceiling. Heads go dark in Movie and Rest.</p>
           </div>
+          <div class="panel group">
+            <h2>Scenes</h2>
+            <div class="row" id="cueBtns" style="flex-wrap:wrap"></div>
+            <div class="row" style="margin-top:10px">
+              <select class="txt" id="swA" style="flex:1"></select><span class="note">to</span><select class="txt" id="swB" style="flex:1"></select>
+            </div>
+            <div class="slider"><div class="l">Sweep time <b id="vSwP">8 s</b></div><input type="range" id="swP" class="plain" min="2" max="30" step="1" value="8"></div>
+            <div class="row"><button class="btn" id="swGo">Sweep</button><button class="btn danger" id="cueStop">Back to the show</button></div>
+            <p class="note" id="cueNow">Saved targets live on the Heads page. Every head keeps its safety limits in scenes too.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -234,6 +244,11 @@ code{font:12px var(--f-num);color:var(--ink-2);word-break:break-all}
             <button class="btn danger" id="allDark">All dark (Esc)</button>
           </div>
           <p class="note" style="margin-top:10px">Drag the pad or use <kbd>←→</kbd> pan <kbd>↑↓</kbd> tilt, <kbd>Shift</kbd> big, <kbd>Alt</kbd> tiny, <kbd>Ctrl</kbd>+<kbd>↑</kbd> straight up (while steering), <kbd>Ctrl</kbd>+<kbd>Space</kbd> steer on/off. Switching tabs stops steering. Steering lights the head dim blue. Keep faces out of the beam.</p>
+          <hr>
+          <h2>Targets</h2>
+          <p class="note">Aim this head at something (a cloud, the curtains' left edge...), name it, save. Use the same name on every head that should join in -- "clouds" on all four makes a Clouds scene. For a sweep, save two targets (e.g. "curtains A" and "curtains B").</p>
+          <div class="row" style="margin-top:8px"><input class="txt" id="tgName" placeholder="name, e.g. clouds" style="flex:1"><button class="btn primary" id="tgSave">Save aim</button></div>
+          <div id="tgList" class="note" style="margin-top:8px"></div>
         </div>
         <div class="panel">
           <h2 id="calTitle">Calibrate</h2>
@@ -480,7 +495,41 @@ function openStream() {
   es.onmessage = e => { try { onLive(JSON.parse(e.data)); } catch (x) {} };
   es.onerror = () => { es.close(); $('cLights').className = 'chip keep bad'; $('cLights').querySelector('span').textContent = 'Hub offline'; setTimeout(openStream, 3000); };
 }
-async function loadState() { try { S = await (await fetch('/api/state', { cache: 'no-store' })).json(); renderVibes(); syncControls(); } catch (e) { setTimeout(loadState, 3000); } }
+// ---------- TARGETS + SCENES ----------
+const targets = () => (S && S.settings && S.settings.head_targets) || {};
+function renderTargets() {
+  const t = targets(), names = Object.keys(t).sort();
+  const box = $('tgList'); if (box) { box.innerHTML = '';
+    if (!names.length) box.textContent = 'No targets yet.';
+    names.forEach(n => { const row = document.createElement('div'); row.className = 'row'; row.style.margin = '4px 0';
+      const heads = Object.keys(t[n]).map(k => +k + 1).sort().join(', ');
+      const lab = document.createElement('span'); lab.style.flex = '1'; lab.textContent = n + ' · heads ' + heads; row.appendChild(lab);
+      const go = document.createElement('button'); go.className = 'btn'; go.textContent = 'Go'; go.onclick = () => startCue(n); row.appendChild(go);
+      if (t[n][sel] !== undefined) { const rm = document.createElement('button'); rm.className = 'btn'; rm.textContent = 'Remove head ' + (sel + 1);
+        rm.onclick = () => { const nt = JSON.parse(JSON.stringify(t)); delete nt[n][sel]; if (!Object.keys(nt[n]).length) delete nt[n];
+          S.settings.head_targets = nt; setting('head_targets', nt); renderTargets(); }; row.appendChild(rm); }
+      box.appendChild(row); }); }
+  const cb = $('cueBtns'); if (cb) { cb.innerHTML = '';
+    names.forEach(n => { const b = document.createElement('button'); b.className = 'btn'; b.textContent = n; b.onclick = () => startCue(n); cb.appendChild(b); });
+    if (!names.length) { const p = document.createElement('span'); p.className = 'note'; p.textContent = 'Save targets on the Heads page to make scenes.'; cb.appendChild(p); } }
+  ['swA', 'swB'].forEach((id, k) => { const el = $(id); if (!el) return; const keep = el.value; el.innerHTML = '';
+    names.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; el.appendChild(o); });
+    if (names.includes(keep)) el.value = keep; else if (names[k]) el.value = names[k]; });
+}
+function startCue(a, b, period) {
+  const c = { a, b: b || null, period: period || 8, t0: Date.now() / 1000 };
+  S.settings.dmx_cue = c; setting('dmx_cue', c);
+  $('cueNow').textContent = b ? ('Sweeping ' + a + ' ↔ ' + b + ' every ' + (period || 8) + ' s') : ('Holding: ' + a);
+}
+$('tgSave').onclick = () => { const n = $('tgName').value.trim(); if (!n) { toast('Name the target first'); return; }
+  if (!HC) { toast('DMX node not reachable'); return; }
+  const t = JSON.parse(JSON.stringify(targets())); t[n] = t[n] || {}; t[n][sel] = { pan: Math.round(pos.pan), tilt: Math.round(pos.tilt) };
+  S.settings.head_targets = t; setting('head_targets', t); renderTargets(); toast('Saved "' + n + '" for head ' + (sel + 1)); };
+$('swP').oninput = e => { $('vSwP').textContent = e.target.value + ' s'; };
+$('swGo').onclick = () => { const a = $('swA').value, b = $('swB').value; if (!a || !b || a === b) { toast('Pick two different targets'); return; } startCue(a, b, +$('swP').value); };
+$('cueStop').onclick = () => { S.settings.dmx_cue = {}; setting('dmx_cue', {}); $('cueNow').textContent = 'Back to the show.'; };
+
+async function loadState() { try { S = await (await fetch('/api/state', { cache: 'no-store' })).json(); renderVibes(); syncControls(); renderTargets(); } catch (e) { setTimeout(loadState, 3000); } }
 async function pollHeads() { try { const r = await fetch('/heads/status', { cache: 'no-store' }); H = r.ok ? await r.json() : null; } catch (e) { H = null; }
   if (onHeads()) { renderHeadList(); drawPad(); } }
 loadState(); openStream(); pollHeads(); setInterval(pollHeads, 700);
@@ -604,6 +653,7 @@ function renderHeadList() {
   });
 }
 function renderCal() {
+  try { renderTargets(); } catch (e) {}
   const h = hd();
   const pend = (S && S.settings && S.settings.heads_pending) || {};
   $('pend').hidden = !pend[String(sel)];
