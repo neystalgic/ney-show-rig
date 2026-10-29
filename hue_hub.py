@@ -1791,6 +1791,24 @@ class Reload(Exception):
     pass
 
 
+def bounded(make, secs):
+    """Start-up steps that talk to MIDI / audio drivers: give up after secs (a stuck driver call must never
+    hold the whole show hostage -- the hub carries on without that part)."""
+    box = {}
+
+    def run():
+        try:
+            box['v'] = make()
+        except Exception as e:                   # noqa: BLE001
+            box['e'] = e
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(secs)
+    if 'e' in box:
+        say('  (start-up step failed: %s)' % box['e'])
+    return box.get('v')
+
+
 def code_stamp():
     here = os.path.dirname(os.path.abspath(__file__))
     out = {}
@@ -1852,19 +1870,20 @@ def main():
             say('Push 2: off (%s)' % e)
         try:
             import hub_livemidi
-            hub.ableton = hub_livemidi.LiveMidi(hub)
-            say('Ableton (IAC Driver): %s' % hub.ableton.status)
+            hub.ableton = bounded(lambda: hub_livemidi.LiveMidi(hub), 8.0)
+            say('Ableton (IAC Driver): %s' % (hub.ableton.status if hub.ableton else
+                                               'skipped -- the MIDI connection did not answer in 8 s'))
             import hub_liveosc
-            hub.livekey = hub_liveosc.LiveKey(hub)        # the key + scale come from Live (AbletonOSC)
+            hub.livekey = bounded(lambda: hub_liveosc.LiveKey(hub), 5.0)   # the key + scale come from Live
         except ImportError as e:
             say('Ableton (IAC Driver): off (%s)' % e)
     import hub_audio                           # the gear listens whether or not the Push is in use
-    hub.audio = hub_audio.AudioIn(hub)
-    say('Audio (the gear): %s' % hub.audio.status)
+    hub.audio = bounded(lambda: hub_audio.AudioIn(hub), 10.0)
+    say('Audio (the gear): %s' % (hub.audio.status if hub.audio else 'skipped -- the Scarlett did not answer in 10 s'))
     try:                                       # the show's MIDI out to the Zephyrus (network session "Show")
         import hub_relay
-        hub.relay = hub_relay.Relay(hub)
-        say('Zephyrus relay: %s' % hub.relay.status)
+        hub.relay = bounded(lambda: hub_relay.Relay(hub), 8.0)
+        say('Zephyrus relay: %s' % (hub.relay.status if hub.relay else 'skipped -- did not answer in 8 s'))
     except ImportError as e:
         say('Zephyrus relay: off (%s)' % e)
     threading.Thread(target=feed_listener, args=(hub, args.feed_port), daemon=True).start()
