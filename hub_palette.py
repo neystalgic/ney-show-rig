@@ -198,6 +198,9 @@ class Palette:
     def sync_colour(self, now, offset=0.0):
         """sync_scheme 'deep' = deep blues and purples swaying slowly; otherwise the hue from sync_hue."""
         st = self.hub.state['settings']
+        if st.get('sync_scheme') == 'tropical':
+            period = max(5.0, float(st.get('sync_period', 90.0)))
+            return tropical_colour((now / period) + offset)
         if st.get('sync_scheme') == 'deep':
             period = max(5.0, float(st.get('sync_period', 60.0)))
             tri = 0.5 - 0.5 * math.cos(2 * math.pi * ((now / period) % 1.0))
@@ -293,10 +296,13 @@ class Palette:
         self.inter_f = fi
         v = v * (1.0 - fi) + float(st.get('intermission_level', 0.38)) * fi
         self.sync_v = v
-        c = self.sync_colour(now)
+        n_ = len(cols)
+        spread = st.get('sync_scheme') == 'tropical'           # tropical: each lamp a different spot on the island
+        cs = [self.sync_colour(now, (i * 0.13 if spread else 0.0)) for i in range(n_)] or [self.sync_colour(now)]
         warm = max(f * 0.85, fi)
         if warm > 0.001:
-            c = tuple(a_ + (b_ - a_) * warm for a_, b_ in zip(c, (1.0, 0.52, 0.18)))
+            cs = [tuple(a_ + (b_ - a_) * warm for a_, b_ in zip(c_, (1.0, 0.52, 0.18))) for c_ in cs]
+        c = cs[0]
         self.sync_c = c
         # SYNC BUFFER: the streamed bulbs wait sync_delay seconds so they land together with the Play
         # floor lamp, which is driven outside the stream and needs that long to catch up.
@@ -304,13 +310,28 @@ class Palette:
         hist = getattr(self, 'sync_hist', None)
         if hist is None:
             hist = self.sync_hist = collections.deque()
-        hist.append((now, v, c))
+        hist.append((now, v, cs))
         while len(hist) > 1 and hist[1][0] <= now - d:
             hist.popleft()
         _, vd, cd = hist[0]
-        return [tuple(x * vd for x in cd) for _ in cols]
+        return [tuple(x * vd for x in cd[i % len(cd)]) for i in range(len(cols))]
 
 DEEP = [(0.0, 0.10, 1.0), (0.22, 0.0, 1.0), (0.48, 0.0, 1.0), (0.62, 0.0, 0.85)]   # deep blue -> indigo -> purple -> plum
+
+
+# TROPICAL (Survivor nights): ocean teal -> lagoon turquoise -> palm green -> mango -> torch amber -> coral -> hibiscus
+TROPIC = [(0.0, 0.55, 0.62), (0.0, 0.85, 0.80), (0.20, 0.80, 0.18), (1.0, 0.62, 0.05), (1.0, 0.42, 0.08),
+          (1.0, 0.32, 0.26), (0.95, 0.12, 0.42)]
+
+
+def tropical_colour(t):
+    """t: any number; walks round the tropical loop (hibiscus leads back into the ocean)."""
+    x = (t % 1.0) * len(TROPIC)
+    i = int(x) % len(TROPIC)
+    f = x - int(x)
+    f = f * f * (3 - 2 * f)
+    a, b = TROPIC[i], TROPIC[(i + 1) % len(TROPIC)]
+    return tuple(p + (q - p) * f for p, q in zip(a, b))
 
 
 def deep_colour(t):

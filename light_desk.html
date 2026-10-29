@@ -491,7 +491,7 @@ $('copyLink').onclick = () => { navigator.clipboard?.writeText($('phoneLink').te
 const PAN_DEG = 540, TILT_DEG = 180, MAXV = 65535, AVOID_LEAN = 4;
 let sel = 0, pos = { pan: 32768, tilt: 32768 }, steering = false, free = false, lastSend = 0, keepT = null;
 const onHeads = () => $('p-heads').classList.contains('on');
-const hpost = async (p, b) => { const r = await fetch('/heads' + p, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(b) }); return r.json(); };
+const hpost = async (p, b) => { const r = await fetch('/heads' + p, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ v: 2 }, b)) }); return r.json(); };   // v: the hub ignores steering from out-of-date desk pages
 const hd = () => HC.heads[sel];
 const leanDeg = (p, h) => (p.tilt - h.tilt_up) * h.tilt_dir * TILT_DEG / MAXV;
 const azOf = (p, h) => ((p.pan / MAXV * PAN_DEG) + (leanDeg(p, h) < 0 ? 180 : 0)) % 360;

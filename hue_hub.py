@@ -1670,6 +1670,14 @@ def make_handler(hub):
                 if method == 'POST':
                     n = min(int(self.headers.get('Content-Length', 0) or 0), 20000)
                     data = self.rfile.read(n)
+                    if sub.startswith('/calib'):           # steering: only from an up-to-date desk (old tabs kept re-steering)
+                        try:
+                            body_ = json.loads(data or b'{}')
+                        except ValueError:
+                            body_ = {}
+                        hub.steer_seen = (self.client_address[0], time.time(), int(body_.get('v', 0) or 0), bool(body_.get('stop')))
+                        if int(body_.get('v', 0) or 0) < 2 and not body_.get('stop'):
+                            return self._send(409, json.dumps({'error': 'this desk page is out of date -- refresh it'}))
                 ip_ = getattr(getattr(hub, 'dmx', None), 'ip', None) or hst      # IPv4: the bare name stalls ~3 s on IPv6
                 rq = urllib.request.Request('http://%s:7060%s' % (ip_, sub), data=data, method=method,
                                             headers={'Content-Type': 'text/plain'})
@@ -1709,6 +1717,12 @@ def make_handler(hub):
                         return self._send(200, f.read(), 'text/html; charset=utf-8')
                 except OSError:
                     return self._send(500, 'the desk page is missing next to hue_hub.py', 'text/plain')
+            if path == '/viz':                       # Scarlett visualizer (full screen on a laptop)
+                try:
+                    with open(os.path.join(HERE, 'viz.html'), 'rb') as f:
+                        return self._send(200, f.read(), 'text/html; charset=utf-8')
+                except OSError:
+                    return self._send(404, 'viz.html is missing', 'text/plain')
             if path.startswith('/kit/'):             # the Zephyrus fetches DMX node updates from here (allowed devices only)
                 name = path[5:]
                 if name not in ('dmx_node.py', 'node_page.html', 'heads_desk.html'):

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scarlett Visualizer</title>
+<style>
+  :root { --ink: #e9e4da; --dim: #7d776c; }
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink); cursor: pointer; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #hud { position: fixed; left: 28px; bottom: 22px; font-size: 12px; letter-spacing: .18em; color: var(--dim);
+         text-transform: uppercase; display: flex; gap: 22px; pointer-events: none; }
+  #hud b { color: var(--ink); font-weight: 500; }
+  #hint { position: fixed; top: 18px; right: 22px; font-size: 11px; letter-spacing: .14em; color: var(--dim);
+          text-transform: uppercase; transition: opacity .6s; pointer-events: none; }
+  body.full #hint { opacity: 0; } body.full { cursor: none; }
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><span>Scarlett 4i4</span><span>Level <b id="db">–</b></span><span id="sec"></span></div>
+<div id="hint">Click for full screen · H hides the text</div>
+<script>
+const cv = document.getElementById('c'), cx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function size() { DPR = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR; cx.setTransform(DPR, 0, 0, DPR, 0, 0); }
+addEventListener('resize', size); size();
+
+// ---- live data from the hub (20 a second), smoothed to 60 fps here ----
+const tgt = { level: 0, low: 0, high: 0, kick: 0, snare: 0, hats: 0, bright: .5 };
+const cur = Object.assign({}, tgt);
+let cols = ['#ff3b6b', '#7b5cff', '#2ad1ff', '#ffb23b', '#3bff9d', '#ff6a2a'], section = '', live = false, lastMsg = 0;
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function vivid(h) {                       // lamp colours, pushed to full brightness for the screen
+  let [r, g, b] = hexRgb(h); const m = Math.max(r, g, b, 1); r = r / m; g = g / m; b = b / m;
+  return [r, g, b].map(x => Math.round(40 + 215 * x)); }
+function connect() {
+  const es = new EventSource('/api/stream');
+  es.onmessage = e => { try { const d = JSON.parse(e.data), a = d.audio || {};
+      for (const k of Object.keys(tgt)) if (typeof a[k] === 'number') tgt[k] = a[k];
+      const c = Object.values(d.cols || {}).filter(x => x && x !== '#000000');
+      if (c.length) cols = c; section = a.section || ''; live = true; lastMsg = performance.now(); } catch (err) {} };
+  es.onerror = () => { live = false; es.close(); setTimeout(connect, 1500); };
+}
+connect();
+
+// ---- the picture ----
+const N = 160;                               // bars round the ring
+const bars = new Float32Array(N), peaks = new Float32Array(N);
+const ripples = [], sparks = [];
+let t = 0, prevSnare = 0, prevKick = 0, lastRipple = 0, peakLv = 0, peakT = 0;
+function noise(i, tt) { return .5 + .25 * Math.sin(i * .37 + tt * 1.9) + .25 * Math.sin(i * .13 - tt * 1.3 + Math.sin(i * .05)); }
+function colAt(f) {                          // smooth walk through the lamp colours
+  const cs = cols.map(vivid), n = cs.length, x = ((f % 1) + 1) % 1 * n, i = Math.floor(x), k = x - i;
+  const a = cs[i % n], b = cs[(i + 1) % n];
+  return [0, 1, 2].map(j => Math.round(a[j] + (b[j] - a[j]) * k)); }
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+let tPrev = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - tPrev) / 1000); tPrev = now; t += dt;
+  if (performance.now() - lastMsg > 2500) live = false;
+  for (const k of Object.keys(cur)) { const up = tgt[k] > cur[k]; cur[k] += (tgt[k] - cur[k]) * (1 - Math.exp(-dt / (up ? .045 : .18))); }
+  const L = live ? cur.level : .04 + .03 * Math.sin(t * .8);
+  // events (spaced: never more than ~3 big changes a second)
+  if (tgt.snare > .55 && prevSnare <= .55 && t - lastRipple > .34) { ripples.push({ r: 0, a: .55, c: colAt(t * .05 + .5) }); lastRipple = t; }
+  prevSnare = tgt.snare;
+  if (cur.hats > .25) for (let i = 0; i < 3; i++) if (Math.random() < cur.hats * .5)
+    sparks.push({ a: Math.random() * 6.283, r: .3 + Math.random() * .25, v: .25 + Math.random() * .35, life: 1, c: colAt(Math.random()) });
+
+  // fade the last frame (soft trails)
+  cx.fillStyle = 'rgba(0,0,0,0.22)'; cx.fillRect(0, 0, W, H);
+  const m = Math.min(W, H), X = W / 2, Y = H / 2 - m * .02;
+  const R0 = m * (.17 + .05 * cur.kick + .04 * L);
+
+  // glow core (kick)
+  const g = cx.createRadialGradient(X, Y, 0, X, Y, R0 * 1.6);
+  const cc = colAt(t * .03);
+  g.addColorStop(0, rgba(cc, .10 + .22 * cur.kick)); g.addColorStop(1, rgba(cc, 0));
+  cx.fillStyle = g; cx.beginPath(); cx.arc(X, Y, R0 * 1.6, 0, 6.283); cx.fill();
+
+  // radial bars: lows on the bottom half, highs on the top half
+  cx.lineCap = 'round';
+  for (let i = 0; i < N; i++) {
+    const ang = i / N * 6.283 - Math.PI / 2, top = .5 + .5 * Math.cos(ang + Math.PI / 2);   // 1 = top
+    const band = cur.low * (1 - top) + cur.high * top;
+    const want = (.08 + .55 * L + .45 * band) * noise(i, t) * (live ? 1 : .6);
+    bars[i] += (want - bars[i]) * (want > bars[i] ? .5 : .12);
+    peaks[i] = Math.max(peaks[i] - dt * .25, bars[i]);
+    const len = m * .28 * bars[i], c = colAt(i / N + t * .04);
+    const x0 = X + Math.cos(ang) * R0, y0 = Y + Math.sin(ang) * R0;
+    cx.strokeStyle = rgba(c, .85); cx.lineWidth = Math.max(2, m * .006);
+    cx.beginPath(); cx.moveTo(x0, y0); cx.lineTo(x0 + Math.cos(ang) * len, y0 + Math.sin(ang) * len); cx.stroke();
+    const pr = R0 + m * .28 * peaks[i] + m * .012;
+    cx.fillStyle = rgba(c, .55); cx.beginPath(); cx.arc(X + Math.cos(ang) * pr, Y + Math.sin(ang) * pr, Math.max(1.2, m * .0025), 0, 6.283); cx.fill();
+  }
+  // inner ring
+  cx.strokeStyle = rgba(colAt(t * .04 + .25), .55 + .35 * cur.kick); cx.lineWidth = Math.max(1.5, m * .004);
+  cx.beginPath(); cx.arc(X, Y, R0 * .94, 0, 6.283); cx.stroke();
+
+  // snare ripples
+  for (let i = ripples.length - 1; i >= 0; i--) { const rp = ripples[i]; rp.r += dt * m * .55; rp.a -= dt * .5;
+    if (rp.a <= 0) { ripples.splice(i, 1); continue; }
+    cx.strokeStyle = rgba(rp.c, rp.a); cx.lineWidth = m * .003; cx.beginPath(); cx.arc(X, Y, R0 + rp.r, 0, 6.283); cx.stroke(); }
+  // hat sparks
+  for (let i = sparks.length - 1; i >= 0; i--) { const s = sparks[i]; s.r += s.v * dt; s.life -= dt * 1.4;
+    if (s.life <= 0 || sparks.length > 400) { sparks.splice(i, 1); continue; }
+    const rr = m * s.r; cx.fillStyle = rgba(s.c, s.life * .8);
+    cx.beginPath(); cx.arc(X + Math.cos(s.a) * rr, Y + Math.sin(s.a) * rr, m * .002 + 1, 0, 6.283); cx.fill(); }
+
+  // the level meter along the bottom (with peak hold)
+  const mw = Math.min(W * .5, 640), mx = X - mw / 2, my = H - 64, segs = 48;
+  if (L > peakLv || t - peakT > 1.2) { peakLv = L; peakT = t; }
+  for (let s = 0; s < segs; s++) { const f = s / segs, on = f < L, pk = Math.abs(f - peakLv) < 1 / segs;
+    const c = colAt(f * .8 + t * .02);
+    cx.fillStyle = on ? rgba(c, .95) : pk ? rgba(c, .7) : 'rgba(255,255,255,0.06)';
+    cx.fillRect(mx + f * mw, my, mw / segs - 3, 6); }
+
+  if (!live) { cx.fillStyle = 'rgba(233,228,218,.5)'; cx.font = '12px ui-monospace, Menlo, monospace'; cx.textAlign = 'center';
+    cx.fillText('WAITING FOR THE HUE HUB', X, Y + 4); }
+  document.getElementById('db').textContent = live ? Math.round(100 * cur.level) + '%' : '–';
+  document.getElementById('sec').textContent = section && live ? section : '';
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+addEventListener('click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); });
+document.addEventListener('fullscreenchange', () => document.body.classList.toggle('full', !!document.fullscreenElement));
+addEventListener('keydown', e => { if (e.key === 'h' || e.key === 'H') { const h = document.getElementById('hud'); h.style.display = h.style.display === 'none' ? '' : 'none'; } });
+</script>
+</body></html>
