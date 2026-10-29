@@ -1,0 +1,25 @@
+HEAD CALIBRATION NOTES  (backup of what's saved on the Zephyrus: C:\NeyDMX\config\heads_config.json)
+=====================================================================================================
+
+HEAD 1  (white desk side table, DMX 085)  -- calibrated Thu Oct 29, 2026, pose-by-pose test
+  Straight up      tilt 32768 (mid)                                   checked: vertical
+  Lean direction   tilt_dir -1
+  Max lean         30 deg   (45 toward the kitchen / doorway could reach a standing person's eyes;
+                             30 lands on the ceiling there)
+  Pan window       0 - 235 deg (pan_max 28520)
+  Blocked zone     az 235 +/- 70  = 165 - 305 deg   (projection screen + desk + Coexist flag, ~15 deg cushion)
+
+  What the angles hit (desk angles = pan heading, +180 when leaning the other way):
+     0   white shelf / kitchen side (ceiling at 30 deg)
+    45   ceiling right over the coffee table (30 and 45 deg)  <- spot for a hanging cloud
+   180   toward the desk; at 45 deg: right end of the projection, by the Coexist flag
+         (in your peripheral vision when sitting at the Zephyrus)
+   225   projector wall (ceiling line at 30 deg)
+   270   bottom-left corner of the projection screen (45 deg)
+   300   projector wall below/left of the screen (45 deg)
+
+  Placement: keep the table in its original spot. Pushed against the wall, the straight-up beam
+  spills onto the screen (and "Match the picture" would read that blue).
+  Straight up leaves a slight wash on the projector wall -> keep Head 1 dim in movie mode.
+
+HEADS 2-4: addresses 015 / 029 / 043, not calibrated yet (cables arrive Fri Oct 30).

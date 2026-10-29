@@ -426,6 +426,7 @@ class Hub:
         self.palette = hub_palette.Palette(self)
         self.gradlamp = hub_gradlamp.GradLamp(self)
         self.dmx = hub_dmx.Heads(self)          # the moving heads (setting dmx_host = the Zephyrus)
+        self.dmx.proof = proof                  # heads match the colour the Hue bulbs can really show
         self.movie_prev = None                  # Movie mode: the lamps' colours from the picture (smoothed)
         self.movie_status = 'off'
         self.message = ('', 0.0)
@@ -1437,7 +1438,9 @@ class Hub:
                              music_release=float, music_base=float, music_boost=float, music_period=float,
                              music_spread=float, music_hold=bool, dmx_on=bool, dmx_strobe=str,
                              music_sat=float, music_idle=float, sync_idle=float, dmx_movie=bool, dmx_movie_level=float,
-                             intermission=bool, intermission_level=float, heads_pending=dict)
+                             intermission=bool, intermission_level=float, heads_pending=dict,
+                             dmx_gain=list, dmx_gamma=float, dmx_proof=bool,
+                             movie_spots=dict, movie_sweep=float)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (

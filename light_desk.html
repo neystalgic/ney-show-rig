@@ -229,11 +229,11 @@ code{font:12px var(--f-num);color:var(--ink-2);word-break:break-all}
           <canvas id="pad" width="900" height="440"></canvas>
           <div class="ro"><span>Pan <b id="rPan">–</b></span><span>Tilt <b id="rTilt">–</b></span><span>Lean <b id="rLean">–</b></span><span>Output <b id="rOut">–</b></span></div>
           <div class="row" style="margin-top:12px">
-            <button class="btn primary" id="steer">Steer (Space)</button>
+            <button class="btn primary" id="steer">Steer (Ctrl+Space)</button>
             <button class="btn" id="free">Free aim</button>
             <button class="btn danger" id="allDark">All dark (Esc)</button>
           </div>
-          <p class="note" style="margin-top:10px">Drag the pad or use <kbd>←→</kbd> pan <kbd>↑↓</kbd> tilt, <kbd>Shift</kbd> big, <kbd>Alt</kbd> tiny, <kbd>U</kbd> straight up. Steering lights the head dim blue. Keep faces out of the beam.</p>
+          <p class="note" style="margin-top:10px">Drag the pad or use <kbd>←→</kbd> pan <kbd>↑↓</kbd> tilt, <kbd>Shift</kbd> big, <kbd>Alt</kbd> tiny, <kbd>Ctrl</kbd>+<kbd>↑</kbd> straight up (while steering), <kbd>Ctrl</kbd>+<kbd>Space</kbd> steer on/off. Switching tabs stops steering. Steering lights the head dim blue. Keep faces out of the beam.</p>
         </div>
         <div class="panel">
           <h2 id="calTitle">Calibrate</h2>
@@ -517,12 +517,12 @@ function sendSteer(force) {
   hpost('/calib', { head: sel, pan: pos.pan, tilt: pos.tilt }).catch(() => toast('DMX node not reachable'));
 }
 function setSteer(on) {
-  steering = on; $('steer').classList.toggle('on', on); $('steer').textContent = on ? 'Steering · Space to stop' : 'Steer (Space)';
+  steering = on; $('steer').classList.toggle('on', on); $('steer').textContent = on ? 'Steering · Ctrl+Space to stop' : 'Steer (Ctrl+Space)';
   clearInterval(keepT);
   if (on) { sendSteer(true); keepT = setInterval(() => sendSteer(true), 2000); } else { hpost('/calib', { head: sel, stop: true }).catch(() => {}); }
   drawPad();
 }
-function stopAll() { steering = false; clearInterval(keepT); $('steer').classList.remove('on'); $('steer').textContent = 'Steer (Space)';
+function stopAll() { steering = false; clearInterval(keepT); $('steer').classList.remove('on'); $('steer').textContent = 'Steer (Ctrl+Space)';
   if (HC) HC.heads.forEach((_, i) => hpost('/calib', { head: i, stop: true }).catch(() => {})); toast('All steering stopped'); drawPad(); }
 const pc = $('pad'), px = pc.getContext('2d');
 const toXY = p => [p.pan / MAXV * pc.width, p.tilt / MAXV * pc.height];
@@ -560,14 +560,19 @@ pc.addEventListener('pointerdown', e => { if (!HC) return; dragging = true; pc.s
 pc.addEventListener('pointermove', e => { if (dragging) padEvt(e); });
 pc.addEventListener('pointerup', () => { dragging = false; sendSteer(true); });
 addEventListener('keydown', e => {
-  if (!onHeads() || e.target.tagName === 'INPUT' || !HC) return;
+  const t = e.target;
+  if (!onHeads() || !HC || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable) return;
   if (e.key === 'Escape') { stopAll(); e.preventDefault(); return; }
-  if (e.key === ' ') { setSteer(!steering); e.preventDefault(); return; }
+  const mod = e.ctrlKey || e.metaKey;                 // steering needs Ctrl (Cmd on the Mac): plain typing never starts it
+  if (mod && (e.key === ' ' || e.code === 'Space')) { setSteer(!steering); e.preventDefault(); return; }
+  if (!steering) return;                              // arrows / straight-up only work while already steering
+  if (mod && e.key === 'ArrowUp') { pos.tilt = hd().tilt_up; sendSteer(true); drawPad(); e.preventDefault(); return; }
   const step = e.shiftKey ? 1024 : e.altKey ? 16 : 128;
   const k = { ArrowLeft: ['pan', -step], ArrowRight: ['pan', step], ArrowUp: ['tilt', -step], ArrowDown: ['tilt', step] }[e.key];
-  if (k) { pos[k[0]] = Math.max(0, Math.min(MAXV, pos[k[0]] + k[1])); if (!steering) setSteer(true); sendSteer(true); drawPad(); e.preventDefault(); }
-  if (e.key === 'u' || e.key === 'U') { pos.tilt = hd().tilt_up; if (!steering) setSteer(true); sendSteer(true); drawPad(); }
+  if (k && !mod) { pos[k[0]] = Math.max(0, Math.min(MAXV, pos[k[0]] + k[1])); sendSteer(true); drawPad(); e.preventDefault(); }
 });
+// leaving the desk (another tab, minimised) stops steering, so a forgotten desk can't keep holding a head
+document.addEventListener('visibilitychange', () => { if (document.hidden && steering) setSteer(false); });
 async function saveHead(p) { try { const h = await hpost('/head', Object.assign({ head: sel }, p)); HC.heads[sel] = h; renderCal(); renderHeadList(); drawPad(); toast('Saved'); } catch (e) { toast('Could not save — is the DMX node running?'); } }
 function pair(r, n, key, toN = x => x, fromN = x => x) { $(r).oninput = () => { $(n).value = toN(+$(r).value); }; $(r).onchange = () => saveHead({ [key]: +$(r).value }); $(n).onchange = () => { const v = fromN(+$(n).value); $(r).value = v; saveHead({ [key]: v }); }; }
 pair('addr', 'addrN', 'addr'); pair('lean', 'leanN', 'tilt_max_deg'); pair('cap', 'capN', 'max_level', x => Math.round(x * 100), x => x / 100);

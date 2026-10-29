@@ -33,6 +33,7 @@ import urllib.request
 ARTNET_PORT = 6454
 NODE_PORT = 7060
 SEND_HZ = 40.0
+SWEEP_DEG_S = 120.0              # movie sweeps only: a quick swing out and back on a loud moment
 MAX_DEG_S = 25.0                 # fastest a beam may swing (degrees a second): quiet motors, no whip pans
 MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range only (135-239 = built-in strobe, never used)
 CH = dict(pan=0, pan_fine=1, tilt=2, tilt_fine=3, speed=4, master=5, r=6, g=7, b=8, w=9)
@@ -71,6 +72,8 @@ class Heads:
         self.status = 'off'
         self.ip = None                     # the node's address (looked up off the show thread)
         self.st = []                       # per head: dict(theta, pan, lvl, flash)
+        self.mv_fast = self.mv_slow = 0.0     # movie loudness (fast / slow) for the sweeps
+        self.sweep_t, self.sweep_n, self.sweep_amp = -10.0, 0, 0.0
         self.sec_prev = ''
         self.phrase_prev = None
         self.last_flash = -10.0
@@ -134,6 +137,21 @@ class Heads:
             self.st.append(dict(theta=0.0, pan=None, lvl=0.0, flash=0.0))
         return hs
 
+    @staticmethod
+    def match(rgb, s):
+        """COLOUR MATCH: lamp colours are gamma-encoded, the heads' LEDs are linear -- linearise, then
+        balance the head's red/green/blue LEDs (settings dmx_gamma, dmx_gain) so a head looks like the bulbs."""
+        try:
+            gm = clamp(float(s.get('dmx_gamma', 2.2)), 1.0, 3.0)
+            gain = [clamp(float(x), 0.0, 1.5) for x in (s.get('dmx_gain') or [1.0, 1.0, 1.0])][:3]
+            if len(gain) < 3:
+                gain = [1.0, 1.0, 1.0]
+        except (TypeError, ValueError):
+            gm, gain = 2.2, [1.0, 1.0, 1.0]
+        out = [clamp(c) ** gm * k for c, k in zip(rgb, gain)]
+        mx = max(out) or 1.0
+        return tuple(x / mx for x in out)                     # brightness stays on the master channel
+
     def frame(self, now, dt, beats, cols, pmode):
         """cols: the lamps' colours AFTER the flicker protection (0..1 RGB tuples)."""
         h = self.host()
@@ -166,6 +184,35 @@ class Heads:
         if fire:
             self.last_flash = now
             self.flashes += 1
+        # MOVIE SWEEPS: a sudden jump in the film's loudness swings the spot heads out and back
+        sweep_e, sweep_kind, sweep_amp = 0.0, 0, 0.0
+        if movie and not dark:
+            try:
+                ch = int(s.get('sync_ch', 2))
+                rms = float((getattr(getattr(self.hub, 'audio', None), 'ch_rms', {}) or {}).get(ch, 0.0))
+            except (TypeError, ValueError):
+                rms = 0.0
+            db = 20.0 * math.log10(max(rms, 1e-6))
+            lo, hi = float(s.get('sync_floor_db', -48.0)), float(s.get('sync_top_db', -12.0))
+            lv_ = clamp((db - lo) / max(1.0, hi - lo))
+            self.mv_fast += (lv_ - self.mv_fast) * (1 - math.exp(-dt / 0.08))
+            self.mv_slow += (lv_ - self.mv_slow) * (1 - math.exp(-dt / 1.5))
+            sens = clamp(float(s.get('movie_sweep', 0.5)))
+            jump = self.mv_fast - self.mv_slow
+            if sens > 0 and jump > 0.30 - 0.20 * sens and now - self.sweep_t > 2.5:
+                self.sweep_t, self.sweep_n = now, self.sweep_n + 1
+                self.sweep_amp = clamp(0.45 + (jump - (0.30 - 0.20 * sens)) * 2.0, 0.45, 1.0)
+            t_ = now - self.sweep_t
+            if t_ < 0.35:
+                sweep_e = t_ / 0.35                              # out, fast
+            elif t_ < 0.65:
+                sweep_e = 1.0                                    # hold a beat
+            elif t_ < 2.25:
+                sweep_e = 0.5 + 0.5 * math.cos(math.pi * (t_ - 0.65) / 1.6)   # ease back home
+            sweep_kind, sweep_amp = self.sweep_n % 2, self.sweep_amp
+        else:
+            self.mv_fast = self.mv_slow = 0.0
+        spots = s.get('movie_spots') or {}
         data = bytearray(512)
         hs = self.heads()
         n = len(hs)
@@ -174,8 +221,14 @@ class Heads:
             # colour: a lamp spread across the room for each head
             src = cols[int(round(i * (len(cols) - 1) / max(1, n - 1)))] if cols else (0.0, 0.0, 0.0)
             hh, ss, vv = colorsys.rgb_to_hsv(*[clamp(x) for x in src])
+            pf = getattr(self, 'proof', None)
+            if pf is not None and s.get('dmx_proof', True) and vv > 0.004:
+                try:                                            # the hue/saturation the Hue bulb really shows
+                    hh, ss, _ = colorsys.rgb_to_hsv(*[clamp(x) for x in pf(tuple(clamp(x / vv) for x in src))])
+                except Exception:
+                    pass
             ss = max(ss, 0.55)                                  # never white
-            r, g, b = colorsys.hsv_to_rgb(hh, ss, 1.0)
+            r, g, b = self.match(colorsys.hsv_to_rgb(hh, ss, 1.0), s)
             w = (1.0 - ss) * 0.35
             # MOVIE: a soft ceiling wash in the lamps' colour (which follows the film's sound), slow and calm
             want = 0.0 if dark else vv * level * (float(s.get('dmx_movie_level', 0.5)) if movie else 1.0)
@@ -194,7 +247,25 @@ class Heads:
                     th_t = min(th_t, cone * 0.8)                 # in drops, stay inside the strobe cone
                 if st['pan'] is not None and in_avoid(hd, st['pan'], th_t, margin=30.0):   # starts rising 30 deg early
                     th_t = AVOID_LEAN * 0.9                      # facing the projection (etc.): stay near straight up
-            step = MAX_DEG_S * dt
+            spot = spots.get(str(i)) if isinstance(spots, dict) else None
+            spot_p = None
+            if movie and not dark and isinstance(spot, dict):
+                try:                                             # MOVIE SPOT: hold the beam over one place (az = pan heading)
+                    s_lean = min(lean_max, max(0.0, float(spot.get('lean', 30.0))))
+                    s_az = float(spot.get('az', 45.0)) % 360.0
+                    s_az += -float(spot.get('sweep_deg', 40.0)) * sweep_amp * sweep_e if sweep_kind == 1 else 0.0
+                    th_s = s_lean * (1.0 - 0.6 * sweep_amp * sweep_e) if sweep_kind == 0 else s_lean
+                    p16 = (s_az % 360.0) / 540.0 * 65535.0
+                    if not in_avoid(hd, p16, th_s) and int(hd.get('pan_min', 0)) <= p16 <= int(hd.get('pan_max', 65535)):
+                        th_t, spot_p = th_s, p16
+                        home16 = (float(spot.get('az', 45.0)) % 360.0) / 540.0 * 65535.0
+                        reach = (abs(float(spot.get('sweep_deg', 40.0))) + 8.0) / 540.0 * 65535.0
+                        if st['pan'] is not None and (abs(st['pan'] - home16) > reach or in_avoid(hd, st['pan'], th_s, margin=30.0)):
+                            th_t = AVOID_LEAN * 0.9              # still turning toward the spot: travel upright
+                except (TypeError, ValueError):
+                    spot_p = None
+            fast = spot_p is not None and sweep_e > 0.0
+            step = (SWEEP_DEG_S if fast else MAX_DEG_S) * dt
             st['theta'] += clamp(th_t - st['theta'], -step, step)
             pmin, pmax = int(hd.get('pan_min', 0)), int(hd.get('pan_max', 65535))
             if movie:
@@ -202,9 +273,11 @@ class Heads:
             else:
                 u = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 32.0 + i / 4.0)) * (move if not dark else 0.0)
             p_t = pmin + u * (pmax - pmin)
+            if spot_p is not None:
+                p_t = spot_p
             if st['pan'] is None:
                 st['pan'] = p_t
-            pstep = MAX_DEG_S / 540.0 * 65535.0 * dt
+            pstep = (SWEEP_DEG_S if fast else MAX_DEG_S) / 540.0 * 65535.0 * dt
             if not dark:
                 st['pan'] += clamp(p_t - st['pan'], -pstep, pstep)
             tilt = int(hd.get('tilt_up', 32768)) + int(hd.get('tilt_dir', 1)) * st['theta'] / 180.0 * 65535.0
@@ -215,7 +288,7 @@ class Heads:
                 st['flash'] = now + 0.05
             if now < st['flash']:
                 lv = 1.0                                         # the hit: full, in the head's colour
-                r, g, b = colorsys.hsv_to_rgb(hh, max(ss, 0.7), 1.0)
+                r, g, b = self.match(colorsys.hsv_to_rgb(hh, max(ss, 0.7), 1.0), s)
                 w = 0.0
             master = 0 if lv < 0.004 else int(round(MASTER_MIN + clamp(lv) * (MASTER_MAX - MASTER_MIN)))
             a = int(hd.get('addr', 1)) - 1
