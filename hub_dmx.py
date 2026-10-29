@@ -35,7 +35,7 @@ NODE_PORT = 7060
 SEND_HZ = 40.0
 SWEEP_DEG_S = 150.0
 MUSIC_SWEEP_DEG_S = 240.0        # music sweeps: as quick as the motors go              # movie sweeps only: a quick swing out and back on a loud moment
-MAX_DEG_S = 25.0                 # fastest a beam may swing (degrees a second): quiet motors, no whip pans
+MAX_DEG_S = 35.0                 # fastest a beam may swing (degrees a second): quiet motors, no whip pans
 MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range only (135-239 = built-in strobe, never used)
 CH = dict(pan=0, pan_fine=1, tilt=2, tilt_fine=3, speed=4, master=5, r=6, g=7, b=8, w=9)
 DEFAULT_HEADS = [dict(addr=a, tilt_up=32768, tilt_dir=1, tilt_max_deg=35.0, pan_min=0, pan_max=65535, motor_speed=0)
@@ -199,7 +199,9 @@ class Heads:
         strobe_on = smode in ('phrase', 'drop') and section == 'drop' and not dark and not movie
         bpb = int(s.get('beats_per_bar', 4) or 4)
         phrase = int(math.floor(beats / (bpb * 4.0)))           # a 4-bar phrase
-        landed = section == 'drop' and self.sec_prev != 'drop'
+        landed = section == 'drop' and self.sec_prev != 'drop' and now - getattr(self, 'land_t', -99.0) > 8.0
+        if landed:
+            self.land_t = now                                  # one 'drop lands' per drop: a flapping detector can't re-fire it
         new_phrase = self.phrase_prev is not None and phrase != self.phrase_prev
         fire = strobe_on and (landed or (smode == 'phrase' and new_phrase)) and now - self.last_flash >= 1.0 / 3.0 + 0.01
         self.sec_prev, self.phrase_prev = section, phrase
@@ -222,7 +224,7 @@ class Heads:
             self.mv_fast += (lv_ - self.mv_fast) * (1 - math.exp(-dt / 0.08))
             self.mv_bri += (lv_ - self.mv_bri) * (1 - math.exp(-dt / (0.15 if lv_ > self.mv_bri else 0.8)))
             self.mv_slow += (lv_ - self.mv_slow) * (1 - math.exp(-dt / 1.5))
-            sens = clamp(float(s.get('movie_sweep', 0.5) if movie else s.get('dmx_sweep', 0.6)))
+            sens = clamp(float(s.get('movie_sweep', 0.5) if movie else s.get('dmx_sweep', 0.0)))
             jump = self.mv_fast - self.mv_slow
             busy = now - self.sweep_t < ((3.7 if self.sweep_n % 3 == 2 else 2.5) if movie else 1.0)
             if sens > 0 and jump > 0.30 - 0.20 * sens and not busy:
