@@ -35,7 +35,7 @@ NODE_PORT = 7060
 SEND_HZ = 40.0
 SWEEP_DEG_S = 150.0
 MUSIC_SWEEP_DEG_S = 240.0
-TURN_DEG_S = 160.0               # phrase turns: every head travels the same angle at the same speed -> they land together        # music sweeps: as quick as the motors go              # movie sweeps only: a quick swing out and back on a loud moment
+TURN_DEG_S = 200.0               # phrase turns: every head travels the same angle at the same speed -> they land together        # music sweeps: as quick as the motors go              # movie sweeps only: a quick swing out and back on a loud moment
 MAX_DEG_S = 35.0                 # fastest a beam may swing (degrees a second): quiet motors, no whip pans
 MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range only (135-239 = built-in strobe, never used)
 CH = dict(pan=0, pan_fine=1, tilt=2, tilt_fine=3, speed=4, master=5, r=6, g=7, b=8, w=9)
@@ -208,18 +208,20 @@ class Heads:
             self.turn_phrase = ph
         turn_deg = (0.0, 1.0, 0.0, -1.0)[self.turn_i] * float(s.get('dmx_turn_deg', 90.0))
         turning = now - self.turn_t < 1.2
-        if turn_deg and self.turn_t == now:                  # decided once per turn: one direction for EVERY head
-            off_ = turn_deg / 540.0 * 65535.0
-            ok_p = ok_m = True
+        if turn_deg and self.turn_t == now:                  # decided once per turn: ONE direction + ONE angle for every head
+            want16 = abs(turn_deg) / 540.0 * 65535.0
+            room_p = room_m = 65535.0
             for j_, h_ in enumerate(self.heads()):
                 lo_, hi_ = int(h_.get('pan_min', 0)), int(h_.get('pan_max', 65535))
                 u_ = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 32.0 + j_ / 4.0 * (1.0 - uni))) * move
                 a_ = min((hi_ - lo_) / 2.0, float(s.get('dmx_pan_amp', 90.0)) / 540.0 * 65535.0)
                 b_ = (lo_ + hi_) / 2.0 + (u_ - 0.5) * 2.0 * a_
-                ok_p = ok_p and lo_ <= b_ + off_ <= hi_
-                ok_m = ok_m and lo_ <= b_ - off_ <= hi_
-            self.turn_sign = -1.0 if (not ok_p and ok_m) else 1.0
-        turn_deg *= getattr(self, 'turn_sign', 1.0)
+                room_p, room_m = min(room_p, hi_ - b_), min(room_m, b_ - lo_)
+            pref = 1.0 if turn_deg > 0 else -1.0             # the way the pattern wants; the other way if it has more room
+            if (room_p if pref > 0 else room_m) < want16 and (room_m if pref > 0 else room_p) > (room_p if pref > 0 else room_m):
+                pref = -pref
+            self.turn_mag = min(want16, room_p if pref > 0 else room_m) * 540.0 / 65535.0 * pref
+        turn_deg = getattr(self, 'turn_mag', turn_deg) if turn_deg else 0.0
         # STROBE HITS: when a drop lands (+ each 4-bar phrase in it), only heads in the ceiling cone, max 3 a second
         cone = clamp(float(s.get('strobe_cone', 45.0)), 0.0, 45.0)
         smode = s.get('dmx_strobe', 'phrase')
