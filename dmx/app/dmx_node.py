@@ -105,8 +105,20 @@ def save_cfg(c):
 
 
 def tilt_window(h):
-    span = h['tilt_max_deg'] / TILT_DEG * 65535.0
+    deg = max([float(h['tilt_max_deg'])] + [min(85.0, float(w.get('lean', 0))) for w in h.get('walls') or []])
+    span = deg / TILT_DEG * 65535.0
     return max(0, int(h['tilt_up'] - span)), min(65535, int(h['tilt_up'] + span))
+
+
+def lean_limit(h, pan16, lean_deg):
+    """Max lean for the direction this beam points: the head's normal max, or more toward one of its WALLS
+    (directions where its own wall is right behind it -- nobody can stand in the beam)."""
+    lim = float(h['tilt_max_deg'])
+    az = (pan16 * PAN_DEG / 65535.0 + (180.0 if lean_deg < 0 else 0.0)) % 360.0
+    for w in h.get('walls') or []:
+        if abs((az - float(w['az']) + 180.0) % 360.0 - 180.0) < float(w['width']) / 2.0:
+            lim = max(lim, min(85.0, float(w.get('lean', 0))))
+    return lim
 
 
 # ---------------------------------------------------------------- flash guard (per head, master + R G B)
@@ -264,6 +276,10 @@ class Node:
                 tilt = max(lo, min(hi, tilt))
                 pan = max(int(h['pan_min']), min(int(h['pan_max']), pan))
                 lean = (tilt - int(h['tilt_up'])) * int(h['tilt_dir']) * TILT_DEG / 65535.0
+                lim_ = lean_limit(h, pan, lean)
+                if abs(lean) > lim_:                    # beyond 'max lean' only toward one of its walls
+                    tilt = int(h['tilt_up'] + math.copysign(lim_ / TILT_DEG * 65535.0, tilt - int(h['tilt_up'])))
+                    lean = math.copysign(lim_, lean)
                 if in_avoid(h, pan, lean):              # toward the projection etc.: pull the beam back up
                     lim = AVOID_LEAN * 65535.0 / TILT_DEG
                     tilt = int(h['tilt_up'] + math.copysign(lim, tilt - int(h['tilt_up'])))
@@ -388,6 +404,10 @@ def make_handler(node):
                         h['avoid'] = [dict(az=float(z['az']) % 360.0, width=max(5.0, min(180.0, float(z.get('width', 60)))),
                                            lean=max(AVOID_LEAN, min(30.0, float(z.get('lean', AVOID_LEAN) or AVOID_LEAN))))
                                       for z in b['avoid'][:6] if isinstance(z, dict) and 'az' in z]
+                    if isinstance(b.get('walls'), list):
+                        h['walls'] = [dict(az=float(z['az']) % 360.0, width=max(5.0, min(120.0, float(z.get('width', 60)))),
+                                           lean=max(0.0, min(85.0, float(z.get('lean', 85)))))
+                                      for z in b['walls'][:4] if isinstance(z, dict) and 'az' in z]
                     if 'calibrated' in b:
                         h['calibrated'] = bool(b['calibrated'])
                     if h['pan_min'] > h['pan_max']:

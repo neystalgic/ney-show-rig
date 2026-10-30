@@ -83,6 +83,7 @@ class Heads:
         self.mv_bri = 0.0                     # movie loudness for the heads' brightness (soft: never a flash)
         self.k_prev, self.k_last, self.k_target, self.k_tm = 0.0, -10.0, 0.0, 0.0   # kick lock
         self.turn_i, self.turn_t, self.turn_phrase = 0, -10.0, None                   # phrase turns
+        self.turn_n, self.wall_t = 0, -10.0                                           # wall sweeps
         self.sweep_t, self.sweep_n, self.sweep_amp = -10.0, 0, 0.0
         self.sec_prev = ''
         self.phrase_prev = None
@@ -203,7 +204,12 @@ class Heads:
             ph = int(math.floor(beats / (int(s.get('beats_per_bar', 4) or 4) * bars))) if now - self.k_last >= 2.5 else self.turn_phrase
         if s.get('dmx_turns', True) and ph is not None and self.turn_phrase is not None and ph != self.turn_phrase \
                 and not movie and now - self.turn_t > 1.5:
-            self.turn_i, self.turn_t = (self.turn_i + 1) % 4, now
+            self.turn_n += 1
+            has_walls = any(h_.get('walls') for h_ in self.heads())
+            if s.get('dmx_walls', True) and has_walls and self.turn_n % 4 == 0:
+                self.wall_t = now                                # this phrase: a WALL SWEEP instead of a turn
+            else:
+                self.turn_i, self.turn_t = (self.turn_i + 1) % 4, now
         if ph is not None:
             self.turn_phrase = ph
         turn_deg = (0.0, 1.0, 0.0, -1.0)[self.turn_i] * float(s.get('dmx_turn_deg', 90.0))
@@ -351,6 +357,23 @@ class Heads:
                             th_t = AVOID_LEAN * 0.9              # still turning toward the spot: travel upright
                 except (TypeError, ValueError):
                     spot_p = None
+            # WALL SWEEP (every 4th phrase): heads with a wall tip right down onto it and sweep across it, all together;
+            # heads without one dip to their max lean on the same beat
+            wt = now - self.wall_t
+            wall_p = None
+            if 0.0 <= wt < 2.6 and not movie and not dark:
+                env = min(1.0, wt / 0.5) if wt < 2.1 else max(0.0, (2.6 - wt) / 0.5)
+                f_ = min(1.0, max(0.0, (wt - 0.5) / 1.6))
+                f_ = f_ * f_ * (3 - 2 * f_)
+                walls = hd.get('walls') or []
+                if walls:
+                    w0 = walls[0]
+                    a0, wd = float(w0['az']), float(w0['width'])
+                    az_ = (a0 - wd / 2.0 + wd * f_) % 360.0
+                    wall_p = az_ / 540.0 * 65535.0
+                    th_t = min(85.0, float(w0.get('lean', 80))) * 0.95 * env
+                else:
+                    th_t = lean_max * env
             cue_p = None
             if cue and not dark:
                 ta = (tg.get(cue.get('a')) or {}).get(str(i))
@@ -368,7 +391,7 @@ class Heads:
                         cue_p = None
             fast = spot_p is not None and sweep_e > 0.0
             mfast = (not movie) and sweep_e > 0.0                 # a music sweep is under way
-            step = (MUSIC_SWEEP_DEG_S if mfast else SWEEP_DEG_S if fast else MAX_DEG_S) * dt
+            step = (MUSIC_SWEEP_DEG_S if (mfast or 0.0 <= now - self.wall_t < 2.6) else SWEEP_DEG_S if fast else MAX_DEG_S) * dt
             st['theta'] += clamp(th_t - st['theta'], -step, step)
             pmin, pmax = int(hd.get('pan_min', 0)), int(hd.get('pan_max', 65535))
             if movie:
@@ -384,7 +407,9 @@ class Heads:
                 p_t = spot_p
             if cue_p is not None:
                 p_t = cue_p
-            if turn_deg and not movie and cue_p is None and spot_p is None and not dark:
+            elif wall_p is not None:
+                p_t = clamp(wall_p, pmin, pmax)
+            if turn_deg and not movie and cue_p is None and spot_p is None and wall_p is None and not dark:
                 off = turn_deg / 540.0 * 65535.0
                 p_t = clamp(p_t + off, pmin, pmax)              # every head: the same angle, the same way
             if mfast and cue_p is None:                          # music sweep: all heads swing the same way, then back
@@ -392,7 +417,7 @@ class Heads:
                 p_t = clamp(p_t + sd / 540.0 * 65535.0, pmin, pmax)
             if st['pan'] is None:
                 st['pan'] = p_t
-            pstep = (MUSIC_SWEEP_DEG_S if mfast else TURN_DEG_S if (turning and not movie) else
+            pstep = (MUSIC_SWEEP_DEG_S if mfast else TURN_DEG_S if ((turning or wall_p is not None) and not movie) else
                      SWEEP_DEG_S if fast else MAX_DEG_S) / 540.0 * 65535.0 * dt
             if not dark:
                 st['pan'] += clamp(p_t - st['pan'], -pstep, pstep)
