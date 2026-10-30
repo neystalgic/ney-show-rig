@@ -321,10 +321,10 @@ class Heads:
                 th_t = min(lean_max, 6.0 + 5.0 * math.sin(now / 23.0 + i * 1.7))   # near-vertical: the ceiling, not the screen
             else:
                 wave = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 8.0 + i * 0.3 * (1.0 - uni)))
-                th_t = lean_max * move * spread * (0.35 + 0.65 * wave)
+                th_t = lean_max * move * (0.55 + 0.45 * spread) * (0.6 + 0.4 * wave)   # lean out most of the time
                 if strobe_on:
                     th_t = min(th_t, cone * 0.8)                 # in drops, stay inside the strobe cone
-                if st['pan'] is not None and in_avoid(hd, st['pan'], th_t, margin=30.0):   # starts rising 30 deg early
+                if st['pan'] is not None and in_avoid(hd, st['pan'], th_t, margin=10.0):   # starts rising 10 deg early (the node is the hard guard)
                     th_t = AVOID_LEAN * 0.9                      # facing the projection (etc.): stay near straight up
             spot = spots.get(str(i)) if isinstance(spots, dict) else None
             spot_p = None
