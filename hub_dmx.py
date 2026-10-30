@@ -34,7 +34,8 @@ ARTNET_PORT = 6454
 NODE_PORT = 7060
 SEND_HZ = 40.0
 SWEEP_DEG_S = 150.0
-MUSIC_SWEEP_DEG_S = 240.0        # music sweeps: as quick as the motors go              # movie sweeps only: a quick swing out and back on a loud moment
+MUSIC_SWEEP_DEG_S = 240.0
+TURN_DEG_S = 160.0               # phrase turns: every head travels the same angle at the same speed -> they land together        # music sweeps: as quick as the motors go              # movie sweeps only: a quick swing out and back on a loud moment
 MAX_DEG_S = 35.0                 # fastest a beam may swing (degrees a second): quiet motors, no whip pans
 MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range only (135-239 = built-in strobe, never used)
 CH = dict(pan=0, pan_fine=1, tilt=2, tilt_fine=3, speed=4, master=5, r=6, g=7, b=8, w=9)
@@ -81,6 +82,7 @@ class Heads:
         self.mv_fast = self.mv_slow = 0.0     # movie loudness (fast / slow) for the sweeps
         self.mv_bri = 0.0                     # movie loudness for the heads' brightness (soft: never a flash)
         self.k_prev, self.k_last, self.k_target, self.k_tm = 0.0, -10.0, 0.0, 0.0   # kick lock
+        self.turn_i, self.turn_t, self.turn_phrase = 0, -10.0, None                   # phrase turns
         self.sweep_t, self.sweep_n, self.sweep_amp = -10.0, 0, 0.0
         self.sec_prev = ''
         self.phrase_prev = None
@@ -192,6 +194,32 @@ class Heads:
             self.k_tm += (self.k_target - self.k_tm) * (1 - math.exp(-dt / 0.12))
             tm = self.k_tm
         uni = clamp(float(s.get('dmx_unison', 0.8)))         # 1 = all heads move together, 0 = each its own phase
+        # PHRASE TURNS: on the first beat of every N bars (counted in kicks while the kicks lead, else the clock),
+        # every head turns the same angle at the same speed -- 0, +X, 0, -X, ... -- so they all land together.
+        bars = max(1, int(s.get('dmx_turn_bars', 4) or 4))
+        if self.k_last == now and now - self.k_last < 2.5 and s.get('dmx_kick_lock', True):
+            ph = int(self.k_target) // (4 * bars)
+        else:
+            ph = int(math.floor(beats / (int(s.get('beats_per_bar', 4) or 4) * bars))) if now - self.k_last >= 2.5 else self.turn_phrase
+        if s.get('dmx_turns', True) and ph is not None and self.turn_phrase is not None and ph != self.turn_phrase \
+                and not movie and now - self.turn_t > 1.5:
+            self.turn_i, self.turn_t = (self.turn_i + 1) % 4, now
+        if ph is not None:
+            self.turn_phrase = ph
+        turn_deg = (0.0, 1.0, 0.0, -1.0)[self.turn_i] * float(s.get('dmx_turn_deg', 90.0))
+        turning = now - self.turn_t < 1.2
+        if turn_deg and self.turn_t == now:                  # decided once per turn: one direction for EVERY head
+            off_ = turn_deg / 540.0 * 65535.0
+            ok_p = ok_m = True
+            for j_, h_ in enumerate(self.heads()):
+                lo_, hi_ = int(h_.get('pan_min', 0)), int(h_.get('pan_max', 65535))
+                u_ = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 32.0 + j_ / 4.0 * (1.0 - uni))) * move
+                a_ = min((hi_ - lo_) / 2.0, float(s.get('dmx_pan_amp', 90.0)) / 540.0 * 65535.0)
+                b_ = (lo_ + hi_) / 2.0 + (u_ - 0.5) * 2.0 * a_
+                ok_p = ok_p and lo_ <= b_ + off_ <= hi_
+                ok_m = ok_m and lo_ <= b_ - off_ <= hi_
+            self.turn_sign = -1.0 if (not ok_p and ok_m) else 1.0
+        turn_deg *= getattr(self, 'turn_sign', 1.0)
         # STROBE HITS: when a drop lands (+ each 4-bar phrase in it), only heads in the ceiling cone, max 3 a second
         cone = clamp(float(s.get('strobe_cone', 45.0)), 0.0, 45.0)
         smode = s.get('dmx_strobe', 'phrase')
@@ -345,17 +373,25 @@ class Heads:
                 u = 0.5 + 0.25 * math.sin(2 * math.pi * (now / 180.0 + i / 4.0))          # a very slow drift
             else:
                 u = 0.5 + 0.5 * math.sin(2 * math.pi * (tm / 32.0 + i / 4.0 * (1.0 - uni))) * (move if not dark else 0.0)
-            p_t = pmin + u * (pmax - pmin)
+            if movie:
+                p_t = pmin + u * (pmax - pmin)
+            else:                                                # the SAME swing (degrees) on every head -> identical motion
+                amp16 = min((pmax - pmin) / 2.0, float(s.get('dmx_pan_amp', 90.0)) / 540.0 * 65535.0)
+                p_t = (pmin + pmax) / 2.0 + (u - 0.5) * 2.0 * amp16
             if spot_p is not None:
                 p_t = spot_p
             if cue_p is not None:
                 p_t = cue_p
+            if turn_deg and not movie and cue_p is None and spot_p is None and not dark:
+                off = turn_deg / 540.0 * 65535.0
+                p_t = clamp(p_t + off, pmin, pmax)              # every head: the same angle, the same way
             if mfast and cue_p is None:                          # music sweep: all heads swing the same way, then back
                 sd = float(s.get('dmx_sweep_deg', 70.0)) * sweep_amp * sweep_e * (1.0 if self.sweep_n % 2 else -1.0)
                 p_t = clamp(p_t + sd / 540.0 * 65535.0, pmin, pmax)
             if st['pan'] is None:
                 st['pan'] = p_t
-            pstep = (MUSIC_SWEEP_DEG_S if mfast else SWEEP_DEG_S if fast else MAX_DEG_S) / 540.0 * 65535.0 * dt
+            pstep = (MUSIC_SWEEP_DEG_S if mfast else TURN_DEG_S if (turning and not movie) else
+                     SWEEP_DEG_S if fast else MAX_DEG_S) / 540.0 * 65535.0 * dt
             if not dark:
                 st['pan'] += clamp(p_t - st['pan'], -pstep, pstep)
             tilt = int(hd.get('tilt_up', 32768)) + int(hd.get('tilt_dir', 1)) * st['theta'] / 180.0 * 65535.0
