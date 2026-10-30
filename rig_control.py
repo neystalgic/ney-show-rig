@@ -188,6 +188,12 @@ LOOKS = {
                                                                  'color_temperature': {'mirek': 370},
                                                                  'dynamics': {'duration': 1500}}))),
     'movienight': ('Movie night', lambda: movie_lights('movie')),
+    'morning': ('Morning light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 85.0},
+                                                                 'color_temperature': {'mirek': 230},
+                                                                 'dynamics': {'duration': 8000}}))),
+    'nightlight': ('Cool night light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 10.0},
+                                                                         'color': {'xy': {'x': 0.19, 'y': 0.23}},
+                                                                         'dynamics': {'duration': 2500}}))),
     'off': ('Lights off', lambda: (stop_all(), hue_lights({'on': {'on': False}, 'dynamics': {'duration': 1500}}))),
 }
 LOOKS['rest'] = ('Rest mode', LOOKS['off'][1])

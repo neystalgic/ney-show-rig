@@ -1,0 +1,46 @@
+TONIGHT - RUN SHEET (Fri Oct 30)
+Goal: clean DMX node -> unsafe-area safety live -> calibrate -> big movement, tested at low brightness.
+
+0. PREP (Claude did this while you were at work)
+   - DMX node (repo copy): heads may lean up to 85; each avoid zone now carries its own max lean
+     (up to 85) and the beam is held at that lean instead of snapping upright; up to 16 zones per head.
+   - Hub: same zone rule; new setting dmx_lean_cap (default 45 = exactly tonight's look until we raise it).
+   - dmx/safety/payloads_draft.json: per-head zones from the safety map (Head 3 left out until re-tested).
+   - Backups of the old files: *.bak-oct30 next to each file.
+
+1. MEASURE (20 min, tape)                         [ ] done
+   - Projected image: left/right edge from the bedroom-door trim; top and bottom height
+   - Glass door: start and end, from the fireplace corner
+   - Back wall: mirror-closet corner -> east corner (expect ~289)
+   - Head 3 and Head 4: two distances each
+   - One head: tabletop -> middle of the head (the tilt axis)
+   - Your seated eye height on each couch
+
+2. ZEPHYRUS NODE CLEAN-UP (15 min, heads OFF)   [ ] done
+   a. Heads powered OFF.
+   b. Task Manager -> end every "Python" task.
+   c. Rename  Downloads\NeyDMX  ->  "NeyDMX OLD"   (flag, don't delete)
+   d. PowerShell:  iwr http://neystalgic:7020/kit/dmx_node.py -OutFile C:\NeyDMX\app\dmx_node.py
+      (the hub must be running on the Mac for this link to work)
+   e. Desktop shortcut -> point it at  C:\NeyDMX\Start DMX Node.bat
+   f. Check auto-start: Task Manager -> Startup apps; and  shell:startup  folder. Flag anything NeyDMX.
+   g. Settings -> Power: never sleep when plugged in.
+   h. Start the node FIRST, then power the heads.
+   i. Check: node page shows "walls" support and all 4 heads calibrated.
+
+3. LOAD THE SAFETY ZONES (10 min, heads ON, low brightness)   [ ] done
+   - Claude sends payloads for Heads 1, 2, 4. Head 3 keeps its old limits.
+   - Dry run: each head swept slowly through its new range at ~15% while you watch for
+     anything landing on the screen, mirror, glass or a seated face.
+
+4. HEAD 3 RE-TEST (15 min)                        [ ] done
+   - 8 poses, you say what each one hits -> fix its direction in the plot -> new zones.
+
+5. RAISE THE CAP (the fun part)                   [ ] done
+   - dmx_lean_cap 45 -> 60 -> 75, watching each step. Wall sweeps on.
+
+6. IF TIME: aim-at-things scenes (clouds, curtains spot), Push pads -> light scenes.
+
+SAFETY RULES THAT STAY ON
+   max 3 flashes/s; no white; heads' own strobe never used; everyone seated during big moves;
+   fan off during shows; node before heads, heads off before closing the node.

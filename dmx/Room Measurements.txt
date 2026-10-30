@@ -1,0 +1,87 @@
+ROOM MEASUREMENTS - solved layout (Oct 30)
+Axes: x runs east from the mirror-closet face; y runs south from the wall behind the white shelf. Inches.
+
+NORTH-SOUTH CHAIN (from the shelf wall)
+  Water heater closet is recessed 10.5 behind the shelf wall ......... y = -10.5
+  Counter: 40 out from the closet ...................................... ends at y = 29.5
+  Walkway: 23 ............................................................ blue couch north end y = 52.5
+  Blue couch: 54 long ................................................... south end y = 106.5
+  Gray couch: 35 deep ................................................... back at y = 141.5
+  CHECK: measured projection wall -> gray couch back = 133
+         141.5 - 133 = 8.5. The projection wall and the shelf wall are the SAME flat wall
+         (confirmed Oct 30; the bedroom door just breaks it up), so one number is off.
+         Re-measured Oct 30: 150. The two long tapes (133, 150) average exactly 141.5,
+         so the chain is right; one long tape across the furniture drifts +/-8.5.
+         LOCKED: gray couch back at y = 141.5.  (CLOSED)
+
+EAST-WEST CHAIN (from the mirror closet)
+  Mirror closet face ....................................................... x = 0
+  Front-door walkway 28 (front door wall) ................................. x = -28
+  Blue couch back: 64 from the closet (92 from the front door: 92-28=64 OK) x = 64
+  Blue couch: 28 deep, faces east ......................................... front x = 92
+  Counter: 30 wide, east edge at the pillar ............................... x = 55 to 85
+     -> couch back is 9 in east of the counter's west edge, couch front 7 in past the pillar ("offset")
+  Gray couch: 88 long, NW corner touches the blue couch's SE corner ....... x = 92 to 180
+  Head 3 nook: 28 wide (same as the blue couch depth) ..................... x = 64 to 92, y = 106.5 to wall
+
+NORTH WALL (west to east)
+  Water heater recess 27.6 | shelf wall 38 | bedroom door 36 | Head 1 / desk wall 75 | fireplace 72 at 45 deg | east wall
+
+WEST WALL (north to south)
+  Fridge corner (fridge front in line with the closet) ...................... y = 27
+  Entry alcove, 50.5 long, recessed 28 (front door at its back) ........... y = 27 to 77.5
+  Mirror closet, 64 long .................................................. y = 77.5 to 141.5
+  => south wall at y = 141.5, so the gray couch sits flush against it.  27 + 50.5 + 64 = 141.5
+     matches the couch chain exactly (10.5/40/23/54/35). Room depth LOCKED at 141.5.
+
+EAST WALL
+  Sliding-door wall, fireplace corner -> back corner = 95 (Oct 30)
+  => fireplace corner at y = 141.5 - 95 = 46.5
+  Fireplace wall 72 long: across = sqrt(72^2 - 46.5^2) = 55.0, so it sits at ~40 deg, not 45
+  => east wall at x = 234.2 (fireplace start) + 55.0 = 289.2  (19.52 ft + 4.58 = 24.10 ft)
+  CHECK: the north-wall chain starts from a guessed kitchen edge, so the back wall's full
+         length (mirror-closet corner -> east corner) should come out about 289 in.
+
+CEILING FAN
+  Directly behind (west of) the blue couch, about x = 41, y = 80 (estimate, ~52 in blades).
+  Hardly ever on. Rule stays: fan OFF during shows. When off, beams may hit it (no chopping).
+
+SOUTH SIDE (Oct 30)
+  Mirror closet -> gray couch west end = 82.5 (measured). The chain 64 + 28 gave 92, so the gray couch
+  sits 9.5 further west: the blue couch's corner meets the gray couch's TOP EDGE. Head 3 nook = 18.5 wide.
+
+HEADS (Oct 30)
+  Head 1: 8 from the bedroom doorway, 20 out from the wall
+  Head 2: 24 from the bedroom doorway, 6 out from the wall (on the 32 in shelf)
+
+SAFETY CHANGES (Oct 30)
+  Fan marked SAFE. Couches unsafe ONLY at seated eye level (34-52 in). Calibrate later.
+
+STILL OPEN
+  - Head 1 table: sits just right of the bedroom door trim, touching the desk's west end (photo Oct 30); kitchen size
+
+TO MEASURE (checklist, Oct 30)
+ TIER 1 - head aiming and safety
+  [ ] Each head: floor to the middle of the moving head (the tilt axis)
+  [x] Head 1: 8 from the doorway, 20 from the wall
+  [x] Head 2: shelf top 32 in (Oct 30)
+  [ ] Head 2: head from the shelf's left end and from the wall
+  [x] Head 3 table: same model as Head 1 (26 in)
+  [ ] Head 3: from the blue couch's south end and from the gray couch's west end
+  [x] Head 4: rolly desk 25.5 in now, extends to 40 in (Oct 30)
+  [ ] Head 4: from the gray couch's east end and from the back wall
+  [ ] Ceiling height in 2-3 spots (93 assumed)
+  [ ] Projection: image left/right edges from the bedroom-door trim; image top and bottom heights
+  [ ] Sliding glass door: start and end along the east wall from the fireplace corner; height
+  [x] Mirror closet: floor to ceiling
+  [ ] Seated eye height on each couch; your standing eye height
+ TIER 2 - room shape cross-checks
+  [ ] Back wall full length (mirror closet corner to the east corner)  -> checks the 23.76 ft width
+  [x] East wall: fireplace corner to the back wall = 95 in (Oct 30)
+  [ ] Studio desk: its corners from the east wall and back wall
+  [ ] Optoma: position and lens height
+ TIER 3 - scene targets
+  [ ] Each cloud and balloon: spot on the floor directly under it, and how far it hangs below the ceiling
+  [ ] Fan: centre spot, blade diameter, blade height
+  [ ] Coffee table: corners from the blue couch front and gray couch front
+  [ ] Laser tripod: max height and planned spot

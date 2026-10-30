@@ -1,0 +1,41 @@
+PRACTICE SCHEDULE  (created Oct 30, 2026)
+How to use: one feature per session (20-30 min). Record everything; keep the good bits as track starters.
+
+DIGITAKT (sampler / drums)
+  [ ] P-lock drill: one 16-step loop that evolves without adding notes (filter, decay, start, pitch per step)
+  [ ] Conditional trigs: hats/percs at 1:2, 1:4, 50% - an 8-bar groove from a 1-bar pattern
+  [ ] Fill mode: trigs that only play while Fill is held = built-in transition button
+  [ ] Resample: sample a Digitone chord or Evil Pet texture, chop it, sequence it
+
+DIGITONE (FM)
+  [ ] One sound, five moods: only change algorithm, ratios, FM amount
+  [ ] Bass variations: 4 notes, 4 different-feeling bars via per-step locks on FM amount / envelope
+  [ ] Arp + conditional trigs: chords that break apart differently each pass
+
+EVIL PET (granular synth / multi-FX)
+  [ ] Granular as FX: Digitone pad into the inputs; play only position, size, spread
+  [ ] Freeze and play: capture drums / FM radio / voice (mic) and play it pitched from the keys
+  [ ] Random-button discipline: 10 rolls, save the 2 you'd really use
+  [ ] MPE: if the Roli is a Seaboard, drive the Evil Pet over MPE (pressure/slide shape the grains)
+
+PUSH 2 + LIVE 12
+  [ ] Scene building: intro / groove / break / build / drop as Session scenes; launch live from Push
+  [ ] Follow actions: let scenes advance themselves while you play the gear
+  [ ] Capture MIDI: noodle unarmed, then Capture
+  [ ] Slicing: slice a Digitakt loop in Simpler, re-perform on the pads
+  [ ] Overbridge: multitrack the Elektrons into Live for mixable stems
+
+POLY D + ROLI
+  [ ] Poly D sequencer bassline clocked to the Digitakt; filter and drive as performance moves
+  [ ] Roli: expressive leads only - one held note made interesting with pressure and slide
+
+COMBINED
+  [ ] The 32-bar arc: 8 intro / 8 groove / 8 breakdown / 8 build -> drop (the hub detects drops: colour hit + strobe)
+  [ ] Weekly one-take jam (10 min) with the lights running = reel + live rehearsal
+  [ ] Constraint days: Digitakt only / one sample / no laptop screen
+  [ ] Clock check: Digitakt playing -> lights follow its MIDI clock; practise tempo changes
+
+LATER (rig idea)
+  [ ] Map a few Push pads to light scenes (sweep the curtains, all on the clouds) to play the lights with the music
+
+LOG (date - drill - what stuck)

@@ -59,6 +59,17 @@ def in_avoid(hd, pan16, lean_deg, margin=0.0):
     return False
 
 
+def avoid_cap(hd, pan16, lean_deg, margin=0.0):
+    """Largest lean the head's avoid zones allow in this direction (None = no zone here)."""
+    az = (pan16 * 540.0 / 65535.0 + (180.0 if lean_deg < 0 else 0.0)) % 360.0
+    cap = None
+    for z in hd.get('avoid') or []:
+        if abs((az - float(z['az']) + 180.0) % 360.0 - 180.0) < float(z['width']) / 2.0 + margin:
+            zl = max(AVOID_LEAN, float(z.get('lean', AVOID_LEAN) or AVOID_LEAN))
+            cap = zl if cap is None else min(cap, zl)
+    return cap
+
+
 def clamp(x, lo=0.0, hi=1.0):
     return lo if x < lo else hi if x > hi else x
 
@@ -314,7 +325,8 @@ class Heads:
             k = 1 - math.exp(-dt / ((0.12 if want > st['lvl'] else 0.8) if movie else (0.06 if want > st['lvl'] else 0.25)))
             st['lvl'] += (want - st['lvl']) * k
             # movement: slow, beat-locked; lean only inside the calibrated window
-            lean_max = clamp(float(hd.get('tilt_max_deg', 35.0)), 0.0, 60.0) * 0.95
+            lean_max = min(clamp(float(hd.get('tilt_max_deg', 35.0)), 0.0, 85.0),
+                           clamp(float(s.get('dmx_lean_cap', 45.0)), 5.0, 85.0)) * 0.95   # show-wide cap (setting)
             if dark:
                 th_t = 0.0
             elif movie:
@@ -324,8 +336,10 @@ class Heads:
                 th_t = lean_max * move * (0.55 + 0.45 * spread) * (0.6 + 0.4 * wave)   # lean out most of the time
                 if strobe_on:
                     th_t = min(th_t, cone * 0.8)                 # in drops, stay inside the strobe cone
-                if st['pan'] is not None and in_avoid(hd, st['pan'], th_t, margin=10.0):   # starts rising 10 deg early (the node is the hard guard)
-                    th_t = AVOID_LEAN * 0.9                      # facing the projection (etc.): stay near straight up
+                if st['pan'] is not None:                       # starts easing 10 deg early (the node is the hard guard)
+                    cap_ = avoid_cap(hd, st['pan'], th_t, margin=10.0)
+                    if cap_ is not None and th_t > cap_ * 0.9:
+                        th_t = cap_ * 0.9                        # toward an unsafe area: only as far as it allows
             spot = spots.get(str(i)) if isinstance(spots, dict) else None
             spot_p = None
             if movie and not dark and isinstance(spot, dict):
