@@ -76,33 +76,27 @@
   "tilt_max_deg": 85.0,
   "avoid": [
    {
-    "az": 351.0,
-    "width": 134.0,
-    "lean": 24.0,
+    "az": 358.0,
+    "width": 88.0,
+    "lean": 54.0,
     "why": "eye level, gray couch"
    },
    {
-    "az": 62.0,
-    "width": 20.0,
-    "lean": 37.0,
-    "why": "eye level, gray couch"
-   },
-   {
-    "az": 98.0,
+    "az": 92.0,
     "width": 40.0,
     "lean": 60.0,
     "why": "Screen"
    },
    {
-    "az": 164.0,
-    "width": 40.0,
-    "lean": 63.0,
+    "az": 163.0,
+    "width": 46.0,
+    "lean": 60.0,
     "why": "Glass door"
    },
    {
-    "az": 285.0,
+    "az": 315.0,
     "width": 10.0,
-    "lean": 53.0,
+    "lean": 60.0,
     "why": "Eye level"
    }
   ]
