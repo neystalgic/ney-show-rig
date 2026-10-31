@@ -25,7 +25,7 @@ MAX_BOUNCES = 2
 LEAN_MAX = 85             # what we'd like the heads to reach
 MARGIN = 5                # degrees kept clear of anything unsafe (beam centre)
 BEAM_HALF = 4             # the beam's own spread: ~8 deg wide, so its edge sits 4 deg off the centre (live test Oct 30)
-SCREEN_EXTRA = 2          # a little more off the projected image so even dim spill doesn't touch it
+SCREEN_EXTRA = 8          # the heads are WASH lights (~22 deg spread): keep the whole wash off the projected image (live test Oct 30)
 AZ_STEP, LEAN_STEP = 2, 1
 
 

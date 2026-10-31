@@ -24,7 +24,7 @@
    {
     "az": 243.0,
     "width": 102.0,
-    "lean": 8.0,
+    "lean": 2.0,
     "why": "Screen"
    }
   ]
@@ -54,13 +54,13 @@
    {
     "az": 182.0,
     "width": 8.0,
-    "lean": 58.0,
+    "lean": 52.0,
     "why": "Screen"
    },
    {
     "az": 184.0,
     "width": 8.0,
-    "lean": 47.0,
+    "lean": 41.0,
     "why": "Screen"
    }
   ]
@@ -126,7 +126,7 @@
    {
     "az": 334.0,
     "width": 12.0,
-    "lean": 67.0,
+    "lean": 61.0,
     "why": "mirror -> Screen"
    }
   ]
@@ -144,7 +144,7 @@
    {
     "az": 86.0,
     "width": 40.0,
-    "lean": 52.0,
+    "lean": 46.0,
     "why": "Screen"
    },
    {
