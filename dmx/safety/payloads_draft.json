@@ -6,25 +6,25 @@
    {
     "az": 37.0,
     "width": 42.0,
-    "lean": 75.0,
+    "lean": 73.0,
     "why": "eye level, blue couch"
    },
    {
     "az": 78.0,
     "width": 52.0,
-    "lean": 77.0,
+    "lean": 75.0,
     "why": "eye level, gray couch"
    },
    {
     "az": 153.0,
     "width": 34.0,
-    "lean": 66.0,
+    "lean": 65.0,
     "why": "Glass door"
    },
    {
     "az": 243.0,
     "width": 102.0,
-    "lean": 15.0,
+    "lean": 14.0,
     "why": "Screen"
    }
   ]
@@ -36,8 +36,14 @@
    {
     "az": 81.0,
     "width": 42.0,
-    "lean": 78.0,
+    "lean": 74.0,
     "why": "eye level, blue couch"
+   },
+   {
+    "az": 106.0,
+    "width": 20.0,
+    "lean": 80.0,
+    "why": "eye level, gray couch"
    },
    {
     "az": 157.0,
@@ -46,9 +52,15 @@
     "why": "Glass door"
    },
    {
-    "az": 183.0,
-    "width": 10.0,
-    "lean": 55.0,
+    "az": 182.0,
+    "width": 8.0,
+    "lean": 64.0,
+    "why": "Screen"
+   },
+   {
+    "az": 184.0,
+    "width": 8.0,
+    "lean": 53.0,
     "why": "Screen"
    }
   ]
@@ -60,25 +72,25 @@
    {
     "az": 358.0,
     "width": 88.0,
-    "lean": 54.0,
+    "lean": 48.0,
     "why": "eye level, gray couch"
    },
    {
     "az": 86.0,
     "width": 40.0,
-    "lean": 60.0,
+    "lean": 59.0,
     "why": "Screen"
    },
    {
     "az": 161.0,
     "width": 50.0,
-    "lean": 57.0,
+    "lean": 55.0,
     "why": "Glass door"
    },
    {
     "az": 315.0,
     "width": 10.0,
-    "lean": 60.0,
+    "lean": 55.0,
     "why": "Eye level"
    }
   ]
