@@ -376,18 +376,20 @@ class Heads:
             wt = now - self.wall_t
             wall_p = None
             if 0.0 <= wt < 2.6 and not movie and not dark:
-                env = min(1.0, wt / 0.5) if wt < 2.1 else max(0.0, (2.6 - wt) / 0.5)
-                f_ = min(1.0, max(0.0, (wt - 0.5) / 1.6))
-                f_ = f_ * f_ * (3 - 2 * f_)
+                # WALL -> CEILING: snap down onto the safe wall right behind the head (0.35 s),
+                # then sweep up it and across the ceiling (to 1.9 s). Heads without a wall (Head 1) carry on as they were.
                 walls = hd.get('walls') or []
                 if walls:
                     w0 = walls[0]
                     a0, wd = float(w0['az']), float(w0['width'])
-                    az_ = (a0 - wd / 2.0 + wd * f_) % 360.0
+                    if wt < 0.35:
+                        lift = 0.0
+                    else:
+                        lift = min(1.0, (wt - 0.35) / 1.55)
+                        lift = lift * lift * (3 - 2 * lift)
+                    az_ = (a0 - wd / 4.0 + wd / 2.0 * lift) % 360.0       # a little drift across the wall as it climbs
                     wall_p = az_ / 540.0 * 65535.0
-                    th_t = min(85.0, float(w0.get('lean', 80))) * 0.95 * env
-                else:
-                    th_t = lean_max * env
+                    th_t = min(85.0, float(w0.get('lean', 80))) * 0.95 * (1.0 - lift)
             cue_p = None
             if cue and not dark:
                 ta = (tg.get(cue.get('a')) or {}).get(str(i))
