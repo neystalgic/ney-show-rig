@@ -57,6 +57,8 @@ HEADS (Oct 30)
 SAFETY CHANGES (Oct 30)
   Fan marked SAFE. Couches unsafe ONLY at seated eye level (34-52 in). Calibrate later.
 
+HEAD 4 (Oct 30): desk top 25 in; back of the head 16 in from the back wall
+
 STILL OPEN
   - Head 1 table: sits just right of the bedroom door trim, touching the desk's west end (photo Oct 30); kitchen size
 

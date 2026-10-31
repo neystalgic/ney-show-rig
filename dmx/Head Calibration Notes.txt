@@ -1,5 +1,8 @@
 HEAD CALIBRATION NOTES  (backup of what's saved on the Zephyrus: C:\NeyDMX\config\heads_config.json)
 =====================================================================================================
+UPDATE Thu Oct 29 (evening): all heads' max lean raised from 30 to 45 deg for performance (Michael's call:
+30 everywhere was limiting the show for hypothetical cases). The targeted zones below -- the ones measured
+with a hand test or a photo -- stay as they are. Anything below that says "Max lean 30" now reads 45.
 
 HEAD 1  (white desk side table, DMX 085)  -- calibrated Thu Oct 29, 2026, pose-by-pose test
   Straight up      tilt 32768 (mid)                                   checked: vertical
