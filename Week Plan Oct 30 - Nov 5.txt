@@ -62,7 +62,8 @@ SAT OCT 31  -- HALLOWEEN, FIRST FULL-RIG SHOW       arriving: gaffer tape + shel
         (balloon + cloud heights: NOT NEEDED -- they'll move as more get added, Oct 31)
     [ ] LiDAR scan (Polycam / Scaniverse) after the walls are done
   Afternoon -- lights
-    [ ] Re-aim anything that moved (Coexist flag); try Head 3 on the flag
+    [ ] No re-aim needed: the Happiness Project flag took the Coexist flag's spot (scene renamed).
+        Try Head 3 on it
     [ ] Head 1 flooding the projection wall when upright: FIX BUILT (node dims Head 1 to 40% of its
         cap when it leans < 20 deg, full again by 35). Start the hub BEFORE the node so the node
         auto-updates and picks it up; then check by eye and tune upright_level
