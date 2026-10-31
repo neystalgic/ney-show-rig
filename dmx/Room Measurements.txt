@@ -70,7 +70,7 @@ TO MEASURE (checklist, Oct 30)
   [ ] Head 2: head from the shelf's left end and from the wall
   [x] Head 3 table: same model as Head 1 (26 in)
   [x] Head 3: base 13.5 in from the blue couch's south end (Oct 30) - matches the plot
-  [ ] Head 3: from the gray couch's west end
+  [x] Head 3: gray couch arm tucks under the table's east edge; head ~6 in west of the couch end (Oct 30)
   [x] Head 4: rolly desk 25.5 in now, extends to 40 in (Oct 30)
   [ ] Head 4: from the gray couch's east end and from the back wall
   [ ] Ceiling height in 2-3 spots (93 assumed)
