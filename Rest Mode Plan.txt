@@ -71,3 +71,17 @@ MEASURED DRAW  (fill in with the energy meter: idle / in use, watts)
  Mac + Scarlett ...... ____ / ____      Studio monitors ..... ____ / ____
  One moving head ..... ____ / ____      Laser bar ........... ____ / ____
  Synths + Elektrons .. ____ / ____      Raspberry Pi ........ ____ / ____
+
+
+UPDATE Oct 31 -- smart plugs ordered, the automation is built (head_power.py, runs inside rig_control)
+----------------------------------------------------------------------------------
+ CHANGE from the plan above (agreed Oct 31): the head plugs DO switch off on their own --
+ after the heads have been dark for 10 min -- because the fans keep running otherwise.
+ Still never the Mac, Scarlett or projector.
+ - Show / music look: plugs on first (only if the DMX node answers), ~25 s reset sweep
+ - Off / rest look:   hub stops -> node parks the heads up + fades out -> plugs off 10 s later
+ - Node closed or Enttec unplugged with the heads on: plugs off after 30 s
+ - New looks: heads_on, heads_off   (Siri / phone, same as the others)
+ - Settings: head_power.json (idle_min, warmup_s, park_s, node_lost_s, enabled)
+ - Log: /tmp/head_power.log
+ Dormant until plugs named "Head 1" - "Head 4" exist on the Hue Bridge.

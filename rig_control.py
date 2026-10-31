@@ -10,7 +10,9 @@
 #   rainbowroom  a rainbow gradient across the room, drifting (no hub)
 #   bright       plain bright daylight white, 100%
 #   cozy         warm white, 60%
-#   off / rest   lights off, hub and fades stopped
+#   off / rest   lights off, hub and fades stopped; moving heads park, then their plugs go off
+#   heads_on     moving heads' smart plugs on (only if the DMX node answers) -- show/music do this too
+#   heads_off    moving heads park, then their plugs go off (fans stop)
 #   status       what's running right now
 #   movienight   movie lights (hub Movie vibe), ready for a film
 #   hub          the MOVIE HUB remote page (phone): services, play/pause, trackpad, typing,
@@ -25,6 +27,7 @@
 # =============================================================================
 import hmac, json, os, secrets, subprocess, sys, threading, time, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import head_power                                  # Hue Smart Plugs on the moving heads (dormant until they exist)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 7040
@@ -113,6 +116,8 @@ def hue_lights(body):
     try:
         cfg = hs.load_config()
         for l in hs.v2(cfg, 'light').get('data', []):
+            if 'dimming' not in l or head_power.is_plug(l):   # smart plugs are never switched like lamps
+                continue
             hs.v2(cfg, 'light/%s' % l['id'], 'PUT', body)
     finally:
         os.chdir(cwd)
@@ -177,8 +182,10 @@ def movie_lights(what):
 
 LOOKS = {
     'movie': ('Movie mode', lambda: (stop_ambient(), start_hub('sync'))),
-    'show': ('The light show', lambda: (stop_ambient(), start_hub('lava'))),
-    'music': ('Music mode', lambda: (stop_ambient(), start_hub('music'))),
+    'show': ('The light show', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('lava'))),
+    'music': ('Music mode', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('music'))),
+    'heads_on': ('Moving heads powering up', lambda: head_power.request_on()),
+    'heads_off': ('Moving heads parking, then power off', lambda: head_power.request_off(why='heads_off')),
     'rainbow': ('Rainbow fade, every lamp together', lambda: (stop_all(), start_ambient(70, 90, 0))),
     'rainbowroom': ('Rainbow across the room', lambda: (stop_all(), start_ambient(70, 120, 240))),
     'bright': ('Bright white', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 100.0},
@@ -196,7 +203,8 @@ LOOKS = {
     'nightlight': ('Cool night light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 10.0},
                                                                          'color': {'xy': {'x': 0.19, 'y': 0.23}},
                                                                          'dynamics': {'duration': 2500}}))),
-    'off': ('Lights off', lambda: (stop_all(), hue_lights({'on': {'on': False}, 'dynamics': {'duration': 1500}}))),
+    'off': ('Lights off', lambda: (stop_all(), hue_lights({'on': {'on': False}, 'dynamics': {'duration': 1500}}),
+                                   head_power.request_off(why='lights off'))),
 }
 LOOKS['rest'] = ('Rest mode', LOOKS['off'][1])
 
@@ -262,7 +270,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.movie(path[2:], q)
         look = path.lower()
         if look == 'status':
-            s = dict(STATE, hub=running('hue_hub.py'), rainbow_fade=running('ambient_fade.py'))
+            s = dict(STATE, hub=running('hue_hub.py'), rainbow_fade=running('ambient_fade.py'),
+                     head_power=head_power.status())
             return self.reply(200, json.dumps(s))
         if look not in LOOKS:
             return self.reply(404, 'Unknown look. Try: ' + ', '.join(sorted(LOOKS)))
@@ -334,4 +343,5 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     print('Rig control on port %d' % PORT, flush=True)
+    head_power.start()
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()

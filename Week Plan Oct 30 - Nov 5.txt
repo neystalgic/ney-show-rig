@@ -40,7 +40,38 @@ SAT OCT 31  -- HALLOWEEN, FIRST FULL-RIG SHOW       arriving: gaffer tape + shel
         If friends come over: ask about photosensitivity before strobes.
     [ ] Power off: heads first, then close the node.
 
+  UPDATED early Sat (day off). Heads 1-4 are calibrated and aimed (done Fri night), so the
+  calibration items above are finished. The day now runs:
+  Morning
+    [ ] Speakers + smart plugs: give Claude a budget, pick, order                 30 min
+    [ ] Practice Schedule drill (Push or Elektrons)                               30 min
+  Midday -- cables + walls
+    [ ] ETHERNET TO THE MACBOOK: Cat6 #1 router (bedroom) -> out the bedroom door
+        -> baseboards (same route as DMX) -> behind the white desk -> gear desk.
+        Plug it into the Anker USB-C hub on the Mac. MEASURED: one 25 ft cable is
+        ~10 ft short -> join BOTH 25 ft cables with a Cat6 coupler (50 ft).
+        ORDERED: coupler + short cable + USB-C adapter arrive SUN NOV 1 -> both
+        Ethernet runs move to Sunday. Mac: System Settings > Network: Ethernet shows
+        "Connected"; then ... > Set Service Order: Ethernet above Wi-Fi.        30 min
+    [ ] ETHERNET TO THE ZEPHYRUS: needs a NEW short Cat6 (10-15 ft) router -> white
+        desk, plus a USB-C gigabit Ethernet adapter (USB-A ports are taken by the
+        Enttec + mouse). Both on the shopping list; do this when they arrive.     15 min
+    [ ] Gaffer tape: DMX + both Cat6 runs along the baseboards (when the tape arrives) ~1 hr
+    [ ] Tapestries / wall art. Projection area stays clear; fabric off the heads.
+    [ ] Room plot: new wall art spots + balloon and cloud HEIGHTS
+    [ ] LiDAR scan (Polycam / Scaniverse) after the walls are done
+  Afternoon -- lights
+    [ ] Re-aim anything that moved (Coexist flag); try Head 3 on the flag
+    [ ] Head 1 flooding the projection wall when upright at full -- fix
+    [ ] Optional: rolly desk up to 40 in, Head 4 on the green balloon
+  Evening
+    [ ] Music show with the lean cap at 60, then 75 (seated, curtain closed, fan off)
+    [ ] Jam. Power off: heads first, then close the node.
+
 SUN NOV 1  -- SKY + MOVIE HUB DAY   (clocks fall back 1 hr at 2 AM; Mac + Pi adjust themselves)
+  When the Amazon box lands (Ethernet adapter, coupler, short Cat6)
+    [ ] Mac: both 25 ft Cat6 joined with the coupler, router -> Anker hub. Ethernet above Wi-Fi  30 min
+    [ ] Zephyrus: short Cat6 router -> USB-C adapter. Then tell Claude: check the node link     15 min
   Morning (~10:30-12:30)
     [ ] Pi to the cloud projector with the micro-HDMI, Pi on Wi-Fi               20 min
     [ ] Run install_sky.sh on the Pi (you type the password)                     20 min
@@ -94,5 +125,13 @@ THU NOV 5  -- CATCH-UP + DRESS REHEARSAL
   Evening
     [ ] Full dress rehearsal: sky + heads + Hue + projector, curtains closed
 
+WHEN THE SMART PLUGS ARRIVE  (ordered Oct 31, 2-4 business days: ~Tue Nov 3 - Thu Nov 5)
+    [ ] Hue app: add the 4 plugs, name them exactly Head 1 / Head 2 / Head 3 / Head 4
+    [ ] Put them in their OWN room ("Moving heads"), not the living room
+    [ ] Each plug: Power-on behaviour (after a power cut) = Off
+    [ ] Plug each head into its labelled plug (H1-H4 tape labels)
+    [ ] Tell Claude: test heads_on / heads_off and the 10-min dark shut-off together
+        (the hub side is already built and waiting: head_power.py)
+
 NOT THIS WEEK
-  Hue Smart Plugs for the heads, laser bar profile, Rest mode phases, extra speaker
+  Laser bar profile, Rest mode phases, extra speaker
