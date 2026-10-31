@@ -1,0 +1,46 @@
+AIM MAP -- where every head lands for every scene
+Built by aiming one head at a time with Michael watching (Oct 30). Dim blue calibration light.
+pan/lean: lean = degrees from straight up; scenes are stored in the hub as head targets.
+
+STUDIO (ceiling over the studio)
+  Head 1 (white desk)    pan 135.1  lean 61.0   left cloud above the Digitone
+  Head 2 (white shelf)   pan 146.4  lean 69.0   washes the curtain + both corner clouds
+  Head 3 (corner table)  not aimed yet
+  Head 4 (rolly desk)    pan 178.2  lean 70.2   streams into the studio corner by the lamp behind the desk
+
+COEXIST FLAG
+  Head 1 (white desk)    pan 167.2  lean 54.8   centre of the flag, image untouched
+  Head 2 (white shelf)   pan 168.4  lean 70.2   whole flag, little wall flood
+  Head 3 (corner table)  not aimed yet
+  Head 4 (rolly desk)    pan 127.4  lean 74.0   whole flag from across the room
+
+COFFEE TABLE (ceiling over it)
+  Head 1 (white desk)    pan  54.3  lean 38.9   ceiling over the coffee table
+  Head 2 (white shelf)   pan 112.1  lean 61.9   ceiling over the coffee table (from the shelf)
+  Head 3 (corner table)  pan  88.9  lean 46.5   over the coffee table through the 45-deg gap between the couches; clouds + balloons cast shadows
+  Head 4 (rolly desk)    pan  28.9  lean 51.0   over the coffee table from the rolly desk; balloon + cloud shadows
+
+BLUE / WHITE BALLOON
+  Head 1 (white desk)    pan 173.3  lean -60.6   wash over the blue balloon + cloud, spilling toward the kitchen side
+  Head 2 (white shelf)   pan 349.0  lean 29.0   dead-on the blue balloon (leans back toward the wall, 29 deg)
+  Head 3 (corner table)  Sits out: the path runs north over the blue couch at seated face height (limit 49 deg, balloon needs 67).
+  Head 4 (rolly desk)    pan  48.5  lean 72.6   blue balloon from across the room; shadow on the water-heater door
+
+RED / WHITE BALLOON
+  Head 1 (white desk)    Sits out (Michael's call).
+  Head 2 (white shelf)   pan  79.8  lean 70.0   red balloon from the shelf, first try
+  Head 3 (corner table)  pan 128.0  lean 22.0   red balloon right above the gray couch end (22 deg)
+  Head 4 (rolly desk)    Sits out: reaching it means sweeping the length of the gray couch at face height (limit 52, needs ~64).
+
+GREEN / WHITE BALLOON
+  Head 1 (white desk)    pan 126.2  lean 65.9   green balloon in the studio corner
+  Head 2 (white shelf)   pan 143.6  lean 75.8   green balloon from the shelf, corner to corner
+  Head 3 (corner table)  Sits out: the path runs along the gray couch at face height.
+  Head 4 (rolly desk)    Blocked by the Poly D / studio desk at the current rolly-desk height (25 in). Raising the desk to ~40 in should clear it.
+
+OBSERVATIONS
+  - Heads are WASH lights (~22 deg spread): give the projected image extra room.
+  - Head 1 straight up at full brightness floods the projection wall: never rest Head 1 upright; dim it facing the image.
+  - Head 3 body sits turned ~45 deg on its table (pan 0 = toward the fan).
+  - Head 4 near-horizontal beams toward the studio get broken into streaks by the Poly D (a nice effect).
+  - Glass door marked safe: velvet curtain closed during shows.

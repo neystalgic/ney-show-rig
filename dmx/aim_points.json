@@ -44,8 +44,59 @@
     "pan": 13606,
     "tilt": 10236,
     "note": "ceiling over the coffee table (from the shelf)"
+   },
+   "2": {
+    "pan": 10794,
+    "tilt": 15823,
+    "note": "over the coffee table through the 45-deg gap between the couches; clouds + balloons cast shadows"
+   },
+   "3": {
+    "pan": 3509,
+    "tilt": 14206,
+    "note": "over the coffee table from the rolly desk; balloon + cloud shadows"
+   }
+  },
+  "blue_balloon": {
+   "0": {
+    "pan": 21033,
+    "tilt": 54842,
+    "note": "wash over the blue balloon + cloud, spilling toward the kitchen side"
+   },
+   "1": {
+    "pan": 42355,
+    "tilt": 22210,
+    "note": "dead-on the blue balloon (leans back toward the wall, 29 deg)"
+   },
+   "3": {
+    "pan": 5884,
+    "tilt": 6348,
+    "note": "blue balloon from across the room; shadow on the water-heater door"
+   }
+  },
+  "red_balloon": {
+   "1": {
+    "pan": 9679,
+    "tilt": 7272,
+    "note": "red balloon from the shelf, first try"
+   },
+   "2": {
+    "pan": 15534,
+    "tilt": 24758,
+    "note": "red balloon right above the gray couch end (22 deg)"
+   }
+  },
+  "green_balloon": {
+   "0": {
+    "pan": 15311,
+    "tilt": 8776,
+    "note": "green balloon in the studio corner"
+   },
+   "1": {
+    "pan": 17424,
+    "tilt": 5168,
+    "note": "green balloon from the shelf, corner to corner"
    }
   }
  },
- "saved": "2026-10-30 21:16"
+ "saved": "2026-10-30 21:29"
 }
