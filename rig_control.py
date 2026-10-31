@@ -188,6 +188,7 @@ LOOKS = {
                                                                  'color_temperature': {'mirek': 370},
                                                                  'dynamics': {'duration': 1500}}))),
     'movienight': ('Movie night', lambda: movie_lights('movie')),
+    'breathe_slow': ('Slow breathing colours', lambda: (stop_all(), start_ambient(65, 420, 140, 16, 18))),
     'breathe': ('Calm breathing colours', lambda: (stop_all(), start_ambient(70, 300, 140, 10, 22))),
     'morning': ('Morning light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 85.0},
                                                                  'color_temperature': {'mirek': 230},
