@@ -80,7 +80,8 @@ TO MEASURE (checklist, Oct 30)
   [x] Gray couch eye height: 43 in sitting, 27 in lying down -> unsafe band 24-48 in (blue couch assumed the same)
   [ ] Blue couch eye height; your standing eye height
  TIER 2 - room shape cross-checks
-  [ ] Back wall full length (mirror closet corner to the east corner)  -> checks the 23.76 ft width
+  [x] Back wall: almost exactly 23 ft (276 in). Room width LOCKED at 23.0 ft (Oct 30).
+      The north-wall chain was 13 in too long; the guessed water-heater recess absorbed it (now ~14 in wide -- CHECK).
   [x] East wall: fireplace corner to the back wall = 95 in (Oct 30)
   [ ] Studio desk: its corners from the east wall and back wall
   [ ] Optoma: position and lens height

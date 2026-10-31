@@ -1,21 +1,20 @@
 head,address,zone_az,zone_width,max_lean_inside,reason
-Head 1,85,33,38,77,"eye level, blue couch"
-Head 1,85,71,50,77,"eye level, gray couch"
+Head 1,85,37,42,75,"eye level, blue couch"
+Head 1,85,78,52,77,"eye level, gray couch"
 Head 1,85,153,34,66,Glass door
 Head 1,85,243,102,15,Screen
-Head 2,15,68,40,78,"eye level, blue couch"
+Head 2,15,81,42,78,"eye level, blue couch"
 Head 2,15,157,26,74,Glass door
 Head 2,15,183,10,55,Screen
 Head 3,29,348,128,17,"eye level, gray couch"
 Head 3,29,58,24,30,"eye level, gray couch"
 Head 3,29,70,12,42,"eye level, gray couch"
 Head 3,29,77,14,50,Eye level
-Head 3,29,167,10,79,mirror -> mirror -> Glass door
-Head 3,29,185,18,79,mirror -> Glass door
-Head 3,29,192,8,80,"mirror -> eye level, blue couch"
-Head 3,29,204,12,74,mirror -> Screen
+Head 3,29,167,10,78,mirror -> mirror -> Glass door
+Head 3,29,186,20,78,mirror -> Glass door
+Head 3,29,206,12,73,mirror -> Screen
 Head 3,29,259,62,49,"eye level, blue couch"
 Head 4,43,358,88,54,"eye level, gray couch"
-Head 4,43,92,40,60,Screen
-Head 4,43,163,46,60,Glass door
+Head 4,43,86,40,60,Screen
+Head 4,43,161,50,57,Glass door
 Head 4,43,315,10,60,Eye level
