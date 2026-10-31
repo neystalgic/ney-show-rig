@@ -1729,10 +1729,13 @@ def make_handler(hub):
                     return self._send(404, 'viz.html is missing', 'text/plain')
             if path.startswith('/kit/'):             # the Zephyrus fetches DMX node updates from here (allowed devices only)
                 name = path[5:]
-                if name not in ('dmx_node.py', 'node_page.html', 'heads_desk.html'):
+                kit = {'dmx_node.py': ('dmx', 'app', 'dmx_node.py'), 'node_page.html': ('dmx', 'app', 'node_page.html'),
+                       'heads_desk.html': ('dmx', 'app', 'heads_desk.html'),
+                       'start_dmx_node.bat': ('dmx', 'Start DMX Node.bat')}      # the auto-updating start script
+                if name not in kit:
                     return self._send(404, 'not found', 'text/plain')
                 try:
-                    with open(os.path.join(HERE, 'dmx', 'app', name), 'rb') as f:
+                    with open(os.path.join(HERE, *kit[name]), 'rb') as f:
                         return self._send(200, f.read(), 'text/plain; charset=utf-8')
                 except OSError:
                     return self._send(404, 'not found', 'text/plain')

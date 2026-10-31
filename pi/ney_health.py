@@ -147,10 +147,55 @@ class H(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
+BACKUP_REPO = os.path.expanduser('~/backups/ney-show-rig.git')   # the Mac pushes every commit here
+
+
+def self_update():
+    """Every 10 min: copy any newer pi/ files from the backup repo (main branch) into this folder.
+    If this script itself changed (and the new one parses), restart in place -- same process, no sudo.
+    Settings (config.json) are git-ignored, so they are never overwritten."""
+    import ast, subprocess, sys
+    me = os.path.abspath(__file__)
+    while True:
+        time.sleep(600)
+        try:
+            if not os.path.isdir(BACKUP_REPO):
+                continue
+            git = ['git', '--git-dir', BACKUP_REPO]
+            names = subprocess.run(git + ['ls-tree', '-r', '--name-only', 'main', 'pi/'],
+                                   capture_output=True, text=True, timeout=30).stdout.split()
+            restart = False
+            for n in names:
+                new = subprocess.run(git + ['show', 'main:' + n], capture_output=True, timeout=30).stdout
+                dst = os.path.join(HERE, n[3:])
+                try:
+                    old = open(dst, 'rb').read()
+                except OSError:
+                    old = None
+                if new == old:
+                    continue
+                if dst.endswith('.py'):
+                    ast.parse(new.decode('utf-8'))           # never install a file that doesn't parse
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                tmp = dst + '.tmp'
+                with open(tmp, 'wb') as f:
+                    f.write(new)
+                os.replace(tmp, dst)
+                log('Updated %s from the backup repo' % n)
+                if os.path.abspath(dst) == me:
+                    restart = True
+            if restart:
+                log('Restarting with the new health watch')
+                os.execv(sys.executable, [sys.executable, me] + sys.argv[1:])
+        except Exception as e:
+            log('Self-update skipped: %s' % e)
+
+
 def main():
     c = cfg()
     threading.Thread(target=watch, daemon=True).start()
     threading.Thread(target=machines, daemon=True).start()
+    threading.Thread(target=self_update, daemon=True).start()
     log('Ney Pi health watch on port %d' % c['port'])
     ThreadingHTTPServer(('0.0.0.0', c['port']), H).serve_forever()
 

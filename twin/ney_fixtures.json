@@ -1,0 +1,74 @@
+{
+ "units": "metres; X east, Y up, Z south (glTF)",
+ "ceiling_m": 2.3622,
+ "fixtures": [
+  {
+   "name": "Head 1",
+   "dmx_address": 85,
+   "mode": "14ch Betopper LM70S",
+   "position_m": [
+    4.2479976,
+    0.9043416000000001,
+    0.5081016
+   ],
+   "plot_ft": [
+    13.937,
+    1.667,
+    2.967
+   ],
+   "pan0_heading_deg_plot": 180,
+   "pan_turns": "ccw"
+  },
+  {
+   "name": "Head 2",
+   "dmx_address": 15,
+   "mode": "14ch Betopper LM70S",
+   "position_m": [
+    2.520696,
+    1.0567416,
+    0.1524
+   ],
+   "plot_ft": [
+    8.27,
+    0.5,
+    3.467
+   ],
+   "pan0_heading_deg_plot": 180,
+   "pan_turns": "ccw"
+  },
+  {
+   "name": "Head 3",
+   "dmx_address": 29,
+   "mode": "14ch Betopper LM70S",
+   "position_m": [
+    1.85928,
+    0.9043416000000001,
+    3.15468
+   ],
+   "plot_ft": [
+    6.1,
+    10.35,
+    2.967
+   ],
+   "pan0_heading_deg_plot": 0,
+   "pan_turns": "cw"
+  },
+  {
+   "name": "Head 4",
+   "dmx_address": 43,
+   "mode": "14ch Betopper LM70S",
+   "position_m": [
+    4.528718400000001,
+    0.89154,
+    3.118104
+   ],
+   "plot_ft": [
+    14.858,
+    10.23,
+    2.925
+   ],
+   "pan0_heading_deg_plot": 180,
+   "pan_turns": "cw"
+  }
+ ]
+}

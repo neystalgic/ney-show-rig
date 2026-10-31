@@ -32,3 +32,7 @@ dmx/heads_config.json
 dmx/heads_config.json.tmp
 dmx/config/heads_config.json
 dmx/config/heads_config.json.tmp
+
+# --- local safety copies (the Pi + GitHub are the real backups) ---
+*.bak-*
+backup_before_relay_*/
