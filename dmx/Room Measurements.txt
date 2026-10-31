@@ -71,10 +71,11 @@ TO MEASURE (checklist, Oct 30)
   [x] Head 4: rolly desk 25.5 in now, extends to 40 in (Oct 30)
   [ ] Head 4: from the gray couch's east end and from the back wall
   [ ] Ceiling height in 2-3 spots (93 assumed)
-  [ ] Projection: image left/right edges from the bedroom-door trim; image top and bottom heights
+  [x] Projection: 72 x 45 in, bottom 48 in off the floor, top at the ceiling; spans door trim -> fireplace corner (Oct 30)
   [ ] Sliding glass door: start and end along the east wall from the fireplace corner; height
   [x] Mirror closet: floor to ceiling
-  [ ] Seated eye height on each couch; your standing eye height
+  [x] Gray couch eye height: 43 in sitting, 27 in lying down -> unsafe band 24-48 in (blue couch assumed the same)
+  [ ] Blue couch eye height; your standing eye height
  TIER 2 - room shape cross-checks
   [ ] Back wall full length (mirror closet corner to the east corner)  -> checks the 23.76 ft width
   [x] East wall: fireplace corner to the back wall = 95 in (Oct 30)

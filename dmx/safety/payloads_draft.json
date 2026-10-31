@@ -34,8 +34,8 @@
     "why": "Glass door"
    },
    {
-    "az": 244.0,
-    "width": 100.0,
+    "az": 243.0,
+    "width": 102.0,
     "lean": 15.0,
     "why": "Screen"
    }
@@ -70,8 +70,8 @@
     "why": "Glass door"
    },
    {
-    "az": 184.0,
-    "width": 8.0,
+    "az": 183.0,
+    "width": 10.0,
     "lean": 55.0,
     "why": "Screen"
    }
