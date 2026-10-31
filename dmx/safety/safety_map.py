@@ -55,7 +55,7 @@ def ray_wall(px, py, dx, dy, poly):
 def build(plan):
     poly = plan['room']['poly']
     items = {i['id']: i for i in plan['items']}
-    unsafe = [i for i in plan['items'] if i['kind'] == 'unsafe' and i.get('cat') != 'fan']
+    unsafe = [i for i in plan['items'] if i['kind'] == 'unsafe' and i.get('cat') != 'fan' and not i.get('off')]   # 'off' = marked safe by Michael
     # eye-level areas: drawn on the plot as unsafe 'eyes' with a height band (zlo..zhi, ft)
     eyes = [u for u in unsafe if u.get('cat') == 'eyes']
     band = lambda u: (u.get('zlo', EYE[0]) if u.get('zlo') is not None else EYE[0],

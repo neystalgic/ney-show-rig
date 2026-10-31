@@ -16,12 +16,6 @@
     "why": "eye level, gray couch"
    },
    {
-    "az": 152.0,
-    "width": 36.0,
-    "lean": 61.0,
-    "why": "Glass door"
-   },
-   {
     "az": 243.0,
     "width": 102.0,
     "lean": 2.0,
@@ -44,12 +38,6 @@
     "width": 28.0,
     "lean": 76.0,
     "why": "eye level, gray couch"
-   },
-   {
-    "az": 157.0,
-    "width": 26.0,
-    "lean": 69.0,
-    "why": "Glass door"
    },
    {
     "az": 182.0,
@@ -102,24 +90,18 @@
    {
     "az": 295.0,
     "width": 10.0,
-    "lean": 74.0,
-    "why": "mirror -> mirror -> Glass door"
+    "lean": 76.0,
+    "why": "mirror -> mirror -> eye level, gray couch"
    },
    {
-    "az": 304.0,
-    "width": 12.0,
+    "az": 307.0,
+    "width": 18.0,
     "lean": 76.0,
     "why": "mirror -> eye level, gray couch"
    },
    {
-    "az": 314.0,
-    "width": 20.0,
-    "lean": 74.0,
-    "why": "mirror -> Glass door"
-   },
-   {
-    "az": 326.0,
-    "width": 16.0,
+    "az": 322.0,
+    "width": 24.0,
     "lean": 75.0,
     "why": "mirror -> eye level, blue couch"
    },
@@ -146,12 +128,6 @@
     "width": 40.0,
     "lean": 46.0,
     "why": "Screen"
-   },
-   {
-    "az": 163.0,
-    "width": 54.0,
-    "lean": 51.0,
-    "why": "Glass door"
    },
    {
     "az": 315.0,
