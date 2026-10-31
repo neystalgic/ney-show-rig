@@ -1,0 +1,86 @@
+{
+ "heads": [
+  {
+   "name": "Head 1 (white desk side table)",
+   "addr": 85,
+   "calibrated": true,
+   "tilt_up": 32768,
+   "tilt_dir": -1,
+   "tilt_max_deg": 45.0,
+   "pan_min": 0,
+   "pan_max": 28520,
+   "motor_speed": 0,
+   "max_level": 0.5,
+   "avoid": [
+    {
+     "az": 235.0,
+     "width": 140.0
+    }
+   ]
+  },
+  {
+   "name": "Head 2 (kitchen cube shelf)",
+   "addr": 15,
+   "calibrated": true,
+   "tilt_up": 32768,
+   "tilt_dir": -1,
+   "tilt_max_deg": 45.0,
+   "pan_min": 0,
+   "pan_max": 65535,
+   "motor_speed": 0,
+   "max_level": 1.0,
+   "avoid": [
+    {
+     "az": 180.0,
+     "width": 60.0,
+     "lean": 20.0
+    }
+   ]
+  },
+  {
+   "name": "Head 3 (couch corner table)",
+   "addr": 29,
+   "calibrated": true,
+   "tilt_up": 32768,
+   "tilt_dir": -1,
+   "tilt_max_deg": 45.0,
+   "pan_min": 0,
+   "pan_max": 65535,
+   "motor_speed": 0,
+   "max_level": 1.0,
+   "avoid": [
+    {
+     "az": 150.0,
+     "width": 80.0,
+     "lean": 20.0
+    },
+    {
+     "az": 330.0,
+     "width": 50.0,
+     "lean": 10.0
+    }
+   ]
+  },
+  {
+   "name": "Head 4 (rolly desk)",
+   "addr": 43,
+   "calibrated": true,
+   "tilt_up": 32768,
+   "tilt_dir": -1,
+   "tilt_max_deg": 45.0,
+   "pan_min": 0,
+   "pan_max": 65535,
+   "motor_speed": 0,
+   "max_level": 1.0,
+   "avoid": [
+    {
+     "az": 290.0,
+     "width": 80.0,
+     "lean": 15.0
+    }
+   ]
+  }
+ ],
+ "universe": 0,
+ "fps": 30
+}

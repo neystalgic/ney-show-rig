@@ -8,16 +8,16 @@ Head 2,15,110,28,80,"eye level, gray couch"
 Head 2,15,157,26,73,Glass door
 Head 2,15,182,8,64,Screen
 Head 2,15,184,8,53,Screen
-Head 3,29,348,128,12,"eye level, gray couch"
-Head 3,29,58,24,23,"eye level, gray couch"
-Head 3,29,70,12,35,"eye level, gray couch"
-Head 3,29,77,14,43,Eye level
-Head 3,29,167,10,78,mirror -> mirror -> Glass door
-Head 3,29,176,12,80,"mirror -> eye level, gray couch"
-Head 3,29,186,20,78,mirror -> Glass door
-Head 3,29,198,16,79,"mirror -> eye level, blue couch"
-Head 3,29,206,12,73,mirror -> Screen
-Head 3,29,259,62,42,"eye level, blue couch"
+Head 3,29,27,62,42,"eye level, blue couch"
+Head 3,29,116,128,12,"eye level, gray couch"
+Head 3,29,186,24,23,"eye level, gray couch"
+Head 3,29,198,12,35,"eye level, gray couch"
+Head 3,29,205,14,43,Eye level
+Head 3,29,295,10,78,mirror -> mirror -> Glass door
+Head 3,29,304,12,80,"mirror -> eye level, gray couch"
+Head 3,29,314,20,78,mirror -> Glass door
+Head 3,29,326,16,79,"mirror -> eye level, blue couch"
+Head 3,29,334,12,73,mirror -> Screen
 Head 4,43,358,88,47,"eye level, gray couch"
 Head 4,43,86,40,58,Screen
 Head 4,43,163,54,55,Glass door
