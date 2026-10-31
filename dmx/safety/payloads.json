@@ -5,14 +5,14 @@
   "avoid": [
    {
     "az": 37.0,
-    "width": 42.0,
-    "lean": 68.0,
+    "width": 30.0,
+    "lean": 70.0,
     "why": "eye level, blue couch"
    },
    {
-    "az": 78.0,
-    "width": 52.0,
-    "lean": 71.0,
+    "az": 76.0,
+    "width": 44.0,
+    "lean": 73.0,
     "why": "eye level, gray couch"
    },
    {
@@ -28,16 +28,10 @@
   "tilt_max_deg": 85.0,
   "avoid": [
    {
-    "az": 81.0,
-    "width": 42.0,
-    "lean": 69.0,
+    "az": 80.0,
+    "width": 24.0,
+    "lean": 71.0,
     "why": "eye level, blue couch"
-   },
-   {
-    "az": 110.0,
-    "width": 28.0,
-    "lean": 76.0,
-    "why": "eye level, gray couch"
    },
    {
     "az": 182.0,
@@ -58,50 +52,38 @@
   "tilt_max_deg": 85.0,
   "avoid": [
    {
-    "az": 27.0,
-    "width": 62.0,
-    "lean": 38.0,
+    "az": 38.0,
+    "width": 40.0,
+    "lean": 49.0,
     "why": "eye level, blue couch"
    },
    {
-    "az": 116.0,
-    "width": 128.0,
-    "lean": 8.0,
+    "az": 77.0,
+    "width": 26.0,
+    "lean": 51.0,
+    "why": "Screen"
+   },
+   {
+    "az": 144.0,
+    "width": 64.0,
+    "lean": 28.0,
     "why": "eye level, gray couch"
    },
    {
-    "az": 186.0,
-    "width": 24.0,
-    "lean": 19.0,
-    "why": "eye level, gray couch"
-   },
-   {
-    "az": 198.0,
-    "width": 12.0,
-    "lean": 31.0,
-    "why": "eye level, gray couch"
-   },
-   {
-    "az": 205.0,
-    "width": 14.0,
-    "lean": 39.0,
-    "why": "Eye level"
-   },
-   {
-    "az": 295.0,
-    "width": 10.0,
+    "az": 296.0,
+    "width": 8.0,
     "lean": 76.0,
     "why": "mirror -> mirror -> eye level, gray couch"
    },
    {
-    "az": 307.0,
-    "width": 18.0,
+    "az": 306.0,
+    "width": 12.0,
     "lean": 76.0,
     "why": "mirror -> eye level, gray couch"
    },
    {
-    "az": 322.0,
-    "width": 24.0,
+    "az": 324.0,
+    "width": 20.0,
     "lean": 75.0,
     "why": "mirror -> eye level, blue couch"
    },
@@ -118,10 +100,10 @@
   "tilt_max_deg": 85.0,
   "avoid": [
    {
-    "az": 358.0,
-    "width": 88.0,
-    "lean": 43.0,
-    "why": "eye level, gray couch"
+    "az": 19.0,
+    "width": 26.0,
+    "lean": 73.0,
+    "why": "eye level, blue couch"
    },
    {
     "az": 86.0,
@@ -130,10 +112,10 @@
     "why": "Screen"
    },
    {
-    "az": 315.0,
-    "width": 10.0,
-    "lean": 51.0,
-    "why": "Eye level"
+    "az": 345.0,
+    "width": 34.0,
+    "lean": 52.0,
+    "why": "eye level, gray couch"
    }
   ]
  }

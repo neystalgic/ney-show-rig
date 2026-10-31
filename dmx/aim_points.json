@@ -1,0 +1,51 @@
+{
+ "confirmed": {
+  "studio": {
+   "0": {
+    "pan": 16401,
+    "tilt": 10559,
+    "note": "left cloud above the Digitone"
+   },
+   "1": {
+    "pan": 17762,
+    "tilt": 7646,
+    "note": "washes the curtain + both corner clouds"
+   },
+   "3": {
+    "pan": 21630,
+    "tilt": 7197,
+    "note": "streams into the studio corner by the lamp behind the desk"
+   }
+  },
+  "coexist": {
+   "0": {
+    "pan": 20287,
+    "tilt": 12823,
+    "note": "centre of the flag, image untouched"
+   },
+   "1": {
+    "pan": 20439,
+    "tilt": 7223,
+    "note": "whole flag, little wall flood"
+   },
+   "3": {
+    "pan": 15465,
+    "tilt": 5831,
+    "note": "whole flag from across the room"
+   }
+  },
+  "coffee": {
+   "0": {
+    "pan": 6592,
+    "tilt": 18611,
+    "note": "ceiling over the coffee table"
+   },
+   "1": {
+    "pan": 13606,
+    "tilt": 10236,
+    "note": "ceiling over the coffee table (from the shelf)"
+   }
+  }
+ },
+ "saved": "2026-10-30 21:16"
+}

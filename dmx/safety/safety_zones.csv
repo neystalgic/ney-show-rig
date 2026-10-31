@@ -1,20 +1,17 @@
 head,address,zone_az,zone_width,max_lean_inside,reason
-Head 1,85,37,42,68,"eye level, blue couch"
-Head 1,85,78,52,71,"eye level, gray couch"
+Head 1,85,37,30,70,"eye level, blue couch"
+Head 1,85,76,44,73,"eye level, gray couch"
 Head 1,85,243,102,2,Screen
-Head 2,15,81,42,69,"eye level, blue couch"
-Head 2,15,110,28,76,"eye level, gray couch"
+Head 2,15,80,24,71,"eye level, blue couch"
 Head 2,15,182,8,52,Screen
 Head 2,15,184,8,41,Screen
-Head 3,29,27,62,38,"eye level, blue couch"
-Head 3,29,116,128,8,"eye level, gray couch"
-Head 3,29,186,24,19,"eye level, gray couch"
-Head 3,29,198,12,31,"eye level, gray couch"
-Head 3,29,205,14,39,Eye level
-Head 3,29,295,10,76,"mirror -> mirror -> eye level, gray couch"
-Head 3,29,307,18,76,"mirror -> eye level, gray couch"
-Head 3,29,322,24,75,"mirror -> eye level, blue couch"
+Head 3,29,38,40,49,"eye level, blue couch"
+Head 3,29,77,26,51,Screen
+Head 3,29,144,64,28,"eye level, gray couch"
+Head 3,29,296,8,76,"mirror -> mirror -> eye level, gray couch"
+Head 3,29,306,12,76,"mirror -> eye level, gray couch"
+Head 3,29,324,20,75,"mirror -> eye level, blue couch"
 Head 3,29,334,12,61,mirror -> Screen
-Head 4,43,358,88,43,"eye level, gray couch"
+Head 4,43,19,26,73,"eye level, blue couch"
 Head 4,43,86,40,46,Screen
-Head 4,43,315,10,51,Eye level
+Head 4,43,345,34,52,"eye level, gray couch"
