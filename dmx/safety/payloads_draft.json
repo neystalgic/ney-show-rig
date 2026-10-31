@@ -4,21 +4,9 @@
   "tilt_max_deg": 85.0,
   "avoid": [
    {
-    "az": 18.0,
-    "width": 8.0,
-    "lean": 78.0,
-    "why": "eye level, blue couch"
-   },
-   {
-    "az": 28.0,
-    "width": 24.0,
-    "lean": 68.0,
-    "why": "Mirror"
-   },
-   {
-    "az": 43.0,
-    "width": 18.0,
-    "lean": 78.0,
+    "az": 33.0,
+    "width": 38.0,
+    "lean": 77.0,
     "why": "eye level, blue couch"
    },
    {
@@ -46,14 +34,8 @@
   "tilt_max_deg": 85.0,
   "avoid": [
    {
-    "az": 46.0,
-    "width": 28.0,
-    "lean": 63.0,
-    "why": "Mirror"
-   },
-   {
-    "az": 71.0,
-    "width": 34.0,
+    "az": 68.0,
+    "width": 40.0,
     "lean": 78.0,
     "why": "eye level, blue couch"
    },

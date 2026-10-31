@@ -1,7 +1,9 @@
 """Safety map: work out, from the room plot, where each moving head must NOT point.
 
 Model: everything is safe unless a beam would
-  - hit a mirror or the glass door (reflection),
+  - hit the glass door,
+  - hit the mirror AND its reflection then lands somewhere unsafe (the reflected beam is
+    traced on -- up to 2 bounces -- and checked against every rule below),
   - hit the projected image (screen),
   - pass through seated eye height over a couch (eyes).
 The fan is ignored (it is off during shows).
@@ -18,6 +20,8 @@ CEIL = 93 * FT            # ceiling height
 EYE = (34 * FT, 52 * FT)  # seated eye band, generous
 GLASS_TOP = 80 * FT       # sliding door height (estimate)
 SCREEN_Z = (0.0, CEIL)    # projected image height: unknown yet, so the whole wall height
+TRACE_MIRROR = True       # False = old rule: any beam on the mirror is unsafe
+MAX_BOUNCES = 2
 LEAN_MAX = 85             # what we'd like the heads to reach
 MARGIN = 5                # degrees kept clear of anything unsafe
 AZ_STEP, LEAN_STEP = 2, 1
@@ -30,7 +34,7 @@ def rect(it, pad=0.0):
 
 def ray_wall(px, py, dx, dy, poly):
     """distance along a horizontal ray to the first wall, and the hit point."""
-    best = (1e9, None)
+    best = (1e9, None, None)
     n = len(poly)
     for i in range(n):
         (x1, y1), (x2, y2) = poly[i], poly[(i + 1) % n]
@@ -41,7 +45,8 @@ def ray_wall(px, py, dx, dy, poly):
         t = ((x1 - px) * ey - (y1 - py) * ex) / den
         u = ((x1 - px) * dy - (y1 - py) * dx) / den
         if t > 1e-6 and -1e-6 <= u <= 1 + 1e-6 and t < best[0]:
-            best = (t, (px + t * dx, py + t * dy))
+            L = math.hypot(ex, ey)
+            best = (t, (px + t * dx, py + t * dy), (-ey / L, ex / L))   # hit distance, point, wall normal
     return best
 
 
@@ -63,16 +68,16 @@ def build(plan):
             if u.get('cat') == 'reflect':
                 top = GLASS_TOP if 'glass' in u['id'] else CEIL
                 if wz <= top:
-                    return u['label']
+                    return u
             elif u.get('cat') == 'screen':
                 lo = u['zlo'] if u.get('zlo') is not None else SCREEN_Z[0]
                 hi = u['zhi'] if u.get('zhi') is not None else SCREEN_Z[1]
                 if lo - 0.25 <= wz <= hi + 0.25:          # 3 in of margin round the image
-                    return u['label']
+                    return u
             elif u.get('cat') == 'eyes':
                 lo, hi = band(u)
                 if lo <= wz <= hi:
-                    return u['label']
+                    return u
         return None
 
     def through_eyes(px, py, pz, dx, dy, lean, dist):
@@ -95,6 +100,30 @@ def build(plan):
             s += 0.1
         return None
 
+    def trace(px, py, pz, dx, dy, lean, depth=0):
+        """Why a beam from (px,py,pz) heading (dx,dy) at this lean is unsafe -- or None if it's fine.
+        A beam that lands on the mirror is reflected and followed."""
+        if lean < 1:
+            return None                                   # straight up: the ceiling right above the head
+        tl = math.tan(math.radians(lean))
+        dwall, wpt, nrm = ray_wall(px, py, dx, dy, poly)
+        dceil = (CEIL - pz) * tl
+        if dceil <= dwall:                                # ends on the ceiling
+            return through_eyes(px, py, pz, dx, dy, lean, dceil)
+        e = through_eyes(px, py, pz, dx, dy, lean, dwall)
+        if e:
+            return e
+        wz = pz + dwall / tl
+        u = hits_unsafe(wpt[0] - dx * 0.05, wpt[1] - dy * 0.05, wz)
+        if not u:
+            return None
+        if TRACE_MIRROR and u.get('cat') == 'reflect' and 'glass' not in u['id'] and depth < MAX_BOUNCES:
+            k = dx * nrm[0] + dy * nrm[1]
+            rdx, rdy = dx - 2 * k * nrm[0], dy - 2 * k * nrm[1]
+            r = trace(wpt[0] + rdx * 0.05, wpt[1] + rdy * 0.05, wz, rdx, rdy, lean, depth + 1)
+            return ('mirror -> ' + r) if r else None
+        return u['label'] if depth == 0 else u['label']
+
     out = []
     for h in heads:
         px, py, pz = h['x'], h['y'], h.get('z', 2.5)
@@ -103,18 +132,9 @@ def build(plan):
         for az in range(0, 360, AZ_STEP):
             th = math.radians(base + sgn * az)
             dx, dy = math.cos(th), math.sin(th)
-            dwall, wpt = ray_wall(px, py, dx, dy, poly)
             safe, why = LEAN_MAX, ''
             for lean in range(0, LEAN_MAX + 1, LEAN_STEP):
-                tl = math.tan(math.radians(lean)) if lean else 0
-                dceil = (CEIL - pz) * tl
-                if lean and dceil > dwall:      # reaches a wall first
-                    wz = pz + dwall / tl
-                    reason = hits_unsafe(wpt[0] - dx * 0.05, wpt[1] - dy * 0.05, wz)
-                    reach = dwall
-                else:
-                    reason, reach = None, dceil
-                reason = reason or through_eyes(px, py, pz, dx, dy, lean, reach)
+                reason = trace(px, py, pz, dx, dy, lean)
                 if reason:
                     safe, why = max(0, lean - MARGIN), reason
                     break
