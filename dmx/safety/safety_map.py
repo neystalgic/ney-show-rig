@@ -23,7 +23,9 @@ SCREEN_Z = (0.0, CEIL)    # projected image height: unknown yet, so the whole wa
 TRACE_MIRROR = True       # False = old rule: any beam on the mirror is unsafe
 MAX_BOUNCES = 2
 LEAN_MAX = 85             # what we'd like the heads to reach
-MARGIN = 5                # degrees kept clear of anything unsafe
+MARGIN = 5                # degrees kept clear of anything unsafe (beam centre)
+BEAM_HALF = 4             # the beam's own spread: ~8 deg wide, so its edge sits 4 deg off the centre (live test Oct 30)
+SCREEN_EXTRA = 2          # a little more off the projected image so even dim spill doesn't touch it
 AZ_STEP, LEAN_STEP = 2, 1
 
 
@@ -136,7 +138,8 @@ def build(plan):
             for lean in range(0, LEAN_MAX + 1, LEAN_STEP):
                 reason = trace(px, py, pz, dx, dy, lean)
                 if reason:
-                    safe, why = max(0, lean - MARGIN), reason
+                    m = MARGIN + BEAM_HALF + (SCREEN_EXTRA if 'Screen' in reason else 0)
+                    safe, why = max(0, lean - m), reason
                     break
             rows.append((az, safe, why))
         out.append((h, rows))
