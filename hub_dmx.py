@@ -146,6 +146,8 @@ class Heads:
                                         data=json.dumps(dict(vals, head=i)).encode(), headers={'Content-Type': 'text/plain'})
             with urllib.request.urlopen(rq, timeout=3) as r:
                 self.node_cfg['heads'][i] = json.loads(r.read())
+            if any(kk not in self.node_cfg['heads'][i] for kk in vals if kk not in ('avoid', 'walls')):
+                continue                             # an older node ignored a setting: keep it until the node updates
             done.append(k)
         if done:
             with self.hub.lock:

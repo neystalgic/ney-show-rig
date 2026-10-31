@@ -88,7 +88,8 @@ TO MEASURE (checklist, Oct 30)
   [ ] Studio desk: its corners from the east wall and back wall
   [ ] Optoma: position and lens height
  TIER 3 - scene targets
-  [ ] Each cloud and balloon: spot on the floor directly under it, and how far it hangs below the ceiling
+  [-] Each cloud and balloon height -- NOT NEEDED (Oct 31): they'll move as more get added.
+      The 3D model keeps them ~14 in below the ceiling; aims are set live by eye anyway.
   [ ] Fan: centre spot, blade diameter, blade height
   [ ] Coffee table: corners from the blue couch front and gray couch front
   [ ] Laser tripod: max height and planned spot

@@ -8,6 +8,8 @@ The node is the LAST word on safety, whatever sends it data:
   * auto / sound programs, colour macros and the reset channel are locked off
   * every head's tilt stays inside its calibrated window (beams above head height), pan inside its window
   * a head that hasn't been calibrated stays DARK (it can still move, for calibration)
+  * a head can be dimmed while it points nearly straight up (upright_level): Head 1's upright wash
+    floods the projection wall at full brightness
   * flash guard: no head can turn round brighter/darker more than 3 times a second
   * channels past the 4 heads (the laser bar, later) stay at 0 until it has a profile
   * if the hub goes quiet for 2 s the heads fade to dark over 2 s and hold their position
@@ -57,6 +59,8 @@ HEAD_DEFAULTS = dict(calibrated=False,
                      pan_min=0, pan_max=65535,  # allowed pan window (16-bit)
                      motor_speed=0,        # fixture's own pan/tilt speed channel (the hub already moves slowly)
                      max_level=1.0,        # brightness cap for this head (0..1)
+                     upright_level=1.0,    # brightness cap while the beam is near straight up (0..1, 1 = off)
+                     upright_lean=20.0,    # 'near straight up' = leaning less than this; full again 15 deg further
                      avoid=[])             # directions the beam must never lean toward: [{az, width}] in pan degrees
 AVOID_LEAN = 4.0          # inside an avoid zone the beam may lean at most this far from straight up (degrees)
 
@@ -273,6 +277,7 @@ class Node:
             master = src[ch['master']]
             rgbw = [src[ch[k]] for k in ('r', 'g', 'b', 'w')]
             cal = self.calib.get(i)
+            up_k = 1.0                                         # upright dimming (1 = none)
             if cal and now < cal['until']:                 # calibration: you're steering it from the phone
                 pan, tilt = cal['pan'], cal['tilt']
                 master, rgbw = MASTER_MIN + 30, [0, 90, 255, 0]   # soft blue, dim -- never white
@@ -295,12 +300,17 @@ class Node:
                 cap = avoid_cap(h, pan, lean)           # toward an unsafe area: no further than that zone allows
                 if cap is not None and abs(lean) > cap:
                     tilt = int(h['tilt_up'] + math.copysign(cap * 65535.0 / TILT_DEG, tilt - int(h['tilt_up'])))
+                    lean = math.copysign(cap, lean)
+                ul = max(0.0, min(1.0, float(h.get('upright_level', 1.0))))
+                if ul < 1.0:                            # near straight up: dimmer, back to full 15 deg further over
+                    x = (abs(lean) - float(h.get('upright_lean', 20.0))) / 15.0
+                    up_k = ul + (1.0 - ul) * max(0.0, min(1.0, x))
             # master: off, or the dimming range -- never the strobe range
             if master < MASTER_MIN:
                 master = 0
             else:
                 lvl = (min(master, MASTER_MAX) - MASTER_MIN) / float(MASTER_MAX - MASTER_MIN)
-                lvl *= max(0.0, min(1.0, float(h.get('max_level', 1.0)))) * (1.0 if cal else self.fade)
+                lvl *= max(0.0, min(1.0, float(h.get('max_level', 1.0)))) * (1.0 if cal else self.fade * up_k)
                 master = 0 if lvl <= 0.004 else int(round(MASTER_MIN + lvl * (MASTER_MAX - MASTER_MIN)))
             master = self.guard.step((i, 'm'), master, now)
             rgbw = [self.guard.step((i, k), v, now) for k, v in zip('rgbw', rgbw)]
@@ -407,9 +417,11 @@ def make_handler(node):
                     return self.send(200, '{"ok":true}')
                 if p == '/head':             # save calibration values for one head
                     for k, lo, hi in (('tilt_up', 0, 65535), ('pan_min', 0, 65535), ('pan_max', 0, 65535),
-                                      ('tilt_max_deg', 0, 85), ('motor_speed', 0, 255), ('max_level', 0, 1), ('addr', 1, 499)):
+                                      ('tilt_max_deg', 0, 85), ('motor_speed', 0, 255), ('max_level', 0, 1), ('addr', 1, 499),
+                                      ('upright_level', 0, 1), ('upright_lean', 0, 85)):
                         if k in b:
-                            h[k] = max(lo, min(hi, float(b[k]) if k in ('tilt_max_deg', 'max_level') else int(b[k])))
+                            h[k] = max(lo, min(hi, float(b[k]) if k in ('tilt_max_deg', 'max_level', 'upright_level',
+                                                                        'upright_lean') else int(b[k])))
                     if 'tilt_dir' in b:
                         h['tilt_dir'] = 1 if int(b['tilt_dir']) >= 0 else -1
                     if isinstance(b.get('avoid'), list):

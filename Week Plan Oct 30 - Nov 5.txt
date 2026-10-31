@@ -58,11 +58,14 @@ SAT OCT 31  -- HALLOWEEN, FIRST FULL-RIG SHOW       arriving: gaffer tape + shel
         Enttec + mouse). Both on the shopping list; do this when they arrive.     15 min
     [ ] Gaffer tape: DMX + both Cat6 runs along the baseboards (when the tape arrives) ~1 hr
     [ ] Tapestries / wall art. Projection area stays clear; fabric off the heads.
-    [ ] Room plot: new wall art spots + balloon and cloud HEIGHTS
+    [ ] Room plot: new wall art spots
+        (balloon + cloud heights: NOT NEEDED -- they'll move as more get added, Oct 31)
     [ ] LiDAR scan (Polycam / Scaniverse) after the walls are done
   Afternoon -- lights
     [ ] Re-aim anything that moved (Coexist flag); try Head 3 on the flag
-    [ ] Head 1 flooding the projection wall when upright at full -- fix
+    [ ] Head 1 flooding the projection wall when upright: FIX BUILT (node dims Head 1 to 40% of its
+        cap when it leans < 20 deg, full again by 35). Start the hub BEFORE the node so the node
+        auto-updates and picks it up; then check by eye and tune upright_level
     [ ] Optional: rolly desk up to 40 in, Head 4 on the green balloon
   Evening
     [ ] Music show with the lean cap at 60, then 75 (seated, curtain closed, fan off)
