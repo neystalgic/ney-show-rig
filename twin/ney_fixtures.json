@@ -8,13 +8,13 @@
    "mode": "14ch Betopper LM70S",
    "position_m": [
     3.9133272000000003,
-    0.8253984000000001,
+    0.8129016,
     0.5081016
    ],
    "plot_ft": [
     12.839,
     1.667,
-    2.708
+    2.667
    ],
    "pan0_heading_deg_plot": 180,
    "pan_turns": "ccw"
@@ -25,13 +25,13 @@
    "mode": "14ch Betopper LM70S",
    "position_m": [
     2.1860256000000002,
-    0.9777984000000001,
+    0.9653016,
     0.1524
    ],
    "plot_ft": [
     7.172,
     0.5,
-    3.208
+    3.167
    ],
    "pan0_heading_deg_plot": 180,
    "pan_turns": "ccw"
@@ -42,13 +42,13 @@
    "mode": "14ch Betopper LM70S",
    "position_m": [
     1.930908,
-    0.8253984000000001,
+    0.8129016,
     3.1638240000000004
    ],
    "plot_ft": [
     6.335,
     10.38,
-    2.708
+    2.667
    ],
    "pan0_heading_deg_plot": 0,
    "pan_turns": "cw"
@@ -59,13 +59,13 @@
    "mode": "14ch Betopper LM70S",
    "position_m": [
     4.9017936,
-    0.8001,
+    0.7872984000000001,
     3.0732984
    ],
    "plot_ft": [
     16.082,
     10.083,
-    2.625
+    2.583
    ],
    "pan0_heading_deg_plot": 180,
    "pan_turns": "cw"
