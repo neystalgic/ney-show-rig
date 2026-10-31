@@ -118,13 +118,13 @@ def hue_lights(body):
         os.chdir(cwd)
 
 
-def start_ambient(bri, turn, spread):
+def start_ambient(bri, turn, spread, *extra):
     try:
         os.remove(os.path.join(HERE, 'ambient.stop'))
     except OSError:
         pass
     log = open('/tmp/ambient_fade.log', 'w')
-    subprocess.Popen([PY, os.path.join(HERE, 'ambient_fade.py'), str(bri), str(turn), str(spread)],
+    subprocess.Popen([PY, os.path.join(HERE, 'ambient_fade.py'), str(bri), str(turn), str(spread)] + [str(e) for e in extra],
                      cwd=HERE, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
 
 
@@ -188,6 +188,7 @@ LOOKS = {
                                                                  'color_temperature': {'mirek': 370},
                                                                  'dynamics': {'duration': 1500}}))),
     'movienight': ('Movie night', lambda: movie_lights('movie')),
+    'breathe': ('Calm breathing colours', lambda: (stop_all(), start_ambient(70, 300, 140, 10, 22))),
     'morning': ('Morning light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 85.0},
                                                                  'color_temperature': {'mirek': 230},
                                                                  'dynamics': {'duration': 8000}}))),

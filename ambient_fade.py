@@ -20,7 +20,17 @@ BRI = float(sys.argv[1]) if len(sys.argv) > 1 else 65.0
 TURN = float(sys.argv[2]) if len(sys.argv) > 2 else 120.0     # seconds for the rainbow to go all the way round
 SPREAD = float(sys.argv[3]) if len(sys.argv) > 3 else 240.0  # degrees of rainbow across the room
                                                                # (0 = every lamp the SAME colour, fading round the rainbow together)
-STEP = 2.0                                                     # seconds between updates (the bulbs fade in between)
+BREATH = float(sys.argv[4]) if len(sys.argv) > 4 else 0.0     # seconds per breath (0 = steady brightness)
+BRI_LO = float(sys.argv[5]) if len(sys.argv) > 5 else BRI * 0.35   # brightness at the bottom of the out-breath
+STEP = 1.25 if BREATH else 2.0                                 # seconds between updates (the bulbs fade in between)
+
+
+def breath_level(t):
+    """0..1: a calm breath -- 40% of the time breathing in (rising), 60% breathing out (falling), eased."""
+    import math
+    ph = (t % BREATH) / BREATH
+    k = ph / 0.4 if ph < 0.4 else 1.0 - (ph - 0.4) / 0.6
+    return 0.5 - 0.5 * math.cos(math.pi * k)
 STOP = os.path.join(HERE, 'ambient.stop')
 
 cfg = hs.load_config()
@@ -48,10 +58,11 @@ print('Ambient fade: %d lamps, %g%% brightness, a full turn every %gs. Ctrl+C or
 t0 = time.time()
 while not os.path.exists(STOP):
     base = ((time.time() - t0 + STEP) / TURN) * 360.0       # aim where the colour will be when the fade ends
+    bri = BRI_LO + (BRI - BRI_LO) * breath_level(time.time() - t0 + STEP) if BREATH else BRI
     for i, rid in enumerate(order):
         h = base + SPREAD * (i / max(1, n - 1) - 0.5)
         xy = lambda hh: hs.rgb_to_xyb(*vivid(hh % 360.0))[:2]
-        body = {'on': {'on': True}, 'dimming': {'brightness': BRI}, 'dynamics': {'duration': int(STEP * 1000)}}
+        body = {'on': {'on': True}, 'dimming': {'brightness': bri}, 'dynamics': {'duration': int(STEP * 1000)}}
         if info.get(rid, {}).get('gradient'):
             pts = [xy(h + (j / 4.0 - 0.5) * (SPREAD / max(1, n - 1)) * 2) for j in range(5)]
             body['gradient'] = {'points': [{'color': {'xy': {'x': x, 'y': y}}} for x, y in pts]}

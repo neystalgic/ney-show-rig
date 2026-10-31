@@ -65,7 +65,9 @@ def build(plan):
                 if wz <= top:
                     return u['label']
             elif u.get('cat') == 'screen':
-                if SCREEN_Z[0] <= wz <= SCREEN_Z[1]:
+                lo = u['zlo'] if u.get('zlo') is not None else SCREEN_Z[0]
+                hi = u['zhi'] if u.get('zhi') is not None else SCREEN_Z[1]
+                if lo - 0.25 <= wz <= hi + 0.25:          # 3 in of margin round the image
                     return u['label']
             elif u.get('cat') == 'eyes':
                 lo, hi = band(u)
