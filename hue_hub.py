@@ -1441,7 +1441,7 @@ class Hub:
                              intermission=bool, intermission_level=float, heads_pending=dict,
                              dmx_gain=list, dmx_gamma=float, dmx_proof=bool,
                              movie_spots=dict, movie_sweep=float, movie_volume_bri=float,
-                             dmx_unison=float, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float,
+                             dmx_unison=float, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float, strobe_max_hz=float, strobe_test=bool,
                              head_targets=dict, dmx_cue=dict,
                              dmx_turns=bool, dmx_turn_deg=float, dmx_turn_bars=int, dmx_pan_amp=float, dmx_walls=bool,
                              dmx_lean_cap=float)

@@ -15,7 +15,8 @@
 #   dmx_host   the Zephyrus' name or IP (its Tailscale name works), '' = heads off
 #   dmx_level  head brightness 0..1 (default 0.8)      dmx_move   movement amount 0..1 (default 1)
 #   dmx_strobe when the heads strobe: 'phrase' (default: the moment a drop lands + every 4 bars in it),
-#              'drop' (only the moment a drop lands), 'off'
+#              'drop' (only the moment a drop lands), 'beat' (every beat while a drop plays -- still never
+#              more than 3 a second), 'always' (every beat whenever music plays, not in quiet parts), 'off'
 #   strobe_cone how far from straight up a head may be to strobe, degrees (default 45 = between 45 and 135
 #              degrees above the surface it sits on). Strobe hits: at most 3 a second, room-wide, in colour
 #              (never white), made by the hub -- the heads' own strobe channel stays locked off.
@@ -245,14 +246,29 @@ class Heads:
         cone = clamp(float(s.get('strobe_cone', 45.0)), 0.0, 45.0)
         smode = s.get('dmx_strobe', 'phrase')
         smode = 'phrase' if smode is True else 'off' if smode in (False, None) else str(smode)
-        strobe_on = smode in ('phrase', 'drop') and section == 'drop' and not dark and not movie
+        strobe_on = ((smode in ('phrase', 'drop', 'beat') and section == 'drop') or
+                     (smode == 'always' and section != 'quiet') or bool(s.get('strobe_test'))) and not dark and not movie
         bpb = int(s.get('beats_per_bar', 4) or 4)
         phrase = int(math.floor(beats / (bpb * 4.0)))           # a 4-bar phrase
         landed = section == 'drop' and self.sec_prev != 'drop' and now - getattr(self, 'land_t', -99.0) > 8.0
         if landed:
             self.land_t = now                                  # one 'drop lands' per drop: a flapping detector can't re-fire it
         new_phrase = self.phrase_prev is not None and phrase != self.phrase_prev
-        fire = strobe_on and (landed or (smode == 'phrase' and new_phrase)) and now - self.last_flash >= 1.0 / 3.0 + 0.01
+        beat_i = int(math.floor(beats))
+        new_beat = getattr(self, 'beat_prev', None) is not None and beat_i != self.beat_prev
+        self.beat_prev = beat_i
+        max_hz = clamp(float(s.get('strobe_max_hz', 3.0)), 1.0, 8.0)       # the node's flash guard has the last word
+        if landed or (smode == 'always' and new_phrase):
+            self.burst_until = now + 2.0                       # a 2 s burst at the fastest allowed rate
+        sub = 4 if (now < getattr(self, 'burst_until', 0.0) or s.get('strobe_test')) else 1   # 16ths in a burst / test
+        tick = int(math.floor(beats * sub))
+        new_tick = getattr(self, 'tick_prev', None) is not None and tick != self.tick_prev
+        self.tick_prev = tick
+        fast_strobe = smode == 'always' and max_hz > 3.0
+        fire = strobe_on and (landed or (smode == 'phrase' and new_phrase) or (smode == 'beat' and new_beat)
+                              or (smode == 'always' and (new_tick if fast_strobe else new_beat))
+                              or (bool(s.get('strobe_test')) and new_tick)) \
+            and now - self.last_flash >= 1.0 / max_hz + 0.01
         self.sec_prev, self.phrase_prev = section, phrase
         if fire:
             self.last_flash = now

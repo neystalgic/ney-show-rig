@@ -139,9 +139,11 @@ def lean_limit(h, pan16, lean_deg):
 
 # ---------------------------------------------------------------- flash guard (per head, master + R G B)
 class Guard:
-    """A value may turn round (up-then-down or down-then-up by a big step) at most 3 times a second."""
+    """A value may turn round (up-then-down or down-then-up by a big step) at most flash_hz times a second
+    (node setting 'flash_hz': 3 by default -- the photosensitive-epilepsy limit; Michael may raise it to 8 max)."""
     THR = 20                          # a 'big' change in DMX units
     GAP = 1.0 / 6.0 + 0.03            # 3 flashes/s = 6 turn-rounds/s
+    hz = 3.0
 
     def __init__(self):
         self.st = {}
@@ -154,7 +156,8 @@ class Guard:
         d = v - s['ext']
         if abs(d) >= self.THR:
             nd = 1 if d > 0 else -1
-            if s['dir'] != 0 and nd != s['dir'] and now - s['last'] < self.GAP:
+            gap = self.GAP if self.hz <= 3.0 else 1.0 / (2.0 * min(8.0, self.hz)) + 0.005
+            if s['dir'] != 0 and nd != s['dir'] and now - s['last'] < gap:
                 return s['out']          # not allowed to turn round yet: hold
             if nd != s['dir']:
                 s['last'] = now
@@ -312,6 +315,7 @@ class Node:
                 lvl = (min(master, MASTER_MAX) - MASTER_MIN) / float(MASTER_MAX - MASTER_MIN)
                 lvl *= max(0.0, min(1.0, float(h.get('max_level', 1.0)))) * (1.0 if cal else self.fade * up_k)
                 master = 0 if lvl <= 0.004 else int(round(MASTER_MIN + lvl * (MASTER_MAX - MASTER_MIN)))
+            self.guard.hz = float(self.cfg.get('flash_hz', 3.0))
             master = self.guard.step((i, 'm'), master, now)
             rgbw = [self.guard.step((i, k), v, now) for k, v in zip('rgbw', rgbw)]
             o = out[a:a + FOOTPRINT]
@@ -434,6 +438,8 @@ def make_handler(node):
                                       for z in b['walls'][:4] if isinstance(z, dict) and 'az' in z]
                     if 'calibrated' in b:
                         h['calibrated'] = bool(b['calibrated'])
+                    if 'flash_hz' in b:                  # node-wide: flash guard rate (3 = default, 8 = most)
+                        node.cfg['flash_hz'] = max(1.0, min(8.0, float(b['flash_hz'])))
                     if h['pan_min'] > h['pan_max']:
                         h['pan_min'], h['pan_max'] = h['pan_max'], h['pan_min']
                     save_cfg(node.cfg)

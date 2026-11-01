@@ -11,6 +11,9 @@
 #   bright       plain bright daylight white, 100%
 #   cozy         warm white, 60%
 #   off / rest   lights off, hub and fades stopped; moving heads park, then their plugs go off
+#   strobe       the light show, strobe version: heads flash on every beat (max 3 a second, ceiling only)
+#   nostrobe     the light show, non strobe version: same show, no flashes
+#   movieglow    dim movie glow: every lamp the same colour, drifting through purples, blues and pinks
 #   heads_on     moving heads' smart plugs on (only if the DMX node answers) -- show/music do this too
 #   heads_off    moving heads park, then their plugs go off (fans stop)
 #   status       what's running right now
@@ -184,6 +187,10 @@ LOOKS = {
     'movie': ('Movie mode', lambda: (stop_ambient(), start_hub('sync'))),
     'show': ('The light show', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('lava'))),
     'music': ('Music mode', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('music'))),
+    'strobe': ('Light show -- strobe version', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
+                                                        hub_setting('dmx_strobe', 'always'), hub_setting('dmx_on', True))),
+    'nostrobe': ('Light show -- non strobe', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
+                                                      hub_setting('dmx_strobe', 'off'), hub_setting('dmx_on', True))),
     'heads_on': ('Moving heads powering up', lambda: head_power.request_on()),
     'heads_off': ('Moving heads parking, then power off', lambda: head_power.request_off(why='heads_off')),
     'rainbow': ('Rainbow fade, every lamp together', lambda: (stop_all(), start_ambient(70, 90, 0))),
@@ -196,6 +203,8 @@ LOOKS = {
                                                                  'dynamics': {'duration': 1500}}))),
     'movienight': ('Movie night', lambda: movie_lights('movie')),
     'breathe_slow': ('Slow breathing colours', lambda: (stop_all(), start_ambient(65, 420, 140, 16, 18))),
+    'movieglow': ('Movie glow: purples, blues + pinks, all lamps together, dim',
+                  lambda: (stop_all(), start_ambient(30, 90, 0, 0, 0, 255, 350))),
     'breathe': ('Calm breathing colours', lambda: (stop_all(), start_ambient(70, 300, 140, 10, 22))),
     'morning': ('Morning light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 85.0},
                                                                  'color_temperature': {'mirek': 230},

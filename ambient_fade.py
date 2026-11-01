@@ -22,6 +22,8 @@ SPREAD = float(sys.argv[3]) if len(sys.argv) > 3 else 240.0  # degrees of rainbo
                                                                # (0 = every lamp the SAME colour, fading round the rainbow together)
 BREATH = float(sys.argv[4]) if len(sys.argv) > 4 else 0.0     # seconds per breath (0 = steady brightness)
 BRI_LO = float(sys.argv[5]) if len(sys.argv) > 5 else BRI * 0.35   # brightness at the bottom of the out-breath
+HUE_LO = float(sys.argv[6]) if len(sys.argv) > 6 else None   # optional colour range (hue degrees): the colours
+HUE_HI = float(sys.argv[7]) if len(sys.argv) > 7 else None   # drift back and forth between these instead of round the wheel
 STEP = 1.25 if BREATH else 2.0                                 # seconds between updates (the bulbs fade in between)
 
 
@@ -58,6 +60,9 @@ print('Ambient fade: %d lamps, %g%% brightness, a full turn every %gs. Ctrl+C or
 t0 = time.time()
 while not os.path.exists(STOP):
     base = ((time.time() - t0 + STEP) / TURN) * 360.0       # aim where the colour will be when the fade ends
+    if HUE_LO is not None and HUE_HI is not None:           # a colour range: drift lo -> hi -> lo, one round trip per TURN
+        import math
+        base = HUE_LO + (HUE_HI - HUE_LO) * (0.5 - 0.5 * math.cos(2 * math.pi * (time.time() - t0 + STEP) / TURN))
     bri = BRI_LO + (BRI - BRI_LO) * breath_level(time.time() - t0 + STEP) if BREATH else BRI
     for i, rid in enumerate(order):
         h = base + SPREAD * (i / max(1, n - 1) - 0.5)
