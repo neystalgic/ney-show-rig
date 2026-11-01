@@ -17,6 +17,9 @@
 #   dmx_strobe when the heads strobe: 'phrase' (default: the moment a drop lands + every 4 bars in it),
 #              'drop' (only the moment a drop lands), 'beat' (every beat while a drop plays -- still never
 #              more than 3 a second), 'always' (every beat whenever music plays, not in quiet parts), 'off'
+#   show_scenes_on  music show rotates through saved scenes (default on): every show_scene_every-th 4-bar phrase
+#              (default 2) the heads a scene uses go to it for one phrase, the rest keep dancing; never in a drop.
+#              show_scenes = the list (default SHOW_SCENES below). A scene you pick yourself (dmx_cue) wins.
 #   strobe_cone how far from straight up a head may be to strobe, degrees (default 45 = between 45 and 135
 #              degrees above the surface it sits on). Strobe hits: at most 3 a second, room-wide, in colour
 #              (never white), made by the hub -- the heads' own strobe channel stays locked off.
@@ -45,6 +48,10 @@ DEFAULT_HEADS = [dict(addr=a, tilt_up=32768, tilt_dir=1, tilt_max_deg=35.0, pan_
 
 
 AVOID_LEAN = 4.0
+# the saved scenes the music show rotates through (setting show_scenes overrides); pairs sweep A <-> B
+SHOW_SCENES = ['Gallery', 'Fantasyland', 'Happiness Project flag', 'Coffee table', 'Orange balloon + cloud',
+               'Studio', 'Blue balloon', 'Red balloon', 'Green balloon']
+SCENE_PAIRS = {'Fantasyland': 'Fantasyland triangles'}
 
 
 def in_avoid(hd, pan16, lean_deg, margin=0.0):
@@ -314,6 +321,24 @@ class Heads:
         # SCENES (cues): saved per-head aims ("targets") -- hold one (every head that has it), or sweep A <-> B
         cue = s.get('dmx_cue') if isinstance(s.get('dmx_cue'), dict) else None
         tg = s.get('head_targets') if isinstance(s.get('head_targets'), dict) else {}
+        # SCENE ROTATION (music): every Nth 4-bar phrase the heads that a saved scene uses go to it for one phrase,
+        # the rest keep dancing. Never in a drop (that's for dancing + strobes). A cue you pick yourself wins.
+        if not (cue and cue.get('a')) and not movie and not dark and s.get('show_scenes_on', True):
+            if new_phrase:
+                self.rot_n = getattr(self, 'rot_n', 0) + 1
+                names = [x for x in (s.get('show_scenes') or SHOW_SCENES) if x in tg]
+                every = max(1, int(s.get('show_scene_every', 2) or 2))
+                if names and section != 'drop' and self.rot_n % every == 0:
+                    self.rot_i = (getattr(self, 'rot_i', -1) + 1) % len(names)
+                    a = names[self.rot_i]
+                    self.auto_cue = dict(a=a, b=SCENE_PAIRS.get(a), period=6.0, t0=now)
+                else:
+                    self.auto_cue = None
+            if section == 'drop':
+                self.auto_cue = None                       # a drop lands mid-scene: back to dancing at once
+            cue = getattr(self, 'auto_cue', None)
+        else:
+            self.auto_cue = None
         cue_f = 0.0
         if cue and cue.get('a') in tg:
             per = max(2.0, float(cue.get('period', 8.0) or 8.0))
