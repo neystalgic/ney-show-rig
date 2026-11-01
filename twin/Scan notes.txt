@@ -1,0 +1,18 @@
+LIDAR SCAN -- Nov 1 2026 (Scaniverse, Area mode, iPhone LiDAR)
+Raw files: ~/Downloads/Scaniverse 2026-11-01 152134 (OBJ + JPG texture)
+
+ney_room_scan.glb  = the scan lined up with the room plot / ney_room.glb:
+  metres, X east (0 = mirror closet face), Y up (0 = floor), Z south (0 = north / shelf wall)
+  -> drop it in Unreal at the same origin as ney_room.glb and they overlap.
+  The mirror's "phantom room" (LiDAR sees the reflection as more room) is cut away.
+  Ceiling + floor are patchy in the scan: use ney_room.glb's flat ceiling (93 in) + floor.
+
+How it lines up with the plot:
+  room 22.83 x 11.86 ft in the scan vs 23.0 x 11.79 ft measured -- within ~2 in
+  ceiling 93.3 in (scan) vs 93 in measured
+  gray couch, coffee table, rolly desk, Head 3 table, Poly D, Optoma, white desk: match
+  moved since the plot (plot updated): floor lamp -> by the kitchen pass-through (~4.4, 2.2 ft);
+                                       gray ottoman -> in front of the gray couch west end (~7.6, 8.3 ft)
+  to confirm: blue couch ~5 in further west than the plot; papasan maybe at ~(3.3, 8.2) ft;
+              Head 2 may sit ~1 ft further east on the shelf than the plot says (scan sees something
+              at x 7.4-9.0 ft on the shelf top) -- matters for the safety map
