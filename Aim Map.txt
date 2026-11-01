@@ -44,3 +44,6 @@ OBSERVATIONS
   - Head 3 body sits turned ~45 deg on its table (pan 0 = toward the fan).
   - Head 4 near-horizontal beams toward the studio get broken into streaks by the Poly D (a nice effect).
   - Glass door marked safe: velvet curtain closed during shows.
+
+HEAD 1 UPRIGHT (Oct 31): dimmed to 20% of its cap when leaning < 20 deg (full again by 35).
+  40% still flooded the projection wall a bit; 20% judged perfect by eye. Node setting upright_level=0.2.

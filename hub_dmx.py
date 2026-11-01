@@ -449,6 +449,11 @@ class Heads:
                 lv = 1.0                                         # the hit: full, in the head's colour
                 r, g, b = self.match(colorsys.hsv_to_rgb(hh, max(ss, 0.7), 1.0), s)
                 w = 0.0
+            if hd.get('upright_level') is None:              # node too old to dim upright heads itself: do it here
+                upc = (s.get('dmx_upright') or {'0': [0.2, 20.0]}).get(str(i))   # Head 1 floods the image upright
+                if upc:
+                    ul = clamp(float(upc[0]))
+                    lv *= ul + (1.0 - ul) * clamp((abs(st['theta']) - float(upc[1])) / 15.0)
             master = 0 if lv < 0.004 else int(round(MASTER_MIN + clamp(lv) * (MASTER_MAX - MASTER_MIN)))
             a = int(hd.get('addr', 1)) - 1
             if a < 0 or a + 14 > 512:
