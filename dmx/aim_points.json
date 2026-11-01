@@ -24,16 +24,22 @@
     "note": "centre of the flag, image untouched"
    },
    "1": {
-    "pan": 20439,
-    "tilt": 7223,
-    "note": "whole flag, little wall flood"
+    "pan": 20075,
+    "tilt": 6495,
+    "note": "whole flag; Oct 31 nudged toward the door + down"
    },
    "3": {
-    "pan": 15465,
+    "pan": 16072,
     "tilt": 5831,
-    "note": "whole flag from across the room"
+    "note": "whole flag; Oct 31 rolly desk raised, nudged right"
    },
-   "target_now": "Happiness Project flag -- the flags swapped walls Oct 31; same spot, same aims"
+   "target_now": "Happiness Project flag -- the flags swapped walls Oct 31; same spot, same aims",
+   "2": {
+    "pan": 12707,
+    "tilt": 4406,
+    "level": 0.5,
+    "note": "across the room at 50%; low beam, seated-only (Oct 31)"
+   }
   },
   "coffee": {
    "0": {

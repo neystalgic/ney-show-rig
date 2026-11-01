@@ -393,6 +393,7 @@ class Heads:
                     wall_p = az_ / 540.0 * 65535.0
                     th_t = min(85.0, float(w0.get('lean', 80))) * 0.95 * (1.0 - lift)
             cue_p = None
+            cue_lvl = 1.0                                        # a scene can dim one head (target 'level', 0-1)
             if cue and not dark:
                 ta = (tg.get(cue.get('a')) or {}).get(str(i))
                 tb = (tg.get(cue.get('b')) or {}).get(str(i)) if cue.get('b') else None
@@ -405,6 +406,8 @@ class Heads:
                         lb = (float(tb['tilt']) - int(hd.get('tilt_up', 32768))) * int(hd.get('tilt_dir', 1)) * 180.0 / 65535.0
                         cue_p = pa + (pb - pa) * cue_f
                         th_t = la + (lb - la) * cue_f               # the node still enforces every limit on top
+                        va, vb = clamp(float(ta.get('level', 1.0))), clamp(float(tb.get('level', 1.0)))
+                        cue_lvl = va + (vb - va) * cue_f
                     except (KeyError, TypeError, ValueError):
                         cue_p = None
             fast = spot_p is not None and sweep_e > 0.0
@@ -442,7 +445,7 @@ class Heads:
             tilt = int(hd.get('tilt_up', 32768)) + int(hd.get('tilt_dir', 1)) * st['theta'] / 180.0 * 65535.0
             tilt = int(clamp(tilt, 0, 65535))
             pan = int(clamp(st['pan'], 0, 65535))
-            lv = st['lvl']
+            lv = st['lvl'] * cue_lvl
             if fire and abs(st['theta']) <= cone:
                 st['flash'] = now + 0.05
             if now < st['flash']:

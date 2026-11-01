@@ -10,9 +10,10 @@ STUDIO (ceiling over the studio)
 
 HAPPINESS PROJECT FLAG  (fireplace wall -- was the Coexist flag; the flags swapped Oct 31, same spot, same aims)
   Head 1 (white desk)    pan 167.2  lean 54.8   centre of the flag, image untouched
-  Head 2 (white shelf)   pan 168.4  lean 70.2   whole flag, little wall flood
-  Head 3 (corner table)  not aimed yet
-  Head 4 (rolly desk)    pan 127.4  lean 74.0   whole flag from across the room
+  Head 2 (white shelf)   pan 165.4  lean 72.2   whole flag (Oct 31: nudged toward the door + down, by eye)
+  Head 3 (corner table)  pan 104.7  lean 77.9   across the room at 50% (Oct 31). Beam crosses the room LOW:
+                                                 seated-only scene
+  Head 4 (rolly desk)    pan 132.4  lean 74.0   whole flag from across the room (Oct 31: desk raised, nudged right)
 
 COFFEE TABLE (ceiling over it)
   Head 1 (white desk)    pan  54.3  lean 38.9   ceiling over the coffee table
