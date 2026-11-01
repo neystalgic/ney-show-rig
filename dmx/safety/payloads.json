@@ -28,21 +28,21 @@
   "tilt_max_deg": 85.0,
   "avoid": [
    {
-    "az": 80.0,
-    "width": 24.0,
-    "lean": 71.0,
+    "az": 66.0,
+    "width": 28.0,
+    "lean": 72.0,
     "why": "eye level, blue couch"
-   },
-   {
-    "az": 182.0,
-    "width": 8.0,
-    "lean": 52.0,
-    "why": "Screen"
    },
    {
     "az": 184.0,
     "width": 8.0,
     "lean": 41.0,
+    "why": "Screen"
+   },
+   {
+    "az": 187.0,
+    "width": 10.0,
+    "lean": 22.0,
     "why": "Screen"
    }
   ]

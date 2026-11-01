@@ -2,9 +2,9 @@ head,address,zone_az,zone_width,max_lean_inside,reason
 Head 1,85,37,30,70,"eye level, blue couch"
 Head 1,85,76,44,73,"eye level, gray couch"
 Head 1,85,243,102,2,Screen
-Head 2,15,80,24,71,"eye level, blue couch"
-Head 2,15,182,8,52,Screen
+Head 2,15,66,28,72,"eye level, blue couch"
 Head 2,15,184,8,41,Screen
+Head 2,15,187,10,22,Screen
 Head 3,29,38,40,49,"eye level, blue couch"
 Head 3,29,77,26,51,Screen
 Head 3,29,144,64,28,"eye level, gray couch"
