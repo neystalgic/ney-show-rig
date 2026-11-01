@@ -13,7 +13,8 @@
 #   off / rest   lights off, hub and fades stopped; moving heads park, then their plugs go off
 #   strobe       the light show, strobe version: heads flash on every beat (max 3 a second, ceiling only)
 #   nostrobe     the light show, non strobe version: same show, no flashes
-#   movieglow    dim movie glow: every lamp the same colour, drifting through purples, blues and pinks
+#   movieglow    dim movie glow: every lamp + the moving heads the same colour, drifting through purples,
+#                blues and pinks (heads: soft ceiling washes, slow drift)
 #   heads_on     moving heads' smart plugs on (only if the DMX node answers) -- show/music do this too
 #   heads_off    moving heads park, then their plugs go off (fans stop)
 #   status       what's running right now
@@ -204,7 +205,7 @@ LOOKS = {
     'movienight': ('Movie night', lambda: movie_lights('movie')),
     'breathe_slow': ('Slow breathing colours', lambda: (stop_all(), start_ambient(65, 420, 140, 16, 18))),
     'movieglow': ('Movie glow: purples, blues + pinks, all lamps together, dim',
-                  lambda: (stop_all(), start_ambient(30, 90, 0, 0, 0, 255, 350))),
+                  lambda: (stop_all(), start_ambient(30, 90, 0, 0, 0, 255, 350, 'heads'))),
     'breathe': ('Calm breathing colours', lambda: (stop_all(), start_ambient(70, 300, 140, 10, 22))),
     'morning': ('Morning light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 85.0},
                                                                  'color_temperature': {'mirek': 230},
