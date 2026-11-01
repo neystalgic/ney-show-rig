@@ -204,6 +204,7 @@ LOOKS = {
                                                                  'dynamics': {'duration': 1500}}))),
     'movienight': ('Movie night', lambda: movie_lights('movie')),
     'breathe_slow': ('Slow breathing colours', lambda: (stop_all(), start_ambient(65, 420, 140, 16, 18))),
+    'upbeat': ('Upbeat: bright rainbow drifting across the room', lambda: (stop_all(), start_ambient(90, 150, 240))),
     'movieglow': ('Movie glow: purples, blues + pinks, all lamps together, dim',
                   lambda: (stop_all(), start_ambient(30, 90, 0, 0, 0, 255, 350, 'heads'))),
     'breathe': ('Calm breathing colours', lambda: (stop_all(), start_ambient(70, 300, 140, 10, 22))),
