@@ -99,12 +99,14 @@ def node_status():
             host = str(json.load(f).get('settings', {}).get('dmx_host') or host).strip()
     except (OSError, ValueError):
         pass
-    try:
-        ip = socket.getaddrinfo(host, NODE_PORT, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
-        with urllib.request.urlopen('http://%s:%d/status' % (ip, NODE_PORT), timeout=2) as r:
-            return json.loads(r.read())
-    except Exception:
-        return None
+    for h in [x.strip() for x in host.split(',') if x.strip()]:    # "LAN address, Tailscale name": first that answers
+        try:
+            ip = socket.getaddrinfo(h, NODE_PORT, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
+            with urllib.request.urlopen('http://%s:%d/status' % (ip, NODE_PORT), timeout=2) as r:
+                return json.loads(r.read())
+        except Exception:
+            continue
+    return None
 
 
 def node_ok(st):

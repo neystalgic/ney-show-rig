@@ -113,19 +113,23 @@ class Heads:
     # the node's calibration (tilt 'up', lean limits, pan windows) -- fetched every few seconds
     def _poll(self):
         while self.run:
-            h = self.host()
-            if h:
+            hl = self.host()
+            # dmx_host may list several addresses, best first: "192.168.1.79,zephyrus" = the wired LAN address,
+            # then the Tailscale name as a fallback (e.g. if the router hands the Zephyrus a new address)
+            for h in [x.strip() for x in hl.split(',') if x.strip()]:
                 try:                                         # IPv4 on purpose: by name the Zephyrus also answers on
-                    self.ip = socket.getaddrinfo(h, NODE_PORT, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
+                    ip = socket.getaddrinfo(h, NODE_PORT, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
                 except Exception as e:                       # IPv6, where Windows drops it and each call stalls ~3 s
-                    self.ip = None
                     self.status = 'cannot find %s on the network (%s)' % (h, e.__class__.__name__)
+                    continue
                 try:
-                    with urllib.request.urlopen('http://%s:%d/config' % (self.ip or h, NODE_PORT), timeout=2) as r:
+                    with urllib.request.urlopen('http://%s:%d/config' % (ip, NODE_PORT), timeout=1.5) as r:
                         self.node_cfg = json.loads(r.read())
-                    with urllib.request.urlopen('http://%s:%d/status' % (self.ip or h, NODE_PORT), timeout=2) as r:
+                    with urllib.request.urlopen('http://%s:%d/status' % (ip, NODE_PORT), timeout=1.5) as r:
                         self.node_status = json.loads(r.read())
-                    self._push_pending(h)
+                    self.ip = ip
+                    self._push_pending(ip)
+                    break
                 except Exception as e:
                     self.node_status = None
                     self.status = 'cannot reach the DMX node on %s (%s)' % (h, e.__class__.__name__)

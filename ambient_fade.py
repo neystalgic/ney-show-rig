@@ -79,8 +79,16 @@ def heads_loop():
         st = json.load(open(os.path.join(HERE, 'hub_state.json')))['settings']
         host = str(st.get('dmx_host') or 'zephyrus').strip()
         tg = (st.get('head_targets') or {}).get('Coffee table') or {}
-        ip = socket.getaddrinfo(host, hd.ARTNET_PORT, socket.AF_INET, socket.SOCK_DGRAM)[0][4][0]
-        ncfg = json.loads(urllib.request.urlopen('http://%s:%d/config' % (ip, hd.NODE_PORT), timeout=3).read())
+        ncfg = ip = None
+        for h_ in [x.strip() for x in host.split(',') if x.strip()]:    # "LAN address, Tailscale name"
+            try:
+                ip = socket.getaddrinfo(h_, hd.ARTNET_PORT, socket.AF_INET, socket.SOCK_DGRAM)[0][4][0]
+                ncfg = json.loads(urllib.request.urlopen('http://%s:%d/config' % (ip, hd.NODE_PORT), timeout=2).read())
+                break
+            except Exception:
+                continue
+        if ncfg is None:
+            raise OSError('no answer')
     except Exception as e:
         print('  heads: DMX node not reachable (%s) -- lamps only' % e.__class__.__name__)
         return

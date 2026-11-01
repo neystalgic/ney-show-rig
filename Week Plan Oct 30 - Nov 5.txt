@@ -43,7 +43,7 @@ SAT OCT 31  -- HALLOWEEN, FIRST FULL-RIG SHOW       arriving: gaffer tape + shel
   UPDATED early Sat (day off). Heads 1-4 are calibrated and aimed (done Fri night), so the
   calibration items above are finished. The day now runs:
   Morning
-    [ ] Speakers + smart plugs: give Claude a budget, pick, order                 30 min
+    [x] Smart plugs ORDERED (speaker still hunting: Rokit 8 G4 fill)  -- Speakers + smart plugs: give Claude a budget, pick, order                 30 min
     [ ] Practice Schedule drill (Push or Elektrons)                               30 min
   Midday -- cables + walls
     [ ] ETHERNET TO THE MACBOOK: Cat6 #1 router (bedroom) -> out the bedroom door
@@ -57,14 +57,14 @@ SAT OCT 31  -- HALLOWEEN, FIRST FULL-RIG SHOW       arriving: gaffer tape + shel
         desk, plus a USB-C gigabit Ethernet adapter (USB-A ports are taken by the
         Enttec + mouse). Both on the shopping list; do this when they arrive.     15 min
     [ ] Gaffer tape: DMX + both Cat6 runs along the baseboards (when the tape arrives) ~1 hr
-    [ ] Tapestries / wall art. Projection area stays clear; fabric off the heads.
+    [x] Tapestries / wall art. Projection area stays clear; fabric off the heads.
     [ ] Room plot: new wall art spots
         (balloon + cloud heights: NOT NEEDED -- they'll move as more get added, Oct 31)
     [ ] LiDAR scan (Polycam / Scaniverse) after the walls are done
   Afternoon -- lights
-    [ ] No re-aim needed: the Happiness Project flag took the Coexist flag's spot (scene renamed).
+    [x] No re-aim needed: the Happiness Project flag took the Coexist flag's spot (scene renamed).
         Try Head 3 on it
-    [ ] Head 1 flooding the projection wall when upright: FIX BUILT (node dims Head 1 to 40% of its
+    [x] Head 1 flooding the projection wall when upright: FIX BUILT (node dims Head 1 to 40% of its
         cap when it leans < 20 deg, full again by 35). Start the hub BEFORE the node so the node
         auto-updates and picks it up; then check by eye and tune upright_level
     [ ] Optional: rolly desk up to 40 in, Head 4 on the green balloon
@@ -72,10 +72,23 @@ SAT OCT 31  -- HALLOWEEN, FIRST FULL-RIG SHOW       arriving: gaffer tape + shel
     [ ] Music show with the lean cap at 60, then 75 (seated, curtain closed, fan off)
     [ ] Jam. Power off: heads first, then close the node.
 
+  DONE SAT OCT 31 (day off): redecorated the walls (Coexist + Happiness flags swapped), ordered the
+  Ethernet gear + smart plugs, swapped the Head 3 / Head 4 power strips, Head 1 upright fix (20%),
+  re-aimed the flag scene, new scenes: Gallery, Fantasyland pair, Mountain (couch empty), Orange
+  balloon + cloud; strobe / non-strobe looks; movie glow with the heads.
+
 SUN NOV 1  -- SKY + MOVIE HUB DAY   (clocks fall back 1 hr at 2 AM; Mac + Pi adjust themselves)
   When the Amazon box lands (Ethernet adapter, coupler, short Cat6)
     [ ] Mac: both 25 ft Cat6 joined with the coupler, router -> Anker hub. Ethernet above Wi-Fi  30 min
     [ ] Zephyrus: short Cat6 router -> USB-C adapter. Then tell Claude: check the node link     15 min
+    [ ] PS5 (under the desk by the Mac): until the switch arrives, test it on the long cable alone
+        (unplug it from the Mac for a few minutes) -- PS5 Settings > Network > Test Internet Connection.
+        Once the 5-port switch comes: router -> 50 ft run -> switch -> Mac + PS5
+  After the Ethernet
+    [ ] LiDAR SCAN for Unreal (Polycam or Scaniverse on the iPhone)                            30 min
+        Lights bright ("morning" look), heads off, coffee table cleared. Walk slowly, phone at chest
+        height, sweep each wall floor-to-ceiling. The mirror closet confuses LiDAR: slide the doors
+        half open or hang a sheet over them while scanning. Export GLB (or OBJ) + send it to Claude.
   Morning (~10:30-12:30)
     [ ] Pi to the cloud projector with the micro-HDMI, Pi on Wi-Fi               20 min
     [ ] Run install_sky.sh on the Pi (you type the password)                     20 min
@@ -136,6 +149,13 @@ WHEN THE SMART PLUGS ARRIVE  (ordered Oct 31, 2-4 business days: ~Tue Nov 3 - Th
     [ ] Plug each head into its labelled plug (H1-H4 tape labels)
     [ ] Tell Claude: test heads_on / heads_off and the 10-min dark shut-off together
         (the hub side is already built and waiting: head_power.py)
+
+COMING UP (when they land)
+    [ ] ADJ Focus Spot One pair (Van Nuys pawn shop, ~$230-270, local pickup): test gobos, focus,
+        UV LED, fan noise in the shop. Then Claude: fixture profile + calibration + safety map,
+        gobo / focus-pull / UV cues, TD link so the visuals know where the spot lands
+    [ ] Unreal Engine: the walls are redecorated now, so the LiDAR scan (Polycam / Scaniverse)
+        can happen any time -> Claude merges it with twin/ney_room.glb + the new scenes / aims
 
 NOT THIS WEEK
   Laser bar profile, Rest mode phases, extra speaker
