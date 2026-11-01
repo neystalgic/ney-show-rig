@@ -15,6 +15,7 @@
 #   nostrobe     the light show, non strobe version: same show, no flashes
 #   movieglow    dim movie glow: every lamp + the moving heads the same colour, drifting through purples,
 #                blues and pinks (heads: soft ceiling washes, slow drift)
+#   wake         wake the Zephyrus (Wake-on-LAN over the cable); show / music / strobe looks do it too
 #   heads_on     moving heads' smart plugs on (only if the DMX node answers) -- show/music do this too
 #   heads_off    moving heads park, then their plugs go off (fans stop)
 #   status       what's running right now
@@ -137,6 +138,25 @@ def start_ambient(bri, turn, spread, *extra):
                      cwd=HERE, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
 
 
+ZEPHYRUS_MAC = '00:e0:4c:68:10:5b'                 # its wired (USB-C) adapter -- Wake-on-LAN
+
+
+def wake_zephyrus():
+    """Wake-on-LAN magic packet to the Zephyrus (harmless if it's already awake)."""
+    import socket
+    mac = bytes.fromhex(ZEPHYRUS_MAC.replace(':', ''))
+    pkt = b'\xff' * 6 + mac * 16
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    for addr in ('255.255.255.255', '192.168.1.255'):
+        for port in (9, 7):
+            try:
+                s.sendto(pkt, (addr, port))
+            except OSError:
+                pass
+    s.close()
+
+
 def stop_all():
     stop_ambient()
     stop_hub()
@@ -186,11 +206,12 @@ def movie_lights(what):
 
 LOOKS = {
     'movie': ('Movie mode', lambda: (stop_ambient(), start_hub('sync'))),
-    'show': ('The light show', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('lava'))),
-    'music': ('Music mode', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('music'))),
-    'strobe': ('Light show -- strobe version', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
+    'show': ('The light show', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('lava'))),
+    'music': ('Music mode', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'))),
+    'wake': ('Waking the Zephyrus', lambda: wake_zephyrus()),
+    'strobe': ('Light show -- strobe version', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                                         hub_setting('dmx_strobe', 'always'), hub_setting('dmx_on', True))),
-    'nostrobe': ('Light show -- non strobe', lambda: (stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
+    'nostrobe': ('Light show -- non strobe', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                                       hub_setting('dmx_strobe', 'off'), hub_setting('dmx_on', True))),
     'heads_on': ('Moving heads powering up', lambda: head_power.request_on()),
     'heads_off': ('Moving heads parking, then power off', lambda: head_power.request_off(why='heads_off')),
