@@ -48,3 +48,26 @@ OBSERVATIONS
 
 HEAD 1 UPRIGHT (Oct 31): dimmed to 20% of its cap when leaning < 20 deg (full again by 35).
   40% still flooded the projection wall a bit; 20% judged perfect by eye. Node setting upright_level=0.2.
+
+NEW SCENES (Oct 31, aimed by eye, red heads against dim purple lamps)
+
+GALLERY  -- every head on a different piece of art
+  Head 1 (white desk)    pan 100.5  lean 81.5   IMAGINE poster / gallery block. Low beam across the room: seated-only
+  Head 2 (white shelf)   pan  95.0  lean 72.5   mountain tapestry, high -- clear of the gray couch
+                                                 (Head 2 turns OPPOSITE to the room plot: trust eyes, not the plot)
+  Head 3 (corner table)  pan 293.0  lean 40.0   Mac Miller tapestry
+  Head 4 (rolly desk)    pan 194.0  lean 62.0   Coexist flag above the studio (rolly desk raised)
+
+FANTASYLAND / FANTASYLAND TRIANGLES  -- a pair: the show can sweep Head 3 between them
+  Head 3                 pan 233.0  lean 52.0   rainbow drip painting           (Fantasyland)
+  Head 3                 pan 227.0  lean 24.5   triangles painting, around the floor lamp (Fantasyland triangles)
+  Head 4 (both)          pan 342.7  lean 51.0   mountain tapestry from the raised desk -- inside normal limits
+
+MOUNTAIN (COUCH EMPTY)
+  Head 3                 pan 169.5  lean 46.0   mountain tapestry along the wall -- found in calibration mode.
+                                                 OUTSIDE the eye-level limits: the node holds it lower until a
+                                                 "couch empty" switch exists (to build)
+  Head 4                 pan 342.7  lean 51.0   same as Fantasyland
+
+ORANGE BALLOON + CLOUD
+  Head 2                 pan 113.0  lean 78.5   hits the cloud + orange balloon perfectly (found by accident)
