@@ -1,0 +1,112 @@
+ZEPHYRUS SETUP  --  links + checklist (RTX 4070 laptop, 8 GB video memory)
+==========================================================================
+Idea: the Mac stays the show brain (Ableton, Hue Hub, VJ board, flicker-safe pass).
+The Zephyrus is the 3D + AI render box. EVERYTHING it does is driven by the same MIDI
+that already runs the show (IAC Bus 1 + the Digitakt clock), sent over the network.
+Its picture comes back to the Mac over Ethernet (NDI) and through the safety pass.
+
+
+STEP 0 -- BEFORE ANYTHING (Zephyrus, plugged in)
+-------------------------------------------------
+[ ] Windows Update (Settings > Windows Update), restart
+[ ] NVIDIA Studio driver for "GeForce RTX 4070 Laptop GPU"
+    https://www.nvidia.com/en-us/drivers/
+[ ] Power: plugged in, Armoury Crate > Turbo / Performance mode
+[ ] Check free disk space (want 150 GB+ free: Unreal + AI models)
+[ ] Claude desktop app, sign in, link it to our conversation (so I can do the rest)
+    https://claude.ai/download
+[ ] Ethernet cable from the Zephyrus to the router (Wi-Fi works, wired is steadier)
+
+
+STEP 1 -- THE MIDI BRIDGE (the heart of the plan)
+--------------------------------------------------
+Mac side (built in already, just turn on):
+[ ] Audio MIDI Setup > Window > Show MIDI Studio > Network (globe icon)
+    > "+" under My Sessions, name it "Show", tick Enabled
+    > allow "Anyone" to connect (or add the Zephyrus once it appears)
+Zephyrus side:
+[ ] rtpMIDI (free, Windows network MIDI that talks to the Mac's session)
+    https://www.tobias-erichsen.de/software/rtpmidi.html
+    > open it, the Mac's "Show" session appears under Directory > Connect
+The Hue Hub relays the show MIDI into that session (hub_relay.py, see MIDI MAP below).
+    Light Desk > Setup > Zephyrus relay shows what it sends. Restart the hub once after updating.
+
+
+STEP 2 -- VIDEO BACK TO THE MAC
+-------------------------------
+[ ] NDI Tools on BOTH machines (free)
+    https://ndi.video/tools
+    Test: on the Zephyrus run "Test Patterns", on the Mac open "Studio Monitor" and pick it.
+
+
+STEP 3 -- TOUCHDESIGNER ON THE ZEPHYRUS
+---------------------------------------
+[ ] TouchDesigner for Windows -- same version as the Mac (2025.32820)
+    https://derivative.ca/download
+
+
+STEP 4 -- AI DREAM LAYER (live Stable Diffusion, ~24 fps on your card at 512x512)
+--------------------------------------------------------------------------------
+[ ] Python 3.11 (Windows installer, tick "Add to PATH")
+    https://www.python.org/downloads/release/python-3119/
+[ ] CUDA Toolkit 11.8 (restart after)
+    https://developer.nvidia.com/cuda-11-8-0-download-archive
+[ ] Git for Windows
+    https://git-scm.com/download/win
+[ ] TouchDiffusion (TouchDesigner component, use the PORTABLE version)
+    https://github.com/olegchomp/TouchDiffusion
+    > run webui.bat > "Update dependencies" (~10 min) > make an sd-turbo engine (~10 min)
+    Tutorial: https://derivative.ca/community-post/tutorial/streamdiffusion-touchdesigner-tutorial/73320
+
+
+STEP 5 -- UNREAL ENGINE (the 3D world)
+--------------------------------------
+[ ] Epic Games Launcher, then Unreal Engine (big download -- start it before bed)
+    https://www.unrealengine.com/download
+    Pick the newest version the TouchEngine + NDI plugins list as supported:
+    https://github.com/TouchDesigner/TouchEngine-UE
+    https://docs.ndi.video/docs/unreal-engine-sdk/ndi-plugin-installation
+[ ] Plugins to switch on in the project: MIDI Device Support, OSC, DMX, NDI, Remote Control
+    MIDI in Unreal:  https://dev.epicgames.com/documentation/unreal-engine/midi-in-unreal-engine
+    OSC in Unreal:   https://dev.epicgames.com/documentation/en-us/unreal-engine/osc-plugin-overview-for-unreal-engine
+    Motion Design:   https://dev.epicgames.com/documentation/unreal-engine/motion-design-quickstart-guide-in-unreal-engine
+
+
+LATER -- LOCAL ASSISTANT
+------------------------
+[ ] Ollama (runs open models locally; 7-8B models fit your 8 GB card)
+    https://ollama.com/download
+
+
+SHOW MIDI MAP  (one language for the whole rig -- everything listens to this)
+-----------------------------------------------------------------------------
+Already running today:
+   ch 1   NOTES you play (Note Colours track)   pitch -> degree colour, velocity -> intensity
+   ch 16  VJ PADS (VJ track)                    which of the 64 recipes (row = family, column = construction)
+   CLOCK  Digitakt / Ableton MIDI clock         beat + bar sync, start / stop
+   ch 2   chords the audio brain hears in the mix (the relay passes these on too)
+Added by the hub relay (so the Zephyrus gets the show's "state" as MIDI too):
+   ch 15  CC 1  degree colour (1-8)        CC 6  build progress
+          CC 2  geometry family (0-7)      CC 7  diffuse amount
+          CC 3  construction (0-7)         CC 8  brightness / master
+          CC 4  kick (envelope)            CC 9  look (clean, ASCII, 8-bit ...)
+          CC 5  loudness                   CC 10 lighting effect
+   (audio is turned INTO MIDI on the Mac, so the Zephyrus never needs the audio itself)
+   CC 1 = 1-8 (8 = the octave, rainbow).  CC 2/3 = 0-7.  CC 9 = 0 clean 1 ASCII 2 8-bit 3 outline
+   4 superflat 5 mirror (sent once TouchDesigner tells the hub the look).  CC 10 = 0 wash 1 glow
+   2 pulse 3 chase 4 sparkle 5 sweep 6 hit.  Kick / loudness / brightness come AFTER the Flicker Guard.
+   Clock: the Digitakt's (through the Scarlett); Ableton's only when the Digitakt's is silent.
+
+What listens on the Zephyrus:
+   Unreal:        note ch16 = build that recipe's 3D geometry, ch1 notes = colour + light pulses,
+                  clock = camera / tunnel speed on the beat, ch15 CCs = glow, fog, particles
+   TouchDiffusion: ch15 CC2 family -> prompt style, CC1 degree -> palette words,
+                  CC5 loudness -> how strongly it repaints
+
+
+ORDER OF WORK
+-------------
+1. Steps 0-2 (installs + MIDI bridge + NDI test)        -- ~1 hour, mostly waiting on downloads
+2. Hub relay + ch 15 state CCs, "Zephyrus" deck on Push  -- I build this on the Mac
+3. AI dream layer (fastest wow)                          -- ~1 hour
+4. Unreal 3D infinite sacred-geometry tunnel             -- first session ~2 hours

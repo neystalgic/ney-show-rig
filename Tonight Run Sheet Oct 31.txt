@@ -1,0 +1,36 @@
+TONIGHT -- HALLOWEEN SHOW NIGHT  (Sat Oct 31, after dark ~6:30)
+=================================================================
+Curtain closed. Ceiling fan off. Everyone seated before big movement.
+
+START-UP (order matters)
+  [ ] 1. Mac: start the hub (show or music look from your phone / Siri is fine)
+  [ ] 2. Zephyrus: "Ney DMX Node" shortcut. It updates itself from the hub on start --
+         that's how it gets tonight's Head 1 fix. Its window should say it's running.
+  [ ] 3. Power the heads (by hand -- the smart plugs aren't here yet)
+
+CHECKS (Claude drives, you watch -- ~20 min)
+  [ ] Head 1 upright: no flood on the projection wall? (dimmed to 40% when near upright;
+      Claude tunes it up/down by eye)
+  [ ] Happiness Project flag scene: lands on the new flag (same aims as the old Coexist one)
+  [ ] Head 3 on the Happiness flag: try it, add it to the scene if it looks good
+
+NEW SCENE TO TRY: "GALLERY"  (each head on a different piece of art; safety map checked)
+  Head 1 -> gallery block (IMAGINE etc.)      pan ~98   lean ~75
+  Head 2 -> mountain tapestry, upper half     pan ~108  lean ~80
+  Head 3 -> Mac Miller tapestry               pan ~255  lean ~31
+  Head 4 -> Coexist flag (above the studio)   pan ~214  lean ~41
+  Positions are estimated from photos -- aim one head at a time by eye, like Oct 30.
+  Can't reach safely (beam would run along the couch past faces): Heads 3 + 4 on the
+  mountain tapestry or the paintings; Head 2 on Mac Miller.
+
+MUSIC SHOW TEST (~30 min)
+  [ ] Lean cap 60 deg -- watch the wall sweeps and scene changes from the couch
+  [ ] If it looks right: lean cap 75 deg
+  [ ] Note anything that hits a face, the mirror or the image -> tell Claude
+
+POWER DOWN
+  [ ] Heads OFF first
+  [ ] Then close the node on the Zephyrus
+  [ ] Lights to breathe_slow or off
+
+NOT TONIGHT: Ethernet (arrives Sun), smart plugs (Tue-Thu), fill speaker (pickup pending)

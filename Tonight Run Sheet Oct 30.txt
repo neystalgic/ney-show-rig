@@ -20,8 +20,10 @@ Goal: clean DMX node -> unsafe-area safety live -> calibrate -> big movement, te
    a. Heads powered OFF.
    b. Task Manager -> end every "Python" task.
    c. Rename  Downloads\NeyDMX  ->  "NeyDMX OLD"   (flag, don't delete)
-   d. PowerShell:  iwr http://neystalgic:7020/kit/dmx_node.py -OutFile C:\NeyDMX\app\dmx_node.py
-      (the hub must be running on the Mac for this link to work)
+   d. PowerShell (hub running on the Mac), ONE time:
+        iwr http://neystalgic:7020/kit/start_dmx_node.bat -OutFile "C:\NeyDMX\Start DMX Node.bat"
+      From then on the start script updates the node by itself every time it starts
+      (syntax-checked, previous version kept as app\dmx_node.prev.py) and refuses to run twice.
    e. Desktop shortcut -> point it at  C:\NeyDMX\Start DMX Node.bat
    f. Check auto-start: Task Manager -> Startup apps; and  shell:startup  folder. Flag anything NeyDMX.
    g. Settings -> Power: never sleep when plugged in.
@@ -38,6 +40,9 @@ Goal: clean DMX node -> unsafe-area safety live -> calibrate -> big movement, te
 
 5. RAISE THE CAP (the fun part)                   [ ] done
    - dmx_lean_cap 45 -> 60 -> 75, watching each step. Wall sweeps on.
+
+5b. PI (needs your password once):  ssh mjney99@ney-pi  then  sudo systemctl restart ney-health
+    -> the Pi now watches the Zephyrus node and updates itself from the backups from then on.
 
 6. IF TIME: aim-at-things scenes (clouds, curtains spot), Push pads -> light scenes.
 

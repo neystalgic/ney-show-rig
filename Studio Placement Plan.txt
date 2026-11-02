@@ -1,0 +1,83 @@
+STUDIO PLACEMENT PLAN -- hardware + furniture (Oct 27, from your walkthrough video)
+==================================================================================
+Tapestries, wall art and neon come later. This is where every piece of HARDWARE lives
+and how the cables run. Items marked (?) need your confirmation.
+
+
+THE DMX CHAIN  (one line, no splits -- the cable order doesn't have to match the addresses)
+----------------------------------------------------------------------------------
+ Zephyrus + Enttec ...... WHITE DESK (unchanged). The Enttec sits on the desk.
+   |  cable 1 (~6-10 ft)
+ Laser bar (addr 57) .... the long white shelf under the Coexist banner, beside the desk.
+   |  cable 2 (~6-10 ft)    Tilted UP, overhead only; never toward the mirror or the glass door.
+ Head 1  (addr 1) ....... black side table beside the white desk (where it is now, by the
+   |                      RGB bar). Closest to the projection: screen halos + studio ceiling.
+   |  cable 3 (MEASURE)     up and over the bedroom door frame, HINGE side, on over-door hooks
+ Head 2  (addr 15) ...... white cube shelf by the kitchen pass-through (where it is now).
+   |                      Covers the entry + lounge ceiling. Tilt limited UP (people walk in
+   |                      here at eye level). Clear the top around it; move the trash can over.
+   |  cable 4 (MEASURE)     along the baseboard behind the blue couch
+ Head 3  (addr 29) ...... corner table between the gray loveseat and the blue couch (where
+   |                      it is now). Ceiling + art wall ONLY -- heads on the couches are
+   |                      right beside it, so the tilt limit keeps it pointing up.
+   |  cable 5 (MEASURE)     along the baseboard behind the gray loveseat
+ Head 4  (addr 43) ...... the WHITE ROLLY DESK beside the gray couch, by the synth and the art
+                          wall (decided Oct 27 -- the kitchen felt too far from the action).
+                          Sweeps the art wall (rearrange the art for it) + the ceiling. Wheels
+                          locked, non-slip pad; tilt limited UP (heads on the couch right there).
+                          TERMINATOR plugs into its DMX OUT -- it's the end of the chain.
+   One straight chain, no wireless: Head 2 -> Head 3 (~6 ft) -> under the doormat (flat cover)
+   + under the gray couch -> Head 4.
+ Mode on every head: 14-channel. Master channel kept in dimming (8-134), never strobe.
+
+
+EVERYTHING ELSE
+----------------------------------------------------------------------------------
+ Mac, Scarlett, Push 2, Elektrons, speakers ... GEAR DESK in the corner by the glass door (unchanged).
+                                                Never on smart plugs (Mac, Scarlett, projector).
+ Projector (?) ........ on its own floor tripod -- confirm where it stands. Heads never on or
+                        touching the tripod. Tripod legs out of the walkway.
+ Raspberry Pi ......... BEDROOM, next to the router, on a short Ethernet cable. Headless and
+                        silent; backs up the Mac over the network (Time Machine), VPN later.
+ Ethernet to the Mac .. router (bedroom) -> out the bedroom door -> same baseboard route as
+                        DMX -> behind the white desk -> gear desk. Measure this one too.
+ Hue lamps ............ stay where they are (they're wireless), EXCEPT:
+ Red paper lantern .... moves BEHIND THE SYNTH (backlights the keyboard) so the gray couch can
+                        slide over a little. Walkway stays clear; update its spot in the Light Desk.
+ Hue Play floor lamp .. moves to the LEFT end of the long white shelf (Coexist banner), so the
+                        shelf blocks its spill before it reaches the projection. Face its lit
+                        side away from the screen. Update its spot in the Light Desk after.
+ Hazer (later) ........ floor, studio side, away from the smoke detector.
+
+
+CABLE RULES
+----------------------------------------------------------------------------------
+ - Everything runs along the baseboards or over the bedroom door frame. Nothing crosses
+   the walkway (entry -> lounge -> studio) or the doorway thresholds.
+ - Where a cable MUST cross floor: flat floor cable cover, beveled edges.
+ - DMX + Ethernet can share a raceway. Keep them off long parallel runs with power cords.
+ - Velcro ties at each head: DMX + power bundled, a little slack loop, nothing taut.
+
+
+THINGS I NOTICED IN THE VIDEO
+----------------------------------------------------------------------------------
+ - CEILING FAN: a beam through spinning blades chops into fast flicker (6-9 times a second)
+   that the flicker guard can't control. Fan OFF during shows, and tilt limits keep beams
+   away from it.
+ - The hanging clouds + hot air balloons will catch the beams beautifully -- the heads
+   just need to stay clear of touching them.
+ - Mirror closet doors: no beams (same as the glass door).
+ - Each head needs a few inches clear all round -- the yoke swings and the head gets warm.
+ - The big pouf by the blue couch sits in the walkway from the entry -- tuck it by the
+   coffee table during shows.
+
+
+MEASURE TODAY (send me the numbers)
+----------------------------------------------------------------------------------
+ [ ] cable 3: Head 1 -> up, across the top of the bedroom door, down -> cube shelf
+ [ ] cable 4: cube shelf -> behind the blue couch -> corner table
+ [ ] cable 5: corner table -> behind the loveseat -> keyboard side table
+ [ ] Ethernet: router -> bedroom door -> baseboards -> gear desk
+ [x] Enttec socket: 5-pin -- you already own the 5-pin male to 3-pin female adapter
+ [ ] outlet near each head (cube shelf: there's one by the trash can)
+ [x] the glass door: 80 x 80 in (the only window) -- blackout panels on the existing rod
