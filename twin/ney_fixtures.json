@@ -24,12 +24,12 @@
    "dmx_address": 15,
    "mode": "14ch Betopper LM70S",
    "position_m": [
-    2.1860256000000002,
+    2.6685240000000006,
     0.9653016,
     0.1524
    ],
    "plot_ft": [
-    7.172,
+    8.755,
     0.5,
     3.167
    ],
@@ -50,7 +50,7 @@
     10.38,
     2.667
    ],
-   "pan0_heading_deg_plot": 0,
+   "pan0_heading_deg_plot": 232,
    "pan_turns": "cw"
   },
   {
