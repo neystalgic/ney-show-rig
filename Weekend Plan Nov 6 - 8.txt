@@ -1,0 +1,36 @@
+WEEKEND PLAN -- FRI NOV 6 to SUN NOV 8
+(work: Fri 3-8 pm, Sat 9 am-1 pm)
+
+ARRIVING
+  Fri  Hue smart plugs (out for delivery)
+  Sat  LS6 totem (to the apartment -- watch for the box) + clouds
+  Sun  galaxy star tapestry
+  Later: rainbow wave rug (Wayfair), powerCON cord for Spot 2, 2 more smart plugs (spots)
+
+FRIDAY (before / after work)
+  [ ] Smart plugs: pair in the Hue app, name EXACTLY "Head 1" .. "Head 4", own room ("Moving heads"),
+      Power-on behaviour = Off. Each HEAD into its own plug. Then tell Claude -> on/off test
+  [ ] Optional: Marketplace photos in daylight (Govee, neon signs, astronaut projector, laser bar)
+
+SATURDAY (after work, ~1:30 on)
+  [ ] Lunch first
+  [ ] Totem: check scrim, top plate, bag. Build it behind the south end of the blue couch
+  [ ] Spot 2 onto the totem (needs power: the powerCON cord, or borrow Spot 1's for the test)
+  [ ] DMX: Spot 1 -> Spot 2. Calibrate Spot 2 with Claude (~15 min: straight up, directions, no-go zones)
+  [ ] Clouds up
+
+SUNDAY
+  [ ] Star tapestry: over the coffee table, 90" side along the gray couch. Clear of the fan + smoke detectors.
+      Pins every ~12 in + a few in the middle. Easier with a second pair of hands
+  [ ] Pi: node starts on its own at boot (one command), test all six lights from the Pi
+  [ ] First full show with everything: heads, both spots, Hues, UV on the stars
+  [ ] Rest. Meds on time, water, early night before Monday
+
+LATER (when there's time)
+  [ ] Fill speaker boost when the heads are on (masks the fans): Ableton fill track = loopback 5+6 (whatever the Mac plays)
+      -> mono, small delay, limiter -> Scarlett output 3. Its gain on a MIDI CC; the rig sends the CC on heads on / off.
+      Calibrate by ear from the couch with the heads running (usually +3 to +6 dB)
+  [ ] Find out why the 10-minute head auto-off did not fire on Nov 6 (heads stayed on through the whole shift)
+
+SAFETY (as always): node up before the heads get power; heads off before the node closes;
+everyone seated during big movement; no lasers on the mirror UFO (laser bar is being sold anyway)

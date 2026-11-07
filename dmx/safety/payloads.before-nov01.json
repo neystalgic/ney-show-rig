@@ -1,0 +1,122 @@
+{
+ "Head 1": {
+  "addr": 85,
+  "tilt_max_deg": 85.0,
+  "avoid": [
+   {
+    "az": 37.0,
+    "width": 30.0,
+    "lean": 70.0,
+    "why": "eye level, blue couch"
+   },
+   {
+    "az": 76.0,
+    "width": 44.0,
+    "lean": 73.0,
+    "why": "eye level, gray couch"
+   },
+   {
+    "az": 243.0,
+    "width": 102.0,
+    "lean": 2.0,
+    "why": "Screen"
+   }
+  ]
+ },
+ "Head 2": {
+  "addr": 15,
+  "tilt_max_deg": 85.0,
+  "avoid": [
+   {
+    "az": 80.0,
+    "width": 24.0,
+    "lean": 71.0,
+    "why": "eye level, blue couch"
+   },
+   {
+    "az": 182.0,
+    "width": 8.0,
+    "lean": 52.0,
+    "why": "Screen"
+   },
+   {
+    "az": 184.0,
+    "width": 8.0,
+    "lean": 41.0,
+    "why": "Screen"
+   }
+  ]
+ },
+ "Head 3": {
+  "addr": 29,
+  "tilt_max_deg": 85.0,
+  "avoid": [
+   {
+    "az": 38.0,
+    "width": 40.0,
+    "lean": 49.0,
+    "why": "eye level, blue couch"
+   },
+   {
+    "az": 77.0,
+    "width": 26.0,
+    "lean": 51.0,
+    "why": "Screen"
+   },
+   {
+    "az": 144.0,
+    "width": 64.0,
+    "lean": 28.0,
+    "why": "eye level, gray couch"
+   },
+   {
+    "az": 296.0,
+    "width": 8.0,
+    "lean": 76.0,
+    "why": "mirror -> mirror -> eye level, gray couch"
+   },
+   {
+    "az": 306.0,
+    "width": 12.0,
+    "lean": 76.0,
+    "why": "mirror -> eye level, gray couch"
+   },
+   {
+    "az": 324.0,
+    "width": 20.0,
+    "lean": 75.0,
+    "why": "mirror -> eye level, blue couch"
+   },
+   {
+    "az": 334.0,
+    "width": 12.0,
+    "lean": 61.0,
+    "why": "mirror -> Screen"
+   }
+  ]
+ },
+ "Head 4": {
+  "addr": 43,
+  "tilt_max_deg": 85.0,
+  "avoid": [
+   {
+    "az": 19.0,
+    "width": 26.0,
+    "lean": 73.0,
+    "why": "eye level, blue couch"
+   },
+   {
+    "az": 86.0,
+    "width": 40.0,
+    "lean": 46.0,
+    "why": "Screen"
+   },
+   {
+    "az": 345.0,
+    "width": 34.0,
+    "lean": 52.0,
+    "why": "eye level, gray couch"
+   }
+  ]
+ }
+}

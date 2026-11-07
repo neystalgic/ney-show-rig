@@ -1444,7 +1444,7 @@ class Hub:
                              dmx_unison=float, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float, strobe_max_hz=float, strobe_test=bool,
                              head_targets=dict, dmx_cue=dict, show_scenes_on=bool, show_scenes=list, show_scene_every=int,
                              dmx_turns=bool, dmx_turn_deg=float, dmx_turn_bars=int, dmx_pan_amp=float, dmx_walls=bool,
-                             dmx_lean_cap=float)
+                             dmx_lean_cap=float, spot_fx=dict, movie_floor=float, dmx_floor_db=float, dmx_top_db=float)
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (

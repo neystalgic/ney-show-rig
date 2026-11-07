@@ -102,47 +102,113 @@ SUN NOV 1  -- SKY + MOVIE HUB DAY   (clocks fall back 1 hr at 2 AM; Mac + Pi adj
   Evening
     [ ] Real movie night: Movie lights, Intermission, Lights up
 
-MON NOV 2  -- (work 3:00-8:00)                    arriving: 1 TB SSD
-  Morning (~10:00-2:00)
+SUN NOV 1 -- WHAT ACTUALLY HAPPENED (updated Mon morning)
+    [x] Ethernet: Mac + Zephyrus wired. [x] LiDAR scan (Scaniverse) + Unreal project + clean room model
+    [x] Unreal: virtual heads + Hue lamps follow the real ones (Hue paired from Unreal)
+    [x] Red glow look; Disney+ signed in; movie mode now follows the Scarlett OUTPUT (loopback 5+6)
+    [ ] Carried over: other streaming logins (with the folks),
+        Movie Hub remote onto the phone (Movie Hub phone link.command -> AirDrop), "Match the picture"
+
+MON NOV 2  -- (work 3:00-8:00)                    (SSD delayed by UPS -> on or before Fri Nov 6)
+  Morning (~9:30-2:00)
+    [ ] Call the pawn shop about the ADJ Focus Spot One pair (call sheet below)    5 min
+    [ ] Zephyrus: run the newest ney_unreal_live.py in Unreal, send Claude the screenshot +
+        the "[NEY] clean room lined up..." line (checks heads + lamps sit in the right spots)   20 min
     [ ] Ableton: open the Lightshow Stems Template, drop in a bounced track,
         check that the 4 groups move the visuals                                 ~1 hr
-    [ ] If the SSD came already: put it in the ORICO enclosure, plug it into the Pi,
-        start the copy (SD Card Copier)                                          10 min + ~30 min copying
   2:30  head out.  Me: build Light Desk phase 2 (live board)
   After work (~8:30)
     [ ] Light night. If the SSD came late: start the copy, then bed.
 
-TUE NOV 3  -- ELECTION DAY, CURTAINS              arriving: curtains
+  PAWN SHOP CALL SHEET (ADJ Focus Spot One pair, Van Nuys)
+    - Still have both? Price for the pair (listed ~$230-270) -- any wiggle room for cash?
+    - Do both power on and move (pan + tilt), and do all the gobos + colours work?
+    - Do they come with power cables / DMX cables / any brackets or manual?
+    - Can I test them in the store before buying (plug in, run the built-in program)?
+    - Return or exchange window if one fails at home?
+    - When can I come by? (Wed/Thu morning work best)
+    In the store: listen to the fan noise, check the focus knob sharpens the gobo, spin the
+    gobo wheel, look for a dim or flickering LED, check the UV LED, sniff for burnt smell.
+
+ARRIVALS (as of Mon night)
+    Tue morning   ADJ Focus Spot One pair -- pawn shop pickup (Chris, $250 out the door)
+    Tue evening   curtains (delayed from midday)
+    Fri Nov 6     Hue smart plugs
+    this week     Pi case + M.2 HAT
+    by Fri Nov 6  1 TB SSD (UPS delay)
+    ~Fri-Mon      ColorKey LS6 totem, Guitar Center open box, Ship to Store Northridge (3-5 business days)
+    open          Rokit fill speaker pickup
+
+TUE NOV 3  -- ELECTION DAY, FOCUS SPOTS, CURTAINS (evening)
   Morning
     [ ] Vote
-    [ ] SSD: out of the ORICO, into the M.2 HAT, boot from it, check that
-        beat / health / sky all come back                                        ~1 hr
-  Midday (when the curtains come)
-    [ ] Hang them over the clip track (drape method, no drilling), west door clear  ~1 hr
-  Afternoon
-    [ ] Time Machine for the Mac onto the Pi's SSD (you approve the install)     ~1 hr
-        first backup runs overnight on Ethernet
-  Evening (dark room test)
-    [ ] Sky + projector + full movie night with the curtains closed. Note any light leaks.
+    [ ] PAWN SHOP PICKUP: ADJ Focus Spot One pair, $250 OUT THE DOOR in store -- ask for Chris
+        (Van Nuys Pawn Shop, eBay seller lend88). Run the in-store checklist BEFORE paying
+        (no eBay buyer protection in store) + ask their return / exchange window.
+  Midday / afternoon (Focus Spots, at home)
+    [ ] Power both on, check they work, set their addresses on the fixture menu:
+        Focus Spot 1 = 101, Focus Spot 2 = 121 (clear of Heads 1-4 at 15/29/43/85).
+        Note which DMX mode / channel count each is in and tell Claude -> fixture profile    30 min
+    [ ] Then they can join the DMX chain: the node keeps any channel it has no profile for at 0,
+        so they stay dark + still until Claude adds them
+    LAYOUT: Focus Spot 1 (addr 101) = rolly desk, next to Head 4.
+            Focus Spot 2 (addr 121) = the totem behind the blue couch (waits for the totem).
+    [ ] Rolly desk: Focus Spot 1 next to Head 4, POWER OFF, swing both heads by hand --
+        at least 1 inch clearance at the closest point; rubber pads under both; casters locked  15 min
+    [ ] Claude: both spots into Unreal at their spots so you can see the gobos first
+  Evening (when the curtains come)
+    [ ] Hang them over the clip track (drape method, no drilling), west door clear     ~1 hr
+    [ ] If there's energy left: lights off, curtains closed, quick look for light leaks
 
 WED NOV 4  -- (work 3:00-7:45)
   Morning (~10:00-2:00)
-    [ ] Try Light Desk phase 2 (live board) on the Mac + phone; list fixes       1-2 hr
-    [ ] Back up the Zephyrus calibration to the repo, push                       10 min
-  2:30  head out.  Me: phase 2 fixes + start phase 3 (song builder)
+    [ ] Restart Start Light Node on the Zephyrus (pulls the Focus Spot update)
+    [ ] SSD via the ORICO enclosure (the HAT + case fit was fighting us): SSD into the ORICO, blue USB 3 port,
+        SD Card Copier -> the USB drive, then Claude switches the Pi to boot from it. Case after, HAT off.   ~1 hr
+    [ ] Focus Spot 1 (rolly desk): on the DMX chain, calibrate with Claude + its no-go zones
+        (incl. one toward Head 4 so they can never swing into each other)                1-1.5 hr
+    [ ] Back up the Zephyrus calibration to the repo, push                               10 min
+  2:30  head out
   After work
     [ ] Rest. At most, a quick vibe check.
 
-THU NOV 5  -- CATCH-UP + DRESS REHEARSAL
+THU NOV 5  -- CATCH-UP + DARK ROOM NIGHT
+  >> PI PROJECT (added Nov 4):
+     1. DONE Nov 5: Pi boots from the 1 TB NVMe on the M.2 HAT+ (rpi-clone, boot order NVMe/USB). SD card kept as the backup.
+     2. DONE Nov 5: Pi by the router on wired Ethernet (192.168.1.80). Running OUT of its case for now (ribbon cable is touchy in the case)
+     3. Measure router -> start of the DMX chain; run real 110-ohm DMX cable along the baseboard (the 25 ft one if it reaches)
+     4. DONE Nov 5: node on the Pi (~/NeyDMX, start with ~/NeyDMX/start_node.sh), calibration copied from the Zephyrus, Enttec on the Pi.
+        Fixed for Linux: RTS cleared + proper DMX break timing. Head 1 test: moves + lights.
+        STILL TO DO: start the node automatically when the Pi boots (Michael runs one command); router reservation for 192.168.1.80
+     5. Hub dmx_host now = Pi first, Zephyrus as backup. Next: test all six lights from the Pi, then a full show
+     Power order still applies: node up before the heads get power, heads off before the node closes
   Morning
-    [ ] Anything that slipped this week goes here first
-    [ ] Command hooks (if they came): cable run around the bedroom door frame    30 min
-  Afternoon
-    [ ] Song builder (phase 3) first try with one bounced track                  1-2 hr
+    [ ] Anything that slipped goes here first (Focus Spot 1)
+    [ ] Pi case if it came: Pi into the case (SSD waits for Friday)
   Evening
-    [ ] Full dress rehearsal: sky + heads + Hue + projector, curtains closed
+    [ ] Dark-room test, curtains closed: movie mode + heads + Focus Spot 1 + projector.
+        Note light leaks. Quick look at the cloud projector (decides the Pi sky)
 
-WHEN THE SMART PLUGS ARRIVE  (ordered Oct 31, 2-4 business days: ~Tue Nov 3 - Thu Nov 5)
+FRI NOV 6  -- SSD DAY
+    [ ] SSD onto the M.2 HAT, SD Card Copier -> SSD, Claude switches the Pi to boot from it  ~1 hr
+    [ ] Smart plugs: Hue app, name them Head 1-4, own room, power-on = Off (~15 min),
+        then Claude tests on/off + the 10-min shut-off
+    [ ] Totem if Guitar Center says it's in: check scrim + top plate + bags at the counter
+
+WEEKEND NOV 7-8
+    [ ] Totem behind the south end of the blue couch (toward the papasan, clear of the fan), ~5-5.5 ft
+    [ ] Focus Spot 2 (addr 121) on it: DMX (25 ft cable), calibrate + no-go zones with Claude  ~1.5 hr
+    [ ] Full dress rehearsal: 4 heads + 2 Focus Spots + Hue + projector, curtains closed
+
+SSD + PI CASE DETAILS (Friday)
+    The ORICO step is skipped: the SSD (2230 size) goes straight onto the M.2 HAT in the case.
+    [ ] Pi off. SSD onto the HAT, Pi into the case, boot from the SD card as usual         20 min
+    [ ] Pi menu > Accessories > SD Card Copier: copy the SD card -> the NVMe SSD           ~30 min
+    [ ] Tell Claude: set the Pi to boot from the SSD, then check beat / health come back    ~20 min
+    [ ] Keep the SD card as a spare backup (label it)
+    [ ] Then: Time Machine for the Mac onto the Pi's SSD (you approve the install)          ~1 hr
+
+WHEN THE SMART PLUGS ARRIVE  (scheduled Fri Nov 6)
     [ ] Hue app: add the 4 plugs, name them exactly Head 1 / Head 2 / Head 3 / Head 4
     [ ] Put them in their OWN room ("Moving heads"), not the living room
     [ ] Each plug: Power-on behaviour (after a power cut) = Off
@@ -154,8 +220,14 @@ COMING UP (when they land)
     [ ] ADJ Focus Spot One pair (Van Nuys pawn shop, ~$230-270, local pickup): test gobos, focus,
         UV LED, fan noise in the shop. Then Claude: fixture profile + calibration + safety map,
         gobo / focus-pull / UV cues, TD link so the visuals know where the spot lands
-    [ ] Unreal Engine: the walls are redecorated now, so the LiDAR scan (Polycam / Scaniverse)
-        can happen any time -> Claude merges it with twin/ney_room.glb + the new scenes / aims
+    [ ] Fill speaker (Rokit G3, $100 agreed): pick up -> Ableton feed (mono, output 3) + EQ
+
+SMALL STUFF (any free 10 minutes)
+    [ ] TouchDesigner MCP connector: update to the newest mcp_webserver_base.tox (fixes the timeouts)
+    [ ] Wake-on-LAN test for the Zephyrus
+    [ ] Router: reserve 192.168.1.79 for the Zephyrus
+    [ ] PS5: 5-port switch + 3 ft cables
 
 NOT THIS WEEK
+  Pi sky (low priority: the cloud projector washed out against the room light -- revisit after the curtains)
   Laser bar profile, Rest mode phases, extra speaker

@@ -290,11 +290,17 @@ class Heads:
         if not dark:
             try:                                                 # the Scarlett's total sound (PlayStation in + the Mac's loopback)
                 chr_ = dict(getattr(getattr(self.hub, 'audio', None), 'ch_rms', {}) or {})
-                rms = math.sqrt(sum(float(v) ** 2 for v in chr_.values()))
+                if movie and s.get('palette') == 'sync':     # the SAME input the Hue lamps follow (sync_ch)
+                    use = [int(s.get('sync_ch', 2))]
+                else:                                        # music: the same channels as the lamps (music_ch)
+                    want = str(s.get('music_ch', 'all'))
+                    use = list(chr_) if want == 'all' else [int(c) for c in want.split(',') if c.strip().isdigit()]
+                rms = math.sqrt(sum(float(chr_.get(c, 0.0)) ** 2 for c in use))
             except (TypeError, ValueError):
                 rms = 0.0
             db = 20.0 * math.log10(max(rms, 1e-6))
-            lo, hi = ((float(s.get('sync_floor_db', -48.0)), float(s.get('sync_top_db', -12.0))) if movie else
+            lo, hi = ((float(s.get('dmx_floor_db', s.get('sync_floor_db', -48.0))),       # heads: their own gate
+                       float(s.get('dmx_top_db', s.get('sync_top_db', -12.0)))) if movie else
                       (float(s.get('music_floor_db', -50.0)), float(s.get('music_top_db', -10.0))))
             lv_ = clamp((db - lo) / max(1.0, hi - lo))
             self.mv_fast += (lv_ - self.mv_fast) * (1 - math.exp(-dt / 0.08))
@@ -365,8 +371,9 @@ class Heads:
                 want = 0.0
             elif movie:                                          # MOVIE: brightness follows the film's loudness
                 vol_k = clamp(float(s.get('movie_volume_bri', 0.85)))
+                m_fl = clamp(float(s.get('movie_floor', 0.12)))         # brightness in silence (0 = dark)
                 want = level * float(s.get('dmx_movie_level', 0.5)) * clamp(
-                    (1.0 - vol_k) * vv + vol_k * (0.12 + 0.88 * self.mv_bri))
+                    (1.0 - vol_k) * vv + vol_k * (m_fl + (1.0 - m_fl) * self.mv_bri))
             else:
                 want = vv * level
             k = 1 - math.exp(-dt / ((0.12 if want > st['lvl'] else 0.8) if movie else (0.06 if want > st['lvl'] else 0.25)))
@@ -422,7 +429,7 @@ class Heads:
             # heads without one dip to their max lean on the same beat
             wt = now - self.wall_t
             wall_p = None
-            if 0.0 <= wt < 2.6 and not movie and not dark:
+            if 0.0 <= wt < 2.6 and not movie and not dark and hd.get('type') != 'focus17':   # spots: walls are movie looks only
                 # WALL -> CEILING: snap down onto the safe wall right behind the head (0.35 s),
                 # then sweep up it and across the ceiling (to 1.9 s). Heads without a wall (Head 1) carry on as they were.
                 walls = hd.get('walls') or []
@@ -504,6 +511,10 @@ class Heads:
                     lv *= ul + (1.0 - ul) * clamp((abs(st['theta']) - float(upc[1])) / 15.0)
             master = 0 if lv < 0.004 else int(round(MASTER_MIN + clamp(lv) * (MASTER_MAX - MASTER_MIN)))
             a = int(hd.get('addr', 1)) - 1
+            if hd.get('type') == 'focus17':                  # Focus Spot: its own 17-channel layout
+                if 0 <= a and a + 17 <= 512:
+                    self.focus_out(data, a, i, hd, pan, st['theta'], lv, hh, ss, s, now, dt, movie, dark)
+                continue
             if a < 0 or a + 14 > 512:
                 continue
             data[a + CH['pan']], data[a + CH['pan_fine']] = pan >> 8, pan & 255
@@ -526,6 +537,74 @@ class Heads:
                 self.status = 'sending to %s' % h
         except Exception as e:
             self.status = 'cannot send to %s (%s)' % (h, e)
+
+    def focus_out(self, data, a, i, hd, pan, theta, lv, hh, ss, s, now, dt, movie, dark):
+        """FOCUS SPOT (ADJ Focus Spot One, 17ch): the same brightness as the heads and the lamps' colour on the
+        COLOUR WHEEL, an open beam or a gobo, and the focus (soft <-> crisp). Setting 'spot_fx' (all optional):
+          gobo (0 = open), gobo_rot, focus (0-255), breathe (focus swing 0-127), breathe_s (seconds a breath),
+          level (0-1), hold = {'az': deg, 'lean': deg, 'drift': deg} (aim at one place, e.g. the curtains),
+          hold_when = 'movie' | 'always'.  The node still enforces every safety rule on top."""
+        fx = s.get('spot_fx') or {}
+        if not isinstance(fx, dict):
+            fx = {}
+        fs = getattr(self, 'fstate', None)
+        if fs is None:
+            fs = self.fstate = {}
+        f = fs.setdefault(i, dict(pan=float(pan), lean=float(theta)))
+        t_pan, t_lean = float(pan), float(theta)
+        hold = fx.get('hold') if hd.get('calibrated') else None    # an uncalibrated spot never gets aimed at a wall
+        if isinstance(hold, dict) and not dark and (movie or fx.get('hold_when') == 'always'):
+            try:
+                az = float(hold['az']) % 360.0
+                az += float(hold.get('drift', 0.0)) * math.sin(2 * math.pi * now / max(5.0, float(hold.get('drift_s', 40.0))))
+                t_pan = (az % 360.0) / 540.0 * 65535.0
+                t_lean = float(hold.get('lean', 30.0))
+            except (KeyError, TypeError, ValueError):
+                pass
+        step16 = MAX_DEG_S / 540.0 * 65535.0 * dt                # glide, never snap (quiet, no whip pans)
+        f['pan'] += clamp(t_pan - f['pan'], -step16, step16)
+        f['lean'] += clamp(t_lean - f['lean'], -MAX_DEG_S * dt, MAX_DEG_S * dt)
+        p16 = int(clamp(f['pan'], 0, 65535))
+        tilt = int(clamp(int(hd.get('tilt_up', 32768)) + int(hd.get('tilt_dir', 1)) * f['lean'] / 240.0 * 65535.0, 0, 65535))
+        deg = (hh * 360.0) % 360.0                               # nearest colour-wheel slot to the lamps' hue
+        if ss < 0.35:
+            slot = 37
+        elif deg >= 345 or deg < 20:
+            slot = 22                                            # red
+        elif deg < 75:
+            slot = 67                                            # yellow
+        elif deg < 190:
+            slot = 52                                            # green
+        elif deg < 262:
+            slot = 37                                            # blue
+        elif deg < 292:
+            slot = 97                                            # navy / deep blue-violet
+        else:
+            slot = 82                                            # pink
+        if fx.get('color') is not None:                          # a fixed wheel slot / slow wheel spin (node limits it)
+            slot = int(clamp(int(fx['color']), 0, 255))
+        foc = float(fx.get('focus', 128))
+        br = clamp(float(fx.get('breathe', 0)), 0.0, 127.0)
+        if br > 0:
+            foc += br * math.sin(2 * math.pi * now / max(2.0, float(fx.get('breathe_s', 12.0))))
+        lvl = clamp(lv * clamp(float(fx.get('level', 1.0))))
+        m = 0 if lvl < 0.004 else int(round(lvl * 255))
+        data[a + 0], data[a + 1] = p16 >> 8, p16 & 255
+        data[a + 2], data[a + 3] = tilt >> 8, tilt & 255
+        data[a + 4] = slot
+        data[a + 5] = int(clamp(int(fx.get('gobo', 0)), 0, 255))
+        data[a + 6] = int(clamp(int(fx.get('gobo_rot', 0)), 0, 255))
+        data[a + 7] = int(clamp(int(foc), 0, 255))
+        data[a + 8] = 12 if m > 0 else 0                         # shutter open (never the strobe range)
+        uvl = clamp(float(fx.get('uv', 0) or 0)) * lvl / 0.8       # UV follows the same loudness (0-1 setting)
+        uv = 0 if uvl < 0.004 else int(round(clamp(uvl) * 255))
+        if fx.get('uv_only'):
+            m = 0
+            data[a + 8] = 0
+        data[a + 9] = m
+        data[a + 10] = 12 if uv > 0 else 0                       # UV shutter open (never strobe)
+        data[a + 11] = uv
+        data[a + 15] = int(clamp(int(hd.get('motor_speed', 0)), 0, 255))
 
     def describe(self):
         return self.status

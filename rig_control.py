@@ -180,6 +180,14 @@ def hub_setting(key, value):
     raise RuntimeError('the Hue Hub did not answer')
 
 
+def movie_reactive():
+    """Movie lights that follow the Scarlett's OUTPUT (loopback 5+6 = whatever the Mac plays):
+    blue -> violet -> pink, louder = brighter, a soft glow in quiet scenes (Nov 2: input 2 alone
+    heard nothing from Safari, so the lamps sat on the warm idle glow)."""
+    hub_vibe('dreamy', 0.6)
+    hub_setting('music_ch', '5,6')
+
+
 def movie_lights(what):
     """Movie Hub lights: movie / intermission / resume / up / picture_on / picture_off."""
     if what in ('movie', 'resume', 'intermission', 'picture_on', 'picture_off'):
@@ -187,7 +195,7 @@ def movie_lights(what):
         if not hub_up():
             start_hub('sync')
         if what == 'movie':
-            hub_vibe('movie')
+            movie_reactive()
             hub_setting('intermission', False)
         elif what == 'resume':
             hub_setting('intermission', False)
@@ -205,7 +213,7 @@ def movie_lights(what):
 
 
 LOOKS = {
-    'movie': ('Movie mode', lambda: (stop_ambient(), start_hub('sync'))),
+    'movie': ('Movie mode', lambda: (stop_ambient(), start_hub('music'), movie_reactive())),
     'show': ('The light show', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('lava'))),
     'music': ('Music mode', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'))),
     'wake': ('Waking the Zephyrus', lambda: wake_zephyrus()),
@@ -228,6 +236,8 @@ LOOKS = {
     'upbeat': ('Upbeat: bright rainbow drifting across the room', lambda: (stop_all(), start_ambient(90, 150, 240))),
     'movieglow': ('Movie glow: purples, blues + pinks, all lamps together, dim',
                   lambda: (stop_all(), start_ambient(30, 90, 0, 0, 0, 255, 350, 'heads'))),
+    'redglow': ('Red glow: purples, pinks + reds drifting across the room, dim ambient',
+                lambda: (stop_all(), start_ambient(40, 120, 50, 0, 0, 315, 365))),
     'breathe': ('Calm breathing colours', lambda: (stop_all(), start_ambient(70, 300, 140, 10, 22))),
     'morning': ('Morning light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 85.0},
                                                                  'color_temperature': {'mirek': 230},
