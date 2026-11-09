@@ -34,6 +34,7 @@ DECKS = [
     ('warp', '/project1/proc_warp/out1'), ('plasma', '/project1/mp_plasma/out1'),
     ('tunnel2d', '/project1/mp_tunnel/out1'), ('radar', '/project1/mp_radar/out1'),
     ('builder', None),                             # the 64 geometry recipes (all 64 Push pads)
+    ('breath', '/project1/breath_geo/out1'),       # Nov 9: POP flower of life that breathes with the hub (breath_geo.tox)
 ]
 FAMILIES = ['flower', 'metatron', 'yantra', 'golden', 'tesseract', 'chladni', 'quasicrystal', 'mandala']
 LOOKS = ['clean', 'ascii', '8bit', 'outline', 'superflat', 'mirror']
