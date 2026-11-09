@@ -34,6 +34,7 @@ import hmac, json, os, secrets, subprocess, sys, threading, time, urllib.parse, 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import head_power                                  # Hue Smart Plugs on the moving heads (dormant until they exist)
 import hub_watchdog                                # restarts a frozen hub on its own (Nov 9)
+import light_schedule                              # wind-down 21:30, night light 23:00, sunrise 07:40-08:00 (Nov 9)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 7040
@@ -330,7 +331,8 @@ class Handler(BaseHTTPRequestHandler):
         look = path.lower()
         if look == 'status':
             s = dict(STATE, hub=running('hue_hub.py'), rainbow_fade=running('ambient_fade.py'),
-                     head_power=head_power.status(), watchdog=hub_watchdog.status())
+                     head_power=head_power.status(), watchdog=hub_watchdog.status(),
+                     schedule=light_schedule.status())
             return self.reply(200, json.dumps(s))
         if look not in LOOKS:
             return self.reply(404, 'Unknown look. Try: ' + ', '.join(sorted(LOOKS)))
@@ -424,4 +426,13 @@ if __name__ == '__main__':
             except Exception:
                 pass
     hub_watchdog.start(lambda: STATE['busy'], _wd_stop, _wd_start, _wd_restore)
+
+    def _sched_stop():
+        with LOCK:
+            stop_all()
+        STATE.update(look='schedule', since=time.strftime('%H:%M'))
+
+    def _hub_busy():                                # a show is on: running hub that hears sound
+        return running('hue_hub.py') and not head_power.hub_quiet()
+    light_schedule.start(hue_lights, _sched_stop, lambda: head_power.request_off(why='night light'), _hub_busy)
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
