@@ -1243,6 +1243,8 @@ class Hub:
                         picture_on=bool(self.state['settings'].get('movie')),
                         level=round(float(getattr(self.palette, 'music_env', 0.0) or 0.0), 3),
                         audio=self.audioshow.snapshot(),
+                        audio_blocks=(int(getattr(self.audio, 'blocks', 0) or 0)
+                                      if getattr(self, 'audio', None) is not None else None),
                         live_key=(self.livekey.status if getattr(self, 'livekey', None) is not None else 'off'),
                         brain=(self.audio.brain.snapshot() if self.audio is not None and getattr(self.audio, 'brain', None)
                                is not None else 'off (install Essentia: Install Audio Brain.command)'),

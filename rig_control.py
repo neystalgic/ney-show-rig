@@ -33,6 +33,7 @@
 import hmac, json, os, secrets, subprocess, sys, threading, time, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import head_power                                  # Hue Smart Plugs on the moving heads (dormant until they exist)
+import hub_watchdog                                # restarts a frozen hub on its own (Nov 9)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 7040
@@ -96,9 +97,20 @@ def hub_up():
         return False
 
 
+def launch_hub():
+    """Start the hub in the background (no Terminal window), the same way TouchDesigner does."""
+    import shlex
+    with open(os.path.join(HERE, 'hub_log.txt'), 'a') as f:
+        f.write('\nStarting the Hue Hub at %s (rig_control)\n' % time.ctime())
+    subprocess.Popen(['/usr/bin/env', '-i', 'HOME=' + os.path.expanduser('~'), '/usr/bin/arch', '-arm64', '/bin/zsh', '-lc',
+                      'cd %s && exec python3 -u hue_hub.py >> hub_log.txt 2>&1' % shlex.quote(HERE)],
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     start_new_session=True)
+
+
 def start_hub(palette):
     if not hub_up():
-        subprocess.Popen(['open', os.path.join(HERE, 'Start Hue Hub.command')])
+        launch_hub()
         for _ in range(60):
             time.sleep(1)
             if hub_up():
@@ -313,7 +325,7 @@ class Handler(BaseHTTPRequestHandler):
         look = path.lower()
         if look == 'status':
             s = dict(STATE, hub=running('hue_hub.py'), rainbow_fade=running('ambient_fade.py'),
-                     head_power=head_power.status())
+                     head_power=head_power.status(), watchdog=hub_watchdog.status())
             return self.reply(200, json.dumps(s))
         if look not in LOOKS:
             return self.reply(404, 'Unknown look. Try: ' + ', '.join(sorted(LOOKS)))
@@ -386,4 +398,25 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     print('Rig control on port %d' % PORT, flush=True)
     head_power.start()
+
+    def _wd_stop():
+        with LOCK:
+            stop_hub()
+
+    def _wd_start(palette):
+        with LOCK:
+            start_hub(palette)
+
+    def _wd_restore(good):                          # put the vibe back the way it was
+        if good.get('vibe'):
+            try:
+                hub_vibe(good['vibe'], float(good.get('energy') or 0.6))
+            except Exception:
+                pass
+        if good.get('blackout'):
+            try:
+                hub_api({'op': 'blackout', 'on': True})
+            except Exception:
+                pass
+    hub_watchdog.start(lambda: STATE['busy'], _wd_stop, _wd_start, _wd_restore)
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()

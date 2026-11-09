@@ -1,0 +1,31 @@
+SHOW NIGHT CHECKLIST  (Nov 9 -- keeps the Mac from overloading)
+==================================================================
+
+WHAT THE MAC IS DOING (measured Nov 9, 2:29 pm, quiet room, no show running)
+  TouchDesigner  ~68% of one core     Ableton Live  ~57%     Claude app  ~55%
+  Push 3 ~9%     hub (Python) ~10%    coreaudio/usbaudio ~19%
+  Load 3.6 out of 14 cores, memory 83% free  -> fine right now.
+  The Nov 8 overload was Spotify (~98%) + TouchDesigner (~93%) + Ableton together.
+
+BEFORE THE SHOW (2 minutes)
+  [ ] Restart the Mac if it's been up more than a week (it was up 24 days on Nov 9)
+  [ ] Quit Spotify -- play through Ableton instead (Spotify was the single biggest load)
+  [ ] Quit the Claude desktop app if you don't need it during the show
+  [ ] Quit browsers / Chrome tabs with video
+  [ ] Ableton: Preferences > Audio buffer 512 samples for shows (256 only when recording)
+  [ ] TouchDesigner: frame rate 30 for shows (Claude can set this; 60 only for recording visuals)
+  [ ] Order: Pi node is always on -> start the hub -> heads on (Tap Switch / Siri) -> music
+
+DURING
+  If the lights freeze: wait ~90 s -- the watchdog restarts the hub on its own.
+  If they're still frozen after 3 restarts in an hour, it gives up on purpose: run "Stop Hue Hub",
+  wait 30 s, start it again.
+
+AFTER
+  Heads off (they also switch off on their own after 10 min of quiet)
+  Hub can stay running; the node on the Pi always stays on.
+
+LATER IDEAS (bigger load savings)
+  - Only cook the VJ deck that's on screen (all generator decks render at 1280x800 today)
+  - Remove the duplicate MCP webserver in TouchDesigner (mcp_webserver_base1)
+  - Move Unreal + heavy visuals to the Zephyrus, send video back over the cable (NDI)

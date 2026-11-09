@@ -109,6 +109,23 @@ def node_status():
     return None
 
 
+def hub_quiet():
+    """True when nothing is playing: hub stopped, blacked out, or its audio under -60 dB.
+    (Nov 6: the hub kept the heads glowing in a silent room, so 'dark' never came.)"""
+    try:
+        with urllib.request.urlopen('http://127.0.0.1:7020/api/live', timeout=2) as r:
+            live = json.loads(r.read())
+    except Exception:
+        return True                                   # no hub = no show
+    if live.get('blackout'):
+        return True
+    heard = str((live.get('audio') or {}).get('status') or '')
+    m = re.search(r'peak (-?\d+) dB', heard)
+    if 'very quiet' in heard or 'PURE SILENCE' in heard or 'no sound arriving' in heard:
+        return True
+    return bool(m) and float(m.group(1)) < -60.0
+
+
 def node_ok(st):
     return bool(st) and not st.get('error')
 
@@ -189,6 +206,9 @@ def _tick():
         return
     STATE['lost_since'] = None
     dark = all(int(h.get('master', 0)) == 0 for h in st.get('heads', []))
+    quiet = False if dark else hub_quiet()
+    STATE['idle_why'] = 'dark' if dark else ('quiet room' if quiet else None)
+    dark = dark or quiet
     if not dark or now < STATE['warm_until']:
         STATE['dark_since'] = None if not dark else (STATE['dark_since'] or now)
         return
@@ -196,7 +216,7 @@ def _tick():
     if now - STATE['dark_since'] >= s['idle_min'] * 60:
         with _lock:
             _switch(False)
-        log('OFF (dark for %d min -- fans off)' % s['idle_min'])
+        log('OFF (%s for %d min -- fans off)' % (STATE.get('idle_why') or 'dark', s['idle_min']))
         STATE['dark_since'] = None
 
 
@@ -218,6 +238,7 @@ def status():
     s = settings()
     d = {k: STATE[k] for k in ('plugs', 'on', 'node', 'last', 'busy')}
     if STATE['dark_since']:
+        d['idle_why'] = STATE.get('idle_why')
         d['dark_for_s'] = int(time.time() - STATE['dark_since'])
     d['idle_min'] = s['idle_min']
     return d

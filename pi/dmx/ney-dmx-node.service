@@ -1,0 +1,18 @@
+[Unit]
+Description=Ney DMX node (Art-Net in, Enttec out) for the moving heads and spots
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=mjney99
+WorkingDirectory=/home/mjney99/NeyDMX/app
+# wait up to 30 s for the Enttec to show up after boot
+ExecStartPre=/bin/sh -c 'for i in $(seq 30); do [ -e /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_BG00CLXX-if00-port0 ] && exit 0; sleep 1; done; exit 1'
+ExecStart=/usr/bin/python3 -u /home/mjney99/NeyDMX/app/dmx_node.py --serial /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_BG00CLXX-if00-port0
+Restart=always
+RestartSec=5
+StandardOutput=append:/home/mjney99/NeyDMX/node.log
+StandardError=append:/home/mjney99/NeyDMX/node.log
+
+[Install]
+WantedBy=multi-user.target
