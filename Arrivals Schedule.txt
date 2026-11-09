@@ -5,6 +5,7 @@ Fri Oct 30   DMX cables (4 x 15 ft) + terminator (Amazon)  [ARRIVED Thu Oct 29 a
              -> address heads 2-4 (14CH: 015 / 029 / 043; head 1 is on 085 for now), wire the chain,
                 terminator in Head 4's DMX OUT, calibrate each head, first full-rig show
              2 x 25 ft flat Cat6 (CableGeeker) + Anker 8-in-1 USB-C hub + ORICO M.2 NVMe enclosure (Amazon)
+             [ARRIVED Thu Oct 29 evening, a day early]
              -> Cat6 #1: router -> Mac (makes the Pi's "wake the Mac" reliable for Movie Night)
              -> Cat6 #2: spare / router -> Zephyrus if Tailscale over Wi-Fi ever lags the heads
              -> USB-C hub: the Mac's extra ports (Ethernet in, Scarlett, projector HDMI) for show nights

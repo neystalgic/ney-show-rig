@@ -1,0 +1,20 @@
+SPOT 1 (Focus Spot One, rolly desk) -- FAVOURITE LOOKS ON THE CURTAIN
+Each line: name | spot_fx values (the Hue Hub setting 'spot_fx'; hold = curtain aim, movie mode only)
+
+1. Gobo wheel scroll + rotation (Nov 4) | gobo 180, gobo_rot 210, focus 160, breathe 80, breathe_s 10
+2. Focus pull (Nov 4)                   | gobo 45, gobo_rot 0, focus 128, breathe 115, breathe_s 6
+3. Gobo wheel scroll, no spin (Nov 4)  | gobo 180, gobo_rot 0, focus 180, breathe 0
+4. Colour wheel steps (Nov 4)          | gobo 45, gobo_rot 0, focus 190, colour steps every 4 s: red 22, pink 82, blue 37, navy 97, green 52, yellow 67
+5. Colour + spin + focus combo (Nov 4)  | gobo 45, gobo_rot 196 (slow spin), focus 140, breathe 100, breathe_s 8, colour steps every 2 s: red 22, pink 82, blue 37, navy 97, green 52, yellow 67
+6. Colour wheel spin (Nov 4)           | gobo 45, gobo_rot 0, focus 190, colour 180 (slow continuous wheel roll)
+7. Slow colour roll + focus pull (Nov 4) | gobo 45, gobo_rot 0, colour 186 (slower roll), focus 135, breathe 110, breathe_s 8
+
+Aims (movie mode only): curtain = hold az 106, lean 75 | Happiness Project flag = hold az 136, lean 76
+Movie brightness (Nov 4): Hues + heads 0-60 %, Spot 1 0-80 %, all following Scarlett input 2
+
+SPOT 2 (totem) movie look (Nov 7): gobo wheel scroll + rotation (gobo 180, gobo_rot 210, focus 160, breathe 80 / 10 s), colour = the room's palette,
+  aimed over the gray couch + coffee table (az 180, lean 65, drifting +/-8 deg every 40 s). Setting: spot_fx.per_head['5']. Ceiling fan OFF.
+
+NIGHT SKY (Nov 8): room blacked out (hub blackout), both spots UV only on the galaxy tapestry.
+  Spot 2: pan 43691, tilt 15019 (living-room aim)   Spot 1: pan 23302, tilt 45329 (right half of the tapestry)
+  Runs 30 min from the Pi script ~/NeyDMX/nightsky.sh (re-sends the aim every 50 s). Seated only, ceiling fan off.

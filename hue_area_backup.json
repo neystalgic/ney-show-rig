@@ -1,0 +1,123 @@
+{
+ "service_locations": [
+  {
+   "service": {
+    "rtype": "entertainment",
+    "rid": "4649dea0-a790-4601-aac7-c064e168d46d"
+   },
+   "positions": [
+    {
+     "x": -1.0,
+     "y": 1.0,
+     "z": -0.0
+    }
+   ],
+   "equalization_factor": 1.0,
+   "position": {
+    "x": -1.0,
+    "y": 1.0,
+    "z": -0.0
+   }
+  },
+  {
+   "service": {
+    "rtype": "entertainment",
+    "rid": "6159caf6-1a04-4e02-9d08-2f83b05f407a"
+   },
+   "positions": [
+    {
+     "x": 1.0,
+     "y": 0.78135,
+     "z": 0.0
+    }
+   ],
+   "equalization_factor": 1.0,
+   "position": {
+    "x": 1.0,
+    "y": 0.78135,
+    "z": 0.0
+   }
+  },
+  {
+   "service": {
+    "rtype": "entertainment",
+    "rid": "27ef3e8e-281e-4128-b5c1-7cf4c9b11e5d"
+   },
+   "positions": [
+    {
+     "x": -1.0,
+     "y": 0.07693,
+     "z": 0.0
+    }
+   ],
+   "equalization_factor": 1.0,
+   "position": {
+    "x": -1.0,
+    "y": 0.07693,
+    "z": 0.0
+   }
+  },
+  {
+   "service": {
+    "rtype": "entertainment",
+    "rid": "c5e06eab-2171-4b96-a2c2-730064b15d0b"
+   },
+   "positions": [
+    {
+     "x": 1.0,
+     "y": -1.0,
+     "z": -0.76999
+    },
+    {
+     "x": 1.0,
+     "y": -1.0,
+     "z": 0.76999
+    }
+   ],
+   "equalization_factor": 1.0,
+   "position": {
+    "x": 1.0,
+    "y": -1.0,
+    "z": -0.76999
+   }
+  },
+  {
+   "service": {
+    "rtype": "entertainment",
+    "rid": "32bd2119-37f8-4ed8-9a1a-323eed57a924"
+   },
+   "positions": [
+    {
+     "x": -0.64278,
+     "y": -0.88668,
+     "z": 0.0
+    }
+   ],
+   "equalization_factor": 1.0,
+   "position": {
+    "x": -0.64278,
+    "y": -0.88668,
+    "z": 0.0
+   }
+  },
+  {
+   "service": {
+    "rtype": "entertainment",
+    "rid": "15d961e4-a897-40d4-b829-e5770125bcf5"
+   },
+   "positions": [
+    {
+     "x": 1.0,
+     "y": 0.12927,
+     "z": 0.0
+    }
+   ],
+   "equalization_factor": 1.0,
+   "position": {
+    "x": 1.0,
+    "y": 0.12927,
+    "z": 0.0
+   }
+  }
+ ]
+}

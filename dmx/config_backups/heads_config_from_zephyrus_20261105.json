@@ -1,0 +1,226 @@
+{
+ "heads": [
+  {
+   "name": "Head 1 (white desk side table)",
+   "addr": 85,
+   "calibrated": true,
+   "tilt_up": 32768,
+   "tilt_dir": -1,
+   "tilt_max_deg": 85,
+   "pan_min": 0,
+   "pan_max": 28520,
+   "motor_speed": 0,
+   "max_level": 0.3125,
+   "avoid": [
+    {
+     "az": 37.0,
+     "width": 30.0,
+     "lean": 70.0
+    },
+    {
+     "az": 76.0,
+     "width": 44.0,
+     "lean": 73.0
+    },
+    {
+     "az": 243.0,
+     "width": 102.0,
+     "lean": 4.0
+    }
+   ],
+   "upright_level": 0.2,
+   "upright_lean": 20.0
+  },
+  {
+   "name": "Head 2 (kitchen cube shelf)",
+   "addr": 15,
+   "calibrated": true,
+   "tilt_up": 32768,
+   "tilt_dir": -1,
+   "tilt_max_deg": 85,
+   "pan_min": 0,
+   "pan_max": 65535,
+   "motor_speed": 0,
+   "max_level": 0.3125,
+   "avoid": [
+    {
+     "az": 66.0,
+     "width": 28.0,
+     "lean": 72.0
+    },
+    {
+     "az": 184.0,
+     "width": 8.0,
+     "lean": 41.0
+    },
+    {
+     "az": 187.0,
+     "width": 10.0,
+     "lean": 22.0
+    }
+   ],
+   "walls": [
+    {
+     "az": 270.0,
+     "width": 40.0,
+     "lean": 85.0
+    }
+   ],
+   "upright_level": 1.0,
+   "upright_lean": 20.0
+  },
+  {
+   "name": "Head 3 (couch corner table)",
+   "addr": 29,
+   "calibrated": true,
+   "tilt_up": 32768,
+   "tilt_dir": -1,
+   "tilt_max_deg": 85,
+   "pan_min": 0,
+   "pan_max": 65535,
+   "motor_speed": 0,
+   "max_level": 0.3125,
+   "avoid": [
+    {
+     "az": 38.0,
+     "width": 40.0,
+     "lean": 49.0
+    },
+    {
+     "az": 77.0,
+     "width": 26.0,
+     "lean": 51.0
+    },
+    {
+     "az": 144.0,
+     "width": 64.0,
+     "lean": 28.0
+    },
+    {
+     "az": 296.0,
+     "width": 8.0,
+     "lean": 76.0
+    },
+    {
+     "az": 306.0,
+     "width": 12.0,
+     "lean": 76.0
+    },
+    {
+     "az": 324.0,
+     "width": 20.0,
+     "lean": 75.0
+    },
+    {
+     "az": 334.0,
+     "width": 12.0,
+     "lean": 61.0
+    }
+   ],
+   "walls": [
+    {
+     "az": 218.0,
+     "width": 40.0,
+     "lean": 85.0
+    }
+   ],
+   "upright_level": 1.0,
+   "upright_lean": 20.0
+  },
+  {
+   "name": "Head 4 (rolly desk)",
+   "addr": 43,
+   "calibrated": true,
+   "tilt_up": 32768,
+   "tilt_dir": -1,
+   "tilt_max_deg": 85,
+   "pan_min": 0,
+   "pan_max": 65535,
+   "motor_speed": 0,
+   "max_level": 0.3125,
+   "avoid": [
+    {
+     "az": 19.0,
+     "width": 26.0,
+     "lean": 73.0
+    },
+    {
+     "az": 86.0,
+     "width": 40.0,
+     "lean": 46.0
+    },
+    {
+     "az": 345.0,
+     "width": 34.0,
+     "lean": 52.0
+    }
+   ],
+   "walls": [
+    {
+     "az": 270.0,
+     "width": 40.0,
+     "lean": 85.0
+    }
+   ],
+   "upright_level": 1.0,
+   "upright_lean": 20.0
+  },
+  {
+   "name": "Focus Spot 1 (rolly desk)",
+   "addr": 101,
+   "type": "focus17",
+   "calibrated": true,
+   "tilt_up": 32768,
+   "tilt_dir": 1,
+   "tilt_max_deg": 30.0,
+   "pan_min": 0,
+   "pan_max": 65535,
+   "motor_speed": 0,
+   "max_level": 1.0,
+   "upright_level": 1.0,
+   "upright_lean": 20.0,
+   "avoid": [
+    {
+     "az": 180.0,
+     "width": 56.0,
+     "lean": 12.0
+    },
+    {
+     "az": 0.0,
+     "width": 50.0,
+     "lean": 10.0
+    }
+   ],
+   "walls": [
+    {
+     "az": 106.0,
+     "width": 24.0,
+     "lean": 76.0
+    },
+    {
+     "az": 136.0,
+     "width": 16.0,
+     "lean": 77.0
+    }
+   ]
+  },
+  {
+   "name": "Focus Spot 2 (totem)",
+   "addr": 121,
+   "type": "focus17",
+   "calibrated": false,
+   "tilt_up": 32768,
+   "tilt_dir": 1,
+   "tilt_max_deg": 35.0,
+   "pan_min": 0,
+   "pan_max": 65535,
+   "motor_speed": 0,
+   "max_level": 1.0,
+   "upright_level": 1.0,
+   "upright_lean": 20.0,
+   "avoid": []
+  }
+ ],
+ "universe": 0,
+ "fps": 30
+}

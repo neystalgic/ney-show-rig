@@ -36,3 +36,7 @@ dmx/config/heads_config.json.tmp
 # --- local safety copies (the Pi + GitHub are the real backups) ---
 *.bak-*
 backup_before_relay_*/
+
+# --- flagged files waiting for Michael to delete ---
+_to_delete/
+*/_to_delete/
