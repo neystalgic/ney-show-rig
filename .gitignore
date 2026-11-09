@@ -40,3 +40,6 @@ backup_before_relay_*/
 # --- flagged files waiting for Michael to delete ---
 _to_delete/
 */_to_delete/
+
+# built on the Mac (holds the mic permission); source is in tools/
+Ney Hub.app/

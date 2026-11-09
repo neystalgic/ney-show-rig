@@ -102,6 +102,11 @@ def launch_hub():
     import shlex
     with open(os.path.join(HERE, 'hub_log.txt'), 'a') as f:
         f.write('\nStarting the Hue Hub at %s (rig_control)\n' % time.ctime())
+    app = os.path.join(HERE, 'Ney Hub.app')         # the launcher app holds the microphone permission (Nov 9)
+    if os.path.isdir(app):
+        subprocess.Popen(['/usr/bin/open', '-n', '-g', '-a', app], stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return
     subprocess.Popen(['/usr/bin/env', '-i', 'HOME=' + os.path.expanduser('~'), '/usr/bin/arch', '-arm64', '/bin/zsh', '-lc',
                       'cd %s && exec python3 -u hue_hub.py >> hub_log.txt 2>&1' % shlex.quote(HERE)],
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,

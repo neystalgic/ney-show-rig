@@ -6,7 +6,7 @@
 # It only ever acts on a hub that is RUNNING but broken -- a hub you stopped on
 # purpose stays stopped. Three kinds of broken:
 #   1. frozen:      the process is there but its web API hasn't answered for 45 s
-#   2. bridge lost: the hub says "not connected" / "lost the bridge" for 90 s
+#   2. bridge lost: the hub says "not connected" / "lost the bridge" / fell back to rehearsal, for 90 s
 #                   (it retries every 5 s on its own; 90 s of that means it's stuck)
 #   3. deaf:        the audio stream stopped delivering blocks for 30 s, or the hub
 #                   hears nothing at all ("no sound arriving") for 60 s
@@ -22,7 +22,7 @@ SETTINGS = os.path.join(HERE, 'hub_watchdog.json')
 LOG = '/tmp/hub_watchdog.log'
 DEFAULTS = {'enabled': True, 'api_dead_s': 45, 'bridge_lost_s': 90, 'audio_stuck_s': 30,
             'no_sound_s': 60, 'settle_s': 30, 'max_per_hour': 3, 'grace_s': 120}
-BAD_BRIDGE = re.compile(r'^(not connected|lost the bridge)', re.I)
+BAD_BRIDGE = re.compile(r'^(not connected|lost the bridge|rehearsal)', re.I)   # rehearsal = it couldn't reach the bridge at start
 
 STATE = {'last': 'starting', 'restarts': [], 'dead_since': None, 'bridge_since': None,
          'deaf_since': None, 'blocks': None, 'blocks_t': None, 'grace_until': 0.0,
