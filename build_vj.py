@@ -36,6 +36,7 @@ DECKS = [
     ('builder', None),                             # the 64 geometry recipes (all 64 Push pads)
     ('breath', '/project1/breath_geo/out1'),       # Nov 9: POP flower of life that breathes with the hub (breath_geo.tox)
     ('breath3d', '/project1/breath_3d/out1'),      # Nov 9: same flower in 3D -- gold PBR tori, palette environment light, music camera (breath_3d.tox)
+    ('particles', '/project1/sacred_particles/out1'),  # Nov 9: 20k POP particles morphing between 7 sacred geometries (sacred_particles.tox)
 ]
 FAMILIES = ['flower', 'metatron', 'yantra', 'golden', 'tesseract', 'chladni', 'quasicrystal', 'mandala']
 LOOKS = ['clean', 'ascii', '8bit', 'outline', 'superflat', 'mirror']
