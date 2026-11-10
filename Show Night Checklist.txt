@@ -12,6 +12,8 @@ BEFORE THE SHOW (2 minutes)
   [ ] Quit Spotify -- play through Ableton instead (Spotify was the single biggest load)
   [ ] Quit the Claude desktop app if you don't need it during the show
   [ ] Quit browsers / Chrome tabs with video
+  [ ] Use a still wallpaper, not an animated Aerial one (Nov 9: the Aerial wallpaper + WindowServer took
+      enough of the graphics chip to drop the visuals from 30 to 25 fps while the Mac sat idle)
   [ ] Ableton: Preferences > Audio buffer 512 samples for shows (256 only when recording)
   [ ] TouchDesigner: frame rate 30 for shows (Claude can set this; 60 only for recording visuals)
   [ ] Order: Pi node is always on -> start the hub -> heads on (Tap Switch / Siri) -> music

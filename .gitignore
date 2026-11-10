@@ -43,3 +43,6 @@ _to_delete/
 
 # built on the Mac (holds the mic permission); source is in tools/
 Ney Hub.app/
+
+# preview frames sent to the phone
+previews/
