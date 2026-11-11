@@ -5,3 +5,6 @@ RAINBOW (Nov 10): "rainbow" always means EVERY BULB THE SAME COLOUR, in sync, br
   when rainbow is asked for. (Applies to the Siri/phone look, the hub's Rainbow vibe and any new look.)
   - rig_control 'rainbow': all lamps one colour, ~90 s per trip round the rainbow, breathing every 10 s
   - hub vibe 'rainbow': music_spread = 0 (one colour on every lamp, pulsing with the music)
+
+NIGHT LIGHT (Nov 10): deep red, about 3%. Not purple or blue (blue light keeps the body awake).
+  Applies to the 11 pm schedule and the Siri/phone 'nightlight' look.
