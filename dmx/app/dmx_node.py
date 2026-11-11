@@ -3,7 +3,15 @@
 
     Hue Hub (Mac)  --Art-Net over Wi-Fi / Tailscale-->  this node  --USB-->  Enttec  --DMX-->  4 moving heads
 
-The node is the LAST word on safety, whatever sends it data:
+v2 (Nov 11): UNLOCKS. Michael decides how hard the rig runs. Node setting 'unlock' (POST /unlock):
+  strobe -> the fixtures' own strobe is allowed (LM70S master 135-239, Focus Spot shutter / UV strobe 16-131),
+            and the flash guard may go up to 25 flashes a second ('flash_hz')
+  white  -> open white on the Focus Spots' colour wheel (the hub decides when to send white to the heads)
+  wheels -> colour wheel spins at any speed
+Still always locked: auto / sound programs, colour macros, reset (they fight the show), and every head's
+calibrated geometry (tilt window, pan window, avoid zones for the mirror / screen / seated faces).
+
+Without unlocks the node is the LAST word on safety, whatever sends it data:
   * the heads' built-in strobe is never used (master channel kept in 8-134 dimming, or 0 = off)
   * auto / sound programs, colour macros and the reset channel are locked off
   * every head's tilt stays inside its calibrated window (beams above head height), pan inside its window
@@ -129,6 +137,9 @@ def load_cfg():
     c['heads'] = heads
     c.setdefault('universe', 0)
     c.setdefault('fps', 30)
+    u = c.setdefault('unlock', {})
+    for k in ('strobe', 'white', 'wheels'):
+        u.setdefault(k, False)
     return c
 
 
@@ -164,6 +175,7 @@ class Guard:
     THR = 20                          # a 'big' change in DMX units
     GAP = 1.0 / 6.0 + 0.03            # 3 flashes/s = 6 turn-rounds/s
     hz = 3.0
+    maxhz = 8.0                       # raised to 25 when strobe is unlocked
 
     def __init__(self):
         self.st = {}
@@ -176,7 +188,7 @@ class Guard:
         d = v - s['ext']
         if abs(d) >= self.THR:
             nd = 1 if d > 0 else -1
-            gap = self.GAP if self.hz <= 3.0 else 1.0 / (2.0 * min(8.0, self.hz)) + 0.005
+            gap = self.GAP if self.hz <= 3.0 else 1.0 / (2.0 * min(self.maxhz, self.hz)) + 0.005
             if s['dir'] != 0 and nd != s['dir'] and now - s['last'] < gap:
                 return s['out']          # not allowed to turn round yet: hold
             if nd != s['dir']:
@@ -339,12 +351,14 @@ class Node:
         """Focus Spot colour / gobo rules: no open white (unless allow_white), the colour wheel only spins
         slowly, and fixed colour changes at most flash_hz a second (a wheel snapping colours is a flicker too)."""
         c = int(fx.get('color', FOCUS_BLUE))
-        if c < 15 and not h.get('allow_white'):
+        un = self.cfg.get('unlock', {})
+        if c < 15 and not (h.get('allow_white') or un.get('white')):
             c = FOCUS_BLUE
-        if 128 <= c < 170:                       # clockwise spin, fast..slow -> slow half only
-            c = 170
-        elif c > 213:                            # counter-clockwise, slow..fast -> slow half only
-            c = 213
+        if not un.get('wheels'):
+            if 128 <= c < 170:                   # clockwise spin, fast..slow -> slow half only
+                c = 170
+            elif c > 213:                        # counter-clockwise, slow..fast -> slow half only
+                c = 213
         st = self.fx_state.setdefault(i, dict(color=c, t=0.0))
         gap = 1.0 / max(1.0, float(self.cfg.get('flash_hz', 3.0)))
         if c != st['color'] and c < 128 and st['color'] < 128 and now - st['t'] < gap:
@@ -373,6 +387,8 @@ class Node:
             master = src[ch['master']]
             rgbw = [src[ch[k]] for k in ('r', 'g', 'b', 'w')] if not is_f else [0, 0, 0, 0]
             uv = src[ch['uv']] if is_f else 0
+            shut_in = src[ch['shutter']] if is_f else 0
+            uvs_in = src[ch['uv_strobe']] if is_f else 0
             fx = dict(color=src[ch['color']], gobo=src[ch['gobo']], gobo_rot=src[ch['gobo_rot']],
                       focus=src[ch['focus']]) if is_f else {}
             dm = self.demo.get(i)
@@ -420,7 +436,10 @@ class Node:
                     x = (abs(lean) - float(h.get('upright_lean', 20.0))) / 15.0
                     up_k = ul + (1.0 - ul) * max(0.0, min(1.0, x))
             kcap = max(0.0, min(1.0, float(h.get('max_level', 1.0)))) * (1.0 if cal else self.fade * up_k)
+            un = self.cfg.get('unlock', {})
+            strobe_ok = bool(un.get('strobe')) and not cal
             self.guard.hz = float(self.cfg.get('flash_hz', 3.0))
+            self.guard.maxhz = 25.0 if un.get('strobe') else 8.0
             if is_f:
                 # Focus Spot: plain 0-255 dimmers (its strobe is a separate shutter channel, held open/closed)
                 lvl = master / 255.0 * kcap
@@ -436,9 +455,10 @@ class Node:
                 for k in ('color', 'gobo', 'gobo_rot', 'focus'):
                     o[ch[k]] = fx[k]
                 o[ch['master']] = master
-                o[ch['shutter']] = SHUTTER_OPEN if master > 0 else 0      # never the strobe range
+                # shutter: open / closed, or (strobe unlocked) the fixture's own strobe at the speed the hub asks
+                o[ch['shutter']] = (shut_in if strobe_ok and 16 <= shut_in <= 131 else SHUTTER_OPEN) if master > 0 else 0
                 o[ch['uv']] = uv
-                o[ch['uv_strobe']] = SHUTTER_OPEN if uv > 0 else 0
+                o[ch['uv_strobe']] = (uvs_in if strobe_ok and 16 <= uvs_in <= 131 else SHUTTER_OPEN) if uv > 0 else 0
                 o[ch['show']] = 0            # no built-in shows
                 o[ch['show_speed']] = 0
                 o[ch['dim_mode']] = 0        # standard dimmer curve
@@ -446,7 +466,20 @@ class Node:
                 o[ch['func']] = 0            # no reset / blackout tricks / sound-active
                 out[a:a + foot] = o
                 continue
-            # master: off, or the dimming range -- never the strobe range
+            # master: off, the dimming range, or (strobe unlocked) the head's own strobe 135-239
+            if strobe_ok and 135 <= master <= 239:
+                rgbw = [int(round(v * kcap)) for v in rgbw]            # strobe speed in master, brightness in the colour
+                rgbw = [self.guard.step((i, k), v, now) for k, v in zip('rgbw', rgbw)]
+                o = out[a:a + foot]
+                o[ch['pan']], o[ch['pan_fine']] = pan >> 8, pan & 255
+                o[ch['tilt']], o[ch['tilt_fine']] = tilt >> 8, tilt & 255
+                o[ch['speed']] = max(0, min(255, int(h.get('motor_speed', 0))))
+                o[ch['master']] = master
+                for k, v in zip(('r', 'g', 'b', 'w'), rgbw):
+                    o[ch[k]] = v
+                o[ch['preset']] = o[ch['preset_speed']] = o[ch['auto']] = o[ch['reset']] = 0
+                out[a:a + foot] = o
+                continue
             if master < MASTER_MIN:
                 master = 0
             else:
@@ -503,7 +536,8 @@ class Node:
             heads.append(d)
         return dict(output=self.out.name, error=self.err, hub_alive=now - self.last_rx < 2.0,
                     hub=self.rx_from, frames_in=self.rx_count, frames_out=self.sent_frames,
-                    last_in_s=round(now - self.last_rx, 1) if self.last_rx else None, fade=round(self.fade, 2), heads=heads)
+                    last_in_s=round(now - self.last_rx, 1) if self.last_rx else None, fade=round(self.fade, 2), heads=heads,
+                    unlock=self.cfg.get('unlock', {}), flash_hz=self.cfg.get('flash_hz', 3.0), version='v2-nov11')
 
 
 def make_handler(node):
@@ -549,6 +583,16 @@ def make_handler(node):
             except Exception:
                 return self.send(400, '{"error":"bad json"}')
             p = self.path.split('?')[0]
+            if p == '/unlock':                 # node-wide unlocks (Michael's call): strobe / white / wheels / flash_hz
+                with node.lock:
+                    u = node.cfg.setdefault('unlock', {})
+                    for k in ('strobe', 'white', 'wheels'):
+                        if k in b:
+                            u[k] = bool(b[k])
+                    if 'flash_hz' in b:
+                        node.cfg['flash_hz'] = max(1.0, min(25.0 if u.get('strobe') else 8.0, float(b['flash_hz'])))
+                    save_cfg(node.cfg)
+                    return self.send(200, json.dumps(dict(unlock=u, flash_hz=node.cfg.get('flash_hz', 3.0))))
             with node.lock:
                 heads = node.cfg['heads']
                 if p == '/head' and i == len(heads) and i < 12 and b.get('type') in TYPES and 'addr' in b:
@@ -605,7 +649,8 @@ def make_handler(node):
                     if int(h['addr']) - 1 + ftype(h)['foot'] > 512:
                         h['addr'] = 512 - ftype(h)['foot'] + 1
                     if 'flash_hz' in b:                  # node-wide: flash guard rate (3 = default, 8 = most)
-                        node.cfg['flash_hz'] = max(1.0, min(8.0, float(b['flash_hz'])))
+                        node.cfg['flash_hz'] = max(1.0, min(25.0 if node.cfg.get('unlock', {}).get('strobe') else 8.0,
+                                                            float(b['flash_hz'])))
                     if h['pan_min'] > h['pan_max']:
                         h['pan_min'], h['pan_max'] = h['pan_max'], h['pan_min']
                     save_cfg(node.cfg)
