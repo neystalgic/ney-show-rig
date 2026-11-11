@@ -4,7 +4,7 @@
 #
 #   21:30  wind-down: lamps fade to warm candle light (2200 K, 35%) over 10 min
 #   23:00  night light: deep red, 12%; the moving heads park and power off
-#   07:40  sunrise: a 20-minute fade from a faint ember to bright morning light at 08:00
+#   08:40  morning: a 20-minute fade from deep night blue up to a soft sky blue, full at 09:00 (Nov 10)
 #
 # It never interrupts a show: if the hub is running AND hearing sound, that step is
 # skipped (and logged). Otherwise it stops the hub / fades first, like the Siri looks.
@@ -16,7 +16,7 @@ import json, os, threading, time
 HERE = os.path.dirname(os.path.abspath(__file__))
 SETTINGS = os.path.join(HERE, 'light_schedule.json')
 LOG = '/tmp/light_schedule.log'
-DEFAULTS = {'enabled': True, 'winddown': '21:30', 'night': '23:00', 'sunrise': '07:40', 'sunrise_min': 20}
+DEFAULTS = {'enabled': True, 'winddown': '21:30', 'night': '23:00', 'sunrise': '08:40', 'sunrise_min': 20}
 STATE = {'done': {}, 'last': 'starting', 'running': None}
 
 
@@ -63,9 +63,9 @@ def night(lights, heads_off):
 
 def sunrise(lights, minutes):
     secs = minutes * 60.0
-    # ember -> amber -> warm -> morning (Hue mirek: 454 = 2200 K, 250 = 4000 K)
-    _ramp(lights, [(1, 454, None, 2), (8, 454, None, secs * 0.25), (30, 370, None, secs * 0.35),
-                   (85, 250, None, secs * 0.40)])
+    # deep night blue -> dawn blue -> soft sky blue (Michael, Nov 10: soft blue mornings, full at 9 am)
+    _ramp(lights, [(1, None, (0.16, 0.10), 2), (12, None, (0.17, 0.15), secs * 0.30), (35, None, (0.19, 0.22), secs * 0.35),
+                   (60, None, (0.22, 0.27), secs * 0.35)])
 
 
 def _fire(name, s, lights, stop_all, heads_off, hub_busy):

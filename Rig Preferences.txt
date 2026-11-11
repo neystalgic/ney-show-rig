@@ -8,3 +8,5 @@ RAINBOW (Nov 10): "rainbow" always means EVERY BULB THE SAME COLOUR, in sync, br
 
 NIGHT LIGHT (Nov 10): deep red, about 12% (3% was too dark to see by). Not purple or blue (blue light keeps the body awake).
   Applies to the 11 pm schedule and the Siri/phone 'nightlight' look.
+
+MORNING (Nov 10): soft sky blue, about 60%, full at 9:00 am (fade starts 8:40). Same colour for the Siri/phone 'morning' look.
