@@ -241,7 +241,7 @@ LOOKS = {
                                                       hub_setting('dmx_strobe', 'off'), hub_setting('dmx_on', True))),
     'heads_on': ('Moving heads powering up', lambda: head_power.request_on()),
     'heads_off': ('Moving heads parking, then power off', lambda: head_power.request_off(why='heads_off')),
-    'rainbow': ('Rainbow fade, every lamp together', lambda: (stop_all(), start_ambient(70, 90, 0))),
+    'rainbow': ('Rainbow breathing, every lamp in sync', lambda: (stop_all(), start_ambient(75, 90, 0, 10, 22))),   # Nov 10: all bulbs one colour, breathing
     'rainbowroom': ('Rainbow across the room', lambda: (stop_all(), start_ambient(70, 120, 240))),
     'bright': ('Bright white', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 100.0},
                                                                 'color_temperature': {'mirek': 200},

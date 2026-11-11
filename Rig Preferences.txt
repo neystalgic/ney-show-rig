@@ -1,0 +1,7 @@
+RIG PREFERENCES (Michael) -- read this before changing looks
+=============================================================
+RAINBOW (Nov 10): "rainbow" always means EVERY BULB THE SAME COLOUR, in sync, breathing
+  through the colours of the rainbow together. Never spread different colours across the lamps
+  when rainbow is asked for. (Applies to the Siri/phone look, the hub's Rainbow vibe and any new look.)
+  - rig_control 'rainbow': all lamps one colour, ~90 s per trip round the rainbow, breathing every 10 s
+  - hub vibe 'rainbow': music_spread = 0 (one colour on every lamp, pulsing with the music)
