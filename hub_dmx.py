@@ -41,7 +41,13 @@ SWEEP_DEG_S = 150.0
 MUSIC_SWEEP_DEG_S = 240.0
 TURN_DEG_S = 200.0               # phrase turns: every head travels the same angle at the same speed -> they land together        # music sweeps: as quick as the motors go              # movie sweeps only: a quick swing out and back on a loud moment
 MAX_DEG_S = 35.0                 # fastest a beam may swing (degrees a second): quiet motors, no whip pans
-MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range only (135-239 = built-in strobe, never used)
+MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range (135-239 = the head's own strobe, used by 'flash')
+# MULTICOLOUR FLASH (Nov 11, Michael's favourite from the full-power test): dmx_strobe = 'flash'
+#   the heads use their OWN strobe (needs node v2 with strobe unlocked), every head the same colour,
+#   stepping round the rainbow + white one step per beat; strobe speed follows the song section.
+#   Spots strobe their shutter at the same speed. Quiet parts / movie / dark: off.
+FLASH_STEPS = [(1, 0, 0, 0), (1, 0.45, 0, 0), (1, 1, 0, 0), (0, 1, 0, 0), (0, 1, 1, 0), (0, 0, 1, 0), (0.6, 0, 1, 0), (0, 0, 0, 1)]
+FLASH_SPEED = {'groove': 0.45, 'breakdown': 0.25, 'drop': 0.95}   # 0 = slowest strobe, 1 = fastest
 CH = dict(pan=0, pan_fine=1, tilt=2, tilt_fine=3, speed=4, master=5, r=6, g=7, b=8, w=9)
 DEFAULT_HEADS = [dict(addr=a, tilt_up=32768, tilt_dir=1, tilt_max_deg=35.0, pan_min=0, pan_max=65535, motor_speed=0)
                  for a in (1, 15, 29, 43)]
@@ -281,6 +287,14 @@ class Heads:
                               or (bool(s.get('strobe_test')) and new_tick)) \
             and now - self.last_flash >= 1.0 / max_hz + 0.01
         self.sec_prev, self.phrase_prev = section, phrase
+        # multicolour flash: the heads' own strobe, one rainbow step per beat
+        self.flash_mode = smode == 'flash' and not dark and not movie and section != 'quiet'
+        if self.flash_mode:
+            sp = clamp(FLASH_SPEED.get(section, 0.55) + 0.1 * (float(s.get('energy', 0.6)) - 0.5))
+            sp = clamp(float(s.get('flash_speed', sp)))          # a fixed speed if you set one
+            self.flash_master = int(135 + sp * (239 - 135))
+            self.flash_shutter = int(16 + sp * (131 - 16))
+            self.flash_rgbw = FLASH_STEPS[beat_i % len(FLASH_STEPS)]
         if fire:
             self.last_flash = now
             self.flashes += 1
@@ -520,6 +534,11 @@ class Heads:
             data[a + CH['pan']], data[a + CH['pan_fine']] = pan >> 8, pan & 255
             data[a + CH['tilt']], data[a + CH['tilt_fine']] = tilt >> 8, tilt & 255
             data[a + CH['speed']] = int(clamp(int(hd.get('motor_speed', 0)), 0, 255))
+            if getattr(self, 'flash_mode', False):
+                fr, fg, fb, fw = self.flash_rgbw
+                k = clamp(cue_lvl)
+                master = self.flash_master
+                r, g, b, w = fr * k, fg * k, fb * k, fw * k
             data[a + CH['master']] = master
             data[a + CH['r']], data[a + CH['g']] = int(r * 255), int(g * 255)
             data[a + CH['b']], data[a + CH['w']] = int(b * 255), int(w * 255)
@@ -600,7 +619,10 @@ class Heads:
         data[a + 5] = int(clamp(int(fx.get('gobo', 0)), 0, 255))
         data[a + 6] = int(clamp(int(fx.get('gobo_rot', 0)), 0, 255))
         data[a + 7] = int(clamp(int(foc), 0, 255))
-        data[a + 8] = 12 if m > 0 else 0                         # shutter open (never the strobe range)
+        data[a + 8] = 12 if m > 0 else 0                         # shutter open
+        if getattr(self, 'flash_mode', False):
+            m = 255
+            data[a + 8] = self.flash_shutter                     # multicolour flash: the spot's own strobe
         uvl = clamp(float(fx.get('uv', 0) or 0)) * lvl / 0.8       # UV follows the same loudness (0-1 setting)
         uv = 0 if uvl < 0.004 else int(round(clamp(uvl) * 255))
         if fx.get('uv_only'):

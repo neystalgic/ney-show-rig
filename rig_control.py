@@ -233,7 +233,11 @@ def movie_lights(what):
 LOOKS = {
     'movie': ('Movie mode', lambda: (stop_ambient(), start_hub('music'), movie_reactive())),
     'show': ('The light show', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('lava'))),
-    'music': ('Music mode', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'))),
+    'music': ('Music mode', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
+                                     hub_setting('dmx_strobe', 'off'))),
+    'flash': ('Multicolour flash: heads + spots strobing, all one colour stepping round the rainbow on the beat',
+              lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
+                       hub_vibe('rainbow', 0.8), hub_setting('dmx_strobe', 'flash'), hub_setting('dmx_on', True))),
     'wake': ('Waking the Zephyrus', lambda: wake_zephyrus()),
     'strobe': ('Light show -- strobe version', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                                         hub_setting('dmx_strobe', 'always'), hub_setting('dmx_on', True))),
