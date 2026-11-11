@@ -1,0 +1,14 @@
+RIG USAGE BUDGET -- the "Rig away loop" checks this BEFORE doing any work.
+If a limit is reached, the run stops in seconds (almost no usage) and tries next time.
+Michael can change any number here. Lines are KEY = value.
+
+PAUSE = no               # yes = the loop does nothing until set back to no
+MAX_RUNS_PER_DAY = 4     # schedule has 5 slots a day; this keeps one spare
+MAX_RUNS_PER_WEEK = 20   # rolling 7 days
+MAX_TASKS_PER_RUN = 1    # one backlog task per run, then stop
+MAX_TOOL_CALLS_PER_RUN = 40   # stop, save progress and log if a task needs more
+STOP_AFTER_FAILED_RUNS = 2    # two failed/blocked runs in a row -> loop pauses itself
+QUIET_HOURS = 01-11      # no runs between 1 am and 11 am (sleep + Michael's morning)
+
+Hard guarantee against extra fees: claude.ai Settings > Usage -> keep "usage credits"
+(extra usage) OFF. Then hitting a limit just pauses until the reset; it never bills.

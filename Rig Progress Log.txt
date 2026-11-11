@@ -1,0 +1,5 @@
+RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
+Format: date time | task | what changed | tests | what's next / needs Michael
+====================================================================================
+2026-11-11 | setup | Backlog + this log + away/ folder created; loop scheduled every
+  3 h (11:48, 14:48, 17:48, 20:48, 23:48), build + test only, Michael deploys.

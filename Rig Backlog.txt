@@ -1,0 +1,44 @@
+RIG BACKLOG -- worked by the "Rig away loop" scheduled task while Michael is away
+=================================================================================
+How it works: each run takes the TOP task marked [SAFE] whose status is "todo", does
+it, tests it, and records it in "Rig Progress Log.txt". Everything is BUILT + TESTED
+inside the away/ folder (one subfolder per task). Nothing goes live until Michael
+says so: he deploys from away/<task>/DEPLOY.txt.
+
+Status words: todo | in progress | ready for Michael | done | blocked (reason)
+Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never touch.
+Michael can reorder, add or delete lines any time -- top of the list wins.
+
+--- QUEUE (top = next) --------------------------------------------------------------
+1. [SAFE] todo -- Watchdog: catch a hub stuck at start-up while a look is busy
+   (Nov 11: API never came up while the "flash" look held busy, watchdog skipped it).
+   Build away/watchdog-startup/: patched hub_watchdog.py + offline test with fake hub.
+2. [SAFE] todo -- Rig 2.0 Phase 2: beat stream. A module that broadcasts the hub's
+   beat/tempo/energy/section/colours ~30x a second over UDP (OSC), plus a small
+   listener script to prove it. away/beat-stream/. Offline test with a fake hub.
+3. [SAFE] todo -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
+   synced breathing, night red 12%, morning soft blue, cozy) using Hue v2 + DMX node
+   HTTP. away/pi-brain/looks.py + tests with a mocked bridge and node. No real calls.
+4. [SAFE] todo -- Rig 2.0 Phase 1b: hand-off rule (Mac hub leads while alive and
+   playing; Pi takes over within seconds when it goes quiet). away/pi-brain/handoff.py
+   + tests that simulate the Mac dropping out.
+5. [SAFE] todo -- Rig 2.0 Phase 1c: health page (one phone page, green/red per
+   machine and service). away/pi-brain/health.py + a static preview HTML.
+6. [SAFE] todo -- Tap Switch dry-run harness: simulate button 1-4 events against a
+   fake bridge and check each maps to show / movieuv / cycle / night. away/tap-test/.
+7. [SAFE] todo -- Unreal on the Zephyrus: step-by-step "Unreal Beat Deck.txt" (OSC
+   receiver from the beat stream, Niagara sacred-geometry system, DMX plugin previs of
+   the 4 heads + 2 spots, nDisplay notes). Plain text, no installs.
+8. [SAFE] todo -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
+   (input / decks / mixer / output, only the on-screen deck cooks, labels) as
+   away/td-tidy/PLAN.txt. Do NOT edit the live TouchDesigner project.
+9. [SAFE] todo -- Housekeeping list: list the .bak-* files older than 7 days that are
+   also in git history, as away/housekeeping/candidates.txt. List only; move nothing.
+
+--- NEEDS MICHAEL (the loop never does these) -------------------------------------
+- [MICHAEL] Pair the Tap Switch Mini (Thu Nov 12), then test buttons 1-4.
+- [MICHAEL] Ableton: map CC 102 / ch 16 (IAC) to the fill track's Utility gain (+6 dB).
+- [MICHAEL] Check Head 2 by eye (flag scene, art-wall cap) -- loosen if wall looks empty.
+- [MICHAEL] Turn on "allow all domains" so Claude can SSH to the Pi directly.
+- [MICHAEL] Review + deploy anything marked "ready for Michael".
+- [MICHAEL] Sacred line visual: watch it, say which forms/colours/timing to keep.
