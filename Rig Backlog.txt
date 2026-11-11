@@ -10,29 +10,40 @@ Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never to
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
 --- QUEUE (top = next) --------------------------------------------------------------
-1. [SAFE] todo -- Watchdog: catch a hub stuck at start-up while a look is busy
-   (Nov 11: API never came up while the "flash" look held busy, watchdog skipped it).
-   Build away/watchdog-startup/: patched hub_watchdog.py + offline test with fake hub.
-2. [SAFE] todo -- Rig 2.0 Phase 2: beat stream. A module that broadcasts the hub's
+1. [SAFE] todo -- Rig 2.0 Phase 2: beat stream. A module that broadcasts the hub's
    beat/tempo/energy/section/colours ~30x a second over UDP (OSC), plus a small
-   listener script to prove it. away/beat-stream/. Offline test with a fake hub.
-3. [SAFE] todo -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
-   synced breathing, night red 12%, morning soft blue, cozy) using Hue v2 + DMX node
-   HTTP. away/pi-brain/looks.py + tests with a mocked bridge and node. No real calls.
-4. [SAFE] todo -- Rig 2.0 Phase 1b: hand-off rule (Mac hub leads while alive and
-   playing; Pi takes over within seconds when it goes quiet). away/pi-brain/handoff.py
-   + tests that simulate the Mac dropping out.
-5. [SAFE] todo -- Rig 2.0 Phase 1c: health page (one phone page, green/red per
-   machine and service). away/pi-brain/health.py + a static preview HTML.
-6. [SAFE] todo -- Tap Switch dry-run harness: simulate button 1-4 events against a
-   fake bridge and check each maps to show / movieuv / cycle / night. away/tap-test/.
-7. [SAFE] todo -- Unreal on the Zephyrus: step-by-step "Unreal Beat Deck.txt" (OSC
+   listener script to prove it. away/beat-stream/. PRIORITY: Michael wants to
+   test it with Unreal tonight (Nov 11) -- include an OSC sender mode aimed at the Zephyrus
+   (address set in a .json, port 7700) and a DEPLOY.txt for running it on the Mac. Offline test with a fake hub.
+2. [SAFE] todo -- Unreal on the Zephyrus: step-by-step "Unreal Beat Deck.txt" (OSC
    receiver from the beat stream, Niagara sacred-geometry system, DMX plugin previs of
    the 4 heads + 2 spots, nDisplay notes). Plain text, no installs.
-8. [SAFE] todo -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
+   PRIORITY: Michael follows it tonight (Nov 11) -- start with plugins to enable and a
+   Blueprint that pulses a light/material on /ney/beat from port 7700.
+3. [SAFE] todo -- Jarvis step 0: command router. A small module that takes a sentence
+   (typed for now; voice later) and maps it to ONE allowlisted action: rig_control looks
+   (show, movieuv, night, rainbow, flash, hype, cozy, morning, nightlight), 'status', and
+   'log weight <n>' (appends to Desktop/Weight Log.csv). Strobe/big moves need a 'yes'.
+   Rules-based matching first, with an optional LLM hook (Ollama local, Claude API later)
+   that may only return an allowlisted action name. away/jarvis-router/ + offline tests.
+   Ready for Michael to try tonight (Nov 11).
+4. [SAFE] todo -- Watchdog: catch a hub stuck at start-up while a look is busy
+   (Nov 11: API never came up while the "flash" look held busy, watchdog skipped it).
+   Build away/watchdog-startup/: patched hub_watchdog.py + offline test with fake hub.
+5. [SAFE] todo -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
+   synced breathing, night red 12%, morning soft blue, cozy) using Hue v2 + DMX node
+   HTTP. away/pi-brain/looks.py + tests with a mocked bridge and node. No real calls.
+6. [SAFE] todo -- Rig 2.0 Phase 1b: hand-off rule (Mac hub leads while alive and
+   playing; Pi takes over within seconds when it goes quiet). away/pi-brain/handoff.py
+   + tests that simulate the Mac dropping out.
+7. [SAFE] todo -- Rig 2.0 Phase 1c: health page (one phone page, green/red per
+   machine and service). away/pi-brain/health.py + a static preview HTML.
+8. [SAFE] todo -- Tap Switch dry-run harness: simulate button 1-4 events against a
+   fake bridge and check each maps to show / movieuv / cycle / night. away/tap-test/.
+9. [SAFE] todo -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
    (input / decks / mixer / output, only the on-screen deck cooks, labels) as
    away/td-tidy/PLAN.txt. Do NOT edit the live TouchDesigner project.
-9. [SAFE] todo -- Housekeeping list: list the .bak-* files older than 7 days that are
+10. [SAFE] todo -- Housekeeping list: list the .bak-* files older than 7 days that are
    also in git history, as away/housekeeping/candidates.txt. List only; move nothing.
 
 --- NEEDS MICHAEL (the loop never does these) -------------------------------------
