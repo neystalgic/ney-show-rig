@@ -9,7 +9,7 @@ Needs node v2 with unlocks on (POST /unlock {"strobe":true,"white":true,"wheels"
   D 14 s  spots: shutter strobe slow -> fast, fast colour-wheel spin, gobo spin, focus pull; heads chase
   E 10 s  fast movement: all heads swing their whole pan window together, then back
   F  4 s  big finish: everything white + max strobe, then dark
-python3 full_power_test.py [node ip] [phase letters, e.g. ABCDEF]
+python3 full_power_test.py [node ip] [phase letters, e.g. ABCDEF] [seconds per phase]
 """
 import json, math, socket, struct, sys, time, urllib.request
 
@@ -49,7 +49,7 @@ def frame(t, ph):
             if ph == 'A': col = 75                               # a colour slot
             if ph == 'C' or ph == 'F': col = 5                   # open white
             if ph == 'D':
-                shut = int(16 + (131 - 16) * min(1.0, t / 12.0))  # strobe slow -> fast
+                shut = int(16 + (131 - 16) * min(1.0, t / (LEN['D'] - 2.0)))  # strobe slow -> fast
                 col = 140                                         # fast clockwise wheel spin
                 gobo, grot = 40, 230                              # a gobo, spinning fast
                 focus = int(128 + 120 * math.sin(t * 2.0))
@@ -58,7 +58,7 @@ def frame(t, ph):
         else:
             r, g, b, w, master = 160, 0, 255, 0, 134            # purple, full dimmer
             if ph == 'B':
-                master = int(135 + (239 - 135) * min(1.0, t / 12.0))     # strobe slow -> fast
+                master = int(135 + (239 - 135) * min(1.0, t / (LEN['B'] - 2.0)))     # strobe slow -> fast
                 r, g, b, w = [(255, 0, 0, 0), (0, 255, 0, 0), (0, 0, 255, 0), (0, 0, 0, 255)][int(t / 1.5) % 4]
             if ph == 'C': r, g, b, w, master = 255, 255, 255, 255, 134
             if ph == 'D':
@@ -69,6 +69,8 @@ def frame(t, ph):
     return d
 
 LEN = dict(A=8, B=14, C=6, D=14, E=10, F=4)
+if len(sys.argv) > 3:                                          # optional: same length for every phase
+    LEN = {k: float(sys.argv[3]) for k in LEN}
 for ph in PHASES:
     print('phase', ph, flush=True)
     t0 = time.time()
