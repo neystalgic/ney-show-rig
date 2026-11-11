@@ -260,7 +260,7 @@ LOOKS = {
     'morning': ('Morning light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 85.0},
                                                                  'color_temperature': {'mirek': 230},
                                                                  'dynamics': {'duration': 8000}}))),
-    'nightlight': ('Red night light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 3.0},
+    'nightlight': ('Red night light', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 12.0},
                                                                          'color': {'xy': {'x': 0.69, 'y': 0.30}},
                                                                          'dynamics': {'duration': 2500}}))),
     'off': ('Lights off', lambda: (stop_all(), hue_lights({'on': {'on': False}, 'dynamics': {'duration': 1500}}),

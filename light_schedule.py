@@ -3,7 +3,7 @@
 # LIGHT SCHEDULE -- the daily rhythm (Nov 9): bed ~11 pm, up at 8 am, every day.
 #
 #   21:30  wind-down: lamps fade to warm candle light (2200 K, 35%) over 10 min
-#   23:00  night light: deep red, 3%; the moving heads park and power off
+#   23:00  night light: deep red, 12%; the moving heads park and power off
 #   07:40  sunrise: a 20-minute fade from a faint ember to bright morning light at 08:00
 #
 # It never interrupts a show: if the hub is running AND hearing sound, that step is
@@ -57,7 +57,7 @@ def winddown(lights):
 
 
 def night(lights, heads_off):
-    _ramp(lights, [(12, None, (0.69, 0.30), 60), (3, None, (0.69, 0.30), 120)])   # Nov 10: deep red, not purple (red barely touches melatonin)
+    _ramp(lights, [(16, None, (0.69, 0.30), 60), (12, None, (0.69, 0.30), 120)])   # Nov 10: deep red ~12% (3% was too dark), not purple
     heads_off()
 
 
