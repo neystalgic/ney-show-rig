@@ -44,7 +44,8 @@ MAX_DEG_S = 35.0                 # fastest a beam may swing (degrees a second): 
 MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range (135-239 = the head's own strobe, used by 'flash')
 # MULTICOLOUR FLASH (Nov 11, Michael's favourite from the full-power test): dmx_strobe = 'flash'
 #   the heads use their OWN strobe (needs node v2 with strobe unlocked), every head the same colour,
-#   stepping round the rainbow + white one step per beat; strobe speed follows the song section.
+#   stepping round the rainbow + white one step per beat. STROBE SPARINGLY (Michael): only while a drop is
+#   on (+ a 2 s burst when it lands); the rest of the song the colours step on the beat without strobing.
 #   Spots strobe their shutter at the same speed. Quiet parts / movie / dark: off.
 FLASH_STEPS = [(1, 0, 0, 0), (1, 0.45, 0, 0), (1, 1, 0, 0), (0, 1, 0, 0), (0, 1, 1, 0), (0, 0, 1, 0), (0.6, 0, 1, 0), (0, 0, 0, 1)]
 FLASH_SPEED = {'groove': 0.45, 'breakdown': 0.25, 'drop': 0.95}   # 0 = slowest strobe, 1 = fastest
@@ -295,6 +296,7 @@ class Heads:
             self.flash_master = int(135 + sp * (239 - 135))
             self.flash_shutter = int(16 + sp * (131 - 16))
             self.flash_rgbw = FLASH_STEPS[beat_i % len(FLASH_STEPS)]
+            self.flash_strobe = section == 'drop' or now < getattr(self, 'burst_until', 0.0)
         if fire:
             self.last_flash = now
             self.flashes += 1
@@ -537,7 +539,7 @@ class Heads:
             if getattr(self, 'flash_mode', False):
                 fr, fg, fb, fw = self.flash_rgbw
                 k = clamp(cue_lvl)
-                master = self.flash_master
+                master = self.flash_master if getattr(self, 'flash_strobe', False) else MASTER_MAX
                 r, g, b, w = fr * k, fg * k, fb * k, fw * k
             data[a + CH['master']] = master
             data[a + CH['r']], data[a + CH['g']] = int(r * 255), int(g * 255)
@@ -622,7 +624,7 @@ class Heads:
         data[a + 8] = 12 if m > 0 else 0                         # shutter open
         if getattr(self, 'flash_mode', False):
             m = 255
-            data[a + 8] = self.flash_shutter                     # multicolour flash: the spot's own strobe
+            data[a + 8] = self.flash_shutter if getattr(self, 'flash_strobe', False) else 12   # strobe only in drops
         uvl = clamp(float(fx.get('uv', 0) or 0)) * lvl / 0.8       # UV follows the same loudness (0-1 setting)
         uv = 0 if uvl < 0.004 else int(round(clamp(uvl) * 255))
         if fx.get('uv_only'):

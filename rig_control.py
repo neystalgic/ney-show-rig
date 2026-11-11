@@ -34,7 +34,8 @@ import hmac, json, os, secrets, subprocess, sys, threading, time, urllib.parse, 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import head_power                                  # Hue Smart Plugs on the moving heads (dormant until they exist)
 import hub_watchdog                                # restarts a frozen hub on its own (Nov 9)
-import light_schedule                              # wind-down 21:30, night light 23:00, sunrise 07:40-08:00 (Nov 9)
+import light_schedule                              # wind-down 21:30, night light 23:00, morning 8:40-9:00
+import tap_switch                                  # Hue Tap Switch Mini: 1 show, 2 movie, 3 cycle, 4 night (Nov 11)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 7040
@@ -230,9 +231,67 @@ def movie_lights(what):
         raise ValueError('unknown lights: %s' % what)
 
 
+# Spot looks for movie nights (hub setting spot_fx). FLAG = the Happiness Project flag + couch looks (Nov 4-7);
+# UV_SKY = both spots UV-only on the galaxy tapestry (the night-sky aims, Nov 8).
+SPOT_FX_FLAG = {"hold": {"az": 136, "lean": 76, "drift": 0}, "hold_when": "movie", "hold_head": 4, "level": 1.0, "gobo": 45,
+                "gobo_rot": 0, "focus": 135, "breathe": 110, "breathe_s": 8, "color": 186,
+                "per_head": {"5": {"hold": {"az": 180, "lean": 65, "drift": 8, "drift_s": 40}, "hold_head": 5, "gobo": 180,
+                                   "gobo_rot": 210, "focus": 160, "breathe": 80, "breathe_s": 10, "color": None}}}
+SPOT_FX_UV_SKY = {"hold": {"az": 192, "lean": 46, "drift": 0}, "hold_when": "movie", "hold_head": 4, "level": 1.0,
+                  "uv": 1.0, "uv_only": True, "gobo": 0, "focus": 128,
+                  "per_head": {"5": {"hold": {"az": 180, "lean": 65, "drift": 0}, "hold_head": 5, "uv": 1.0, "uv_only": True}}}
+
+
+def fill_boost(on):
+    """Fill speaker +6 dB for movies: MIDI CC 102 (channel 16) on the IAC bus -> map it in Ableton to the fill
+    track's Utility gain (CC 127 = +6 dB, 0 = 0 dB). Quietly does nothing if MIDI isn't available."""
+    try:
+        import rtmidi
+        mo = rtmidi.MidiOut()
+        names = mo.get_ports()
+        idx = next((i for i, n in enumerate(names) if 'IAC' in n), None)
+        if idx is None:
+            return
+        mo.open_port(idx)
+        mo.send_message([0xB0 | 15, 102, 127 if on else 0])
+        mo.close_port()
+    except Exception:
+        pass
+
+
+def movie_uv():
+    movie_lights('movie')
+    hub_setting('spot_fx', SPOT_FX_UV_SKY)
+    fill_boost(True)
+
+
+def movie_flag():
+    movie_lights('movie')
+    hub_setting('spot_fx', SPOT_FX_FLAG)
+
+
+def show_full():
+    """Button 1: everything moving together to the music, one colour stepping on the beat, strobe only in drops."""
+    wake_zephyrus(); stop_ambient(); fill_boost(False)
+    head_power.request_on(quiet=True)
+    start_hub('music')
+    hub_vibe('rainbow', 0.8)
+    hub_setting('dmx_strobe', 'flash')
+    hub_setting('dmx_on', True)
+
+
+def night_mode():
+    """Button 4: heads park and power off, lamps to the red night light."""
+    fill_boost(False)
+    stop_all()
+    hue_lights({'on': {'on': True}, 'dimming': {'brightness': 12.0}, 'color': {'xy': {'x': 0.69, 'y': 0.30}},
+                'dynamics': {'duration': 2500}})
+    head_power.request_off(why='night mode')
+
+
 LOOKS = {
     'movie': ('Movie mode', lambda: (stop_ambient(), start_hub('music'), movie_reactive())),
-    'show': ('The light show', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('lava'))),
+    'lava': ('Lava lamp show', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('lava'))),
     'music': ('Music mode', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                      hub_setting('dmx_strobe', 'off'))),
     'flash': ('Multicolour flash: heads + spots strobing, all one colour stepping round the rainbow on the beat',
@@ -253,7 +312,12 @@ LOOKS = {
     'cozy': ('Cozy warm white', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 60.0},
                                                                  'color_temperature': {'mirek': 370},
                                                                  'dynamics': {'duration': 1500}}))),
-    'movienight': ('Movie night', lambda: movie_lights('movie')),
+    'movienight': ('Movie night', lambda: movie_flag()),
+    'movieuv': ('Movie night: UV stars from both spots, fill speaker +6 dB', lambda: movie_uv()),
+    'show': ('Light show: everything together to the music, strobe only in drops', lambda: show_full()),
+    'night': ('Night mode: heads off, red night light', lambda: night_mode()),
+    'hype': ('Hype: every lamp + head one bright colour, fast moves', lambda: (wake_zephyrus(), stop_ambient(),
+             head_power.request_on(quiet=True), start_hub('music'), hub_vibe('hype', 0.85), hub_setting('dmx_strobe', 'off'))),
     'breathe_slow': ('Slow breathing colours', lambda: (stop_all(), start_ambient(65, 420, 140, 16, 18))),
     'upbeat': ('Upbeat: bright rainbow drifting across the room', lambda: (stop_all(), start_ambient(90, 150, 240))),
     'movieglow': ('Movie glow: purples, blues + pinks, all lamps together, dim',
@@ -336,7 +400,7 @@ class Handler(BaseHTTPRequestHandler):
         if look == 'status':
             s = dict(STATE, hub=running('hue_hub.py'), rainbow_fade=running('ambient_fade.py'),
                      head_power=head_power.status(), watchdog=hub_watchdog.status(),
-                     schedule=light_schedule.status())
+                     schedule=light_schedule.status(), tap_switch=tap_switch.status())
             return self.reply(200, json.dumps(s))
         if look not in LOOKS:
             return self.reply(404, 'Unknown look. Try: ' + ', '.join(sorted(LOOKS)))
@@ -430,6 +494,11 @@ if __name__ == '__main__':
             except Exception:
                 pass
     hub_watchdog.start(lambda: STATE['busy'], _wd_stop, _wd_start, _wd_restore)
+
+    def _tap(look):                                 # a Tap Switch press = the same as asking for that look
+        if look in LOOKS:
+            threading.Thread(target=apply, args=(look,), daemon=True).start()
+    tap_switch.start(_tap)
 
     def _sched_stop():
         with LOCK:
