@@ -352,6 +352,26 @@ def apply(look):
             STATE['busy'] = False
 
 
+def ask_jarvis(text):
+    """Nov 11: 'Hey Siri, Ney' -> /ask?text=... -> Jarvis picks allowlisted actions -> the reply Siri speaks."""
+    jd = os.path.join(HERE, 'jarvis')
+    if jd not in sys.path:
+        sys.path.insert(0, jd)
+    import jarvis
+
+    def rig(p):
+        if p == 'status':
+            return json.dumps({'look': STATE.get('look')})
+        if p not in LOOKS:
+            raise KeyError(p)
+        threading.Thread(target=apply, args=(p,), daemon=True).start()
+        return ''
+    try:
+        return jarvis.handle(text or '', jarvis.settings(), rig=rig, confirm=False)
+    except Exception as e:
+        return 'Jarvis hit a snag: %s.' % e.__class__.__name__
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -397,6 +417,16 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             return self.wfile.write(body)
+        if path == 'ask':                               # Jarvis from Siri / Shortcuts / anywhere
+            text = (q.get('text') or [''])[0]
+            n = int(self.headers.get('Content-Length') or 0)
+            if not text and n:
+                raw = self.rfile.read(n).decode('utf-8', 'replace')
+                try:
+                    text = str(json.loads(raw).get('text', ''))
+                except (ValueError, AttributeError):
+                    text = (urllib.parse.parse_qs(raw).get('text') or [raw])[0]
+            return self.reply(200, ask_jarvis(text.strip()))
         if path.startswith('m/'):
             return self.movie(path[2:], q)
         look = path.lower()

@@ -47,6 +47,8 @@ ACTIONS = {
     'bright':      'Bright white.',
     'off':         'Lights off.',
     'wake':        'Waking the Zephyrus.',
+    'later':       None,                      # tonight only: no dimming until <time>
+    'schedule_normal': None,                  # back to the normal 22:30 / 23:00 schedule
     'status':      None,                      # says how the rig is doing
     'weight':      None,                      # logs a weight, needs a number
 }
@@ -54,6 +56,9 @@ CONFIRM = {'show', 'flash', 'hype', 'strobe'}   # strobe / fast movement: ask fi
 
 # Word rules, most specific first. (pattern, action)
 RULES = [
+    (r'\b(schedule|bedtime|lights?) back to normal\b|\bnormal schedule\b|\breset (the )?schedule\b', 'schedule_normal'),
+    (r"(no dimming|don.?t (start )?dim\w*|push (bed ?time|the schedule|wind ?down)|bed ?time (at|to)|stay up|keep (them|the lights|it) (on|up|bright))"
+     r".*?\b(until|till|til|to|at)\s+(?P<when>midnight|\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?)", 'later'),
     (r'\b(log|weigh|weight)\b.*\b(\d{2,3}(\.\d)?)\b|\b(\d{3}(\.\d)?)\s*(lb|lbs|pounds)\b', 'weight'),
     (r'\bstatus\b|how.*(rig|everything|system).*(doing|going)|you (up|there|alive)', 'status'),
     (r'\bnight ?light\b', 'nightlight'),
@@ -105,6 +110,8 @@ def by_rules(text):
     for pat, action in RULES:
         m = re.search(pat, t)
         if m:
+            if action == 'later':
+                return {'action': 'later', 'value': m.group('when')}
             if action == 'weight':
                 num = next((g for g in m.groups() if g and re.fullmatch(r'\d{2,3}(\.\d)?', g)), None)
                 return {'action': 'weight', 'value': float(num) if num else None}
@@ -146,6 +153,70 @@ def understand(text, s, post=None):
     return by_rules(text) or by_model(text, s, post) or {'action': 'unknown', 'value': None}
 
 
+def understand_all(text, s, post=None):
+    """One sentence can ask for a look AND a schedule change. Split on 'and' / 'then' / commas;
+    if the word rules understand the pieces, do each (looks first). Otherwise ask the model once."""
+    pieces = [p for p in re.split(r'\s*(?:,|\band then\b|\bthen\b|\band\b|\balso\b)\s*', text) if p.strip()]
+    found = []
+    for p in pieces:
+        i = by_rules(p)
+        if i and i not in found:
+            found.append(i)
+    if len(found) > 1:
+        return sorted(found, key=lambda i: i['action'] in ('later', 'schedule_normal', 'weight', 'status'))
+    return [understand(text, s, post)]
+
+
+SCHEDULE_FILE = os.path.join(RIG, 'light_schedule.json')
+
+
+def night_time(when):
+    """'midnight' / '12' / '12:30' / '1am' / '11:30' -> (hour, minute), assuming late evening."""
+    w = str(when).lower().replace('.', '').strip()
+    if w == 'midnight':
+        return 0, 0
+    m = re.match(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$', w)
+    if not m:
+        return None
+    h, mi, ap = int(m.group(1)), int(m.group(2) or 0), m.group(3)
+    if h > 23 or mi > 59:
+        return None
+    if ap == 'pm' and h < 12:
+        h += 12
+    elif ap == 'am' and h == 12:
+        h = 0
+    elif not ap:
+        h = 0 if h == 12 else (h + 12 if 6 <= h <= 11 else h)
+    return h, mi
+
+
+def _speak_time(h, mi):
+    if (h, mi) == (0, 0):
+        return 'midnight'
+    return '%d%s %s' % (h % 12 or 12, (':%02d' % mi) if mi else '', 'am' if h < 12 else 'pm')
+
+
+def push_schedule(when, path=None, now=None):
+    t = night_time(when)
+    if not t:
+        return "What time? Try 'no dimming until midnight'."
+    h, mi = t
+    night = (h * 60 + mi + 20) % (24 * 60)
+    now = now or dt.datetime.now()
+    expires = (now + dt.timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
+    with open(path or SCHEDULE_FILE, 'w') as f:
+        json.dump({'winddown': '%02d:%02d' % (h, mi), 'night': '%02d:%02d' % divmod(night, 60),
+                   '_expires': expires.strftime('%Y-%m-%d %H:%M'),
+                   '_note': 'Tonight only, set by Jarvis. Ignored after _expires.'}, f)
+    return 'No dimming until %s. Red wind-down then, night light 20 minutes later. Back to normal tomorrow.' % _speak_time(h, mi)
+
+
+def normal_schedule(path=None):
+    with open(path or SCHEDULE_FILE, 'w') as f:
+        f.write('{}\n')
+    return 'Schedule back to normal: red wind-down at 10:30, night light at 11.'
+
+
 # -- doing --
 def _post(url, body, timeout):
     req = urllib.request.Request(url, json.dumps(body).encode(), {'Content-Type': 'application/json'})
@@ -179,6 +250,10 @@ def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
         if v is None or not 150 <= v <= 400:
             return 'What number should I log?'
         return log_weight(v, weight_path)
+    if a == 'later':
+        return push_schedule(v)
+    if a == 'schedule_normal':
+        return normal_schedule()
     if a == 'status':
         try:
             st = json.loads(rig('status'))
@@ -202,15 +277,22 @@ def say(text, s):
         pass
 
 
-def handle(text, s, dry=False, ask=input, rig=None):
-    intent = understand(text, s)
-    log('heard %r -> %s' % (text, intent))
+def handle(text, s, dry=False, ask=input, rig=None, confirm=True):
+    intents = understand_all(text, s)
+    log('heard %r -> %s' % (text, intents))
     if dry:
-        return '[dry] would do: %s%s' % (intent['action'], '' if intent.get('value') is None else ' %s' % intent['value'])
-    if intent['action'] in CONFIRM:
-        if ask('That one strobes / moves fast. Everyone seated? (y/n) ').strip().lower()[:1] != 'y':
-            return 'Okay, skipped.'
-    return do(intent, s, rig)
+        return '[dry] would do: ' + ', '.join(i['action'] + ('' if i.get('value') is None else ' %s' % i['value'])
+                                             for i in intents)
+    out = []
+    for intent in intents:
+        if intent['action'] in CONFIRM:
+            if not confirm:
+                out.append('Strobes in the drops, everyone seated.')
+            elif ask('That one strobes / moves fast. Everyone seated? (y/n) ').strip().lower()[:1] != 'y':
+                out.append('Okay, skipped the light show.')
+                continue
+        out.append(do(intent, s, rig))
+    return ' '.join(out)
 
 
 def main():

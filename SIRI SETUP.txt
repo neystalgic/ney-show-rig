@@ -1,0 +1,35 @@
+"HEY SIRI, NEY" -- talk to Jarvis from your iPhone, Apple Watch or Mac (about 3 minutes, once)
+=====================================================================================
+Say "Hey Siri, Ney", then say what you want in plain words:
+  "purple lights" / "show mode" / "movie with the stars" / "goodnight" / "status" /
+  "log 268.4" / "don't dim until midnight" / "schedule back to normal" /
+  "purple and don't dim until 12:30"   (two things in one sentence works)
+Siri speaks Jarvis's answer back.
+
+BUILD IT (iPhone, Shortcuts app)
+ 1. Tap + (new shortcut). Tap the name at the top > Rename > Ney
+ 2. Add action: Dictate Text            (Stop Listening: After Pause)
+ 3. Add action: URL Encode              (it picks up Dictated Text automatically)
+ 4. Add action: Text   and type exactly:
+      http://Michaels-MacBook-Pro-2.local:7040/ask?text=
+    then, right after the "=", tap the variable bar and insert  URL Encoded Text
+ 5. Add action: Get Contents of URL     (input: Text)
+    Tap the arrow to show more > Headers > Add new header:
+      Key:   X-Token
+      Value: the rig token -- open "rig_control.token" in this folder on the Mac
+             (TextEdit), copy it, paste it here. Same key your other rig Shortcuts use.
+             Never paste it anywhere else.
+ 6. Add action: Speak Text              (input: Contents of URL)
+ 7. Done. Say "Hey Siri, Ney". The first time, iOS asks to allow local network access: Allow.
+
+ON THE MAC (same shortcut, synced through iCloud)
+ - Shortcuts app > right-click "Ney" > Get Info / details > Add Keyboard Shortcut
+   (try Control-Option-Space). Press it, speak, done.
+ - Want to TYPE instead of talk on the Mac? Duplicate it as "Ney Type" and swap step 2
+   for "Ask for Input" (Text).
+
+APPLE WATCH: the iPhone shortcut shows up on the Watch automatically ("Hey Siri, Ney").
+
+ONLY WORKS AT HOME (same Wi-Fi as the Mac). Away from home comes later (Tailscale).
+If Siri says it can't connect: is the Mac awake? Try http://Michaels-MacBook-Pro-2.local:7040
+in Safari on the phone -- "Not allowed." means the Mac is reachable (that's the token check).

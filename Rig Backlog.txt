@@ -10,7 +10,7 @@ Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never to
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
 --- QUEUE (top = next) --------------------------------------------------------------
-1. [SAFE] todo -- PRIORITY: Jarvis anywhere (Michael, Nov 11: "Jarvis is supposed to be extremely
+1. [SAFE] live with Michael Nov 11 (not for the loop) -- PRIORITY: Jarvis anywhere (Michael, Nov 11: "Jarvis is supposed to be extremely
    convenient, otherwise there's no benefit over prompting Claude"). Build in away/jarvis-anywhere/:
    (a) a patched COPY of rig_control.py with GET/POST /ask?text=... (same token rules as looks) that runs
        jarvis.understand + jarvis.do and returns the spoken reply as plain text, so an iPhone/Watch/Mac

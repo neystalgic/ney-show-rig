@@ -33,8 +33,11 @@ def settings():
     s = dict(DEFAULTS)
     try:
         with open(SETTINGS) as f:
-            s.update(json.load(f))
-    except (OSError, ValueError):
+            extra = json.load(f)
+        exp = extra.get('_expires')              # Nov 11: Jarvis writes tonight-only changes with an expiry
+        if not exp or time.strftime('%Y-%m-%d %H:%M') < exp:
+            s.update({k: v for k, v in extra.items() if not k.startswith('_')})
+    except (OSError, ValueError, AttributeError):
         pass
     return s
 
