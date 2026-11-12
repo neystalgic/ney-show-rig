@@ -1438,7 +1438,7 @@ class Hub:
                              relay_diffuse_bars=float, dmx_host=str, dmx_level=float, dmx_move=float,
                              music_ch=str, music_floor_db=float, music_top_db=float, music_attack=float,
                              music_release=float, music_base=float, music_boost=float, music_period=float,
-                             music_spread=float, music_hold=bool, dmx_on=bool, dmx_strobe=str,
+                             music_spread=float, music_hold=bool, dmx_on=bool, dmx_strobe=str, flash_beats=int,
                              music_sat=float, music_idle=float, sync_idle=float, dmx_movie=bool, dmx_movie_level=float,
                              intermission=bool, intermission_level=float, heads_pending=dict,
                              dmx_gain=list, dmx_gamma=float, dmx_proof=bool,
