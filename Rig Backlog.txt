@@ -10,7 +10,7 @@ Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never to
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
 --- QUEUE (top = next) --------------------------------------------------------------
-1. [SAFE] todo -- PRIORITY (Nov 11 friction #1): CLAUDE BRIDGE without TouchDesigner. When TD is closed
+1. [SAFE] done Nov 12 (built live, deployed, verified) -- PRIORITY (Nov 11 friction #1): CLAUDE BRIDGE without TouchDesigner. When TD is closed
    Claude can't reach the Mac, so every fix became 'paste this into Terminal'. Build in away/claude-bridge/:
    a patched COPY of rig_control.py that watches Hue Rig/bridge/inbox/ every 2 s for small JSON files
    {"do": <allowlisted>} written by Claude through the connected folder. Allowlist: any LOOKS name, 'ask'
