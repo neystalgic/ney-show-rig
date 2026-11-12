@@ -243,6 +243,32 @@ SPOT_FX_UV_SKY = {"hold": {"az": 192, "lean": 46, "drift": 0}, "hold_when": "mov
                   "per_head": {"5": {"hold": {"az": 180, "lean": 65, "drift": 0}, "hold_head": 5, "uv": 1.0, "uv_only": True}}}
 
 
+def _cc(num, val, label):
+    """One MIDI CC on channel 16 over the IAC bus to Ableton. Never raises; result in STATE['fill']."""
+    try:
+        import rtmidi
+        mo = rtmidi.MidiOut()
+        names = mo.get_ports()
+        idx = next((i for i, n in enumerate(names) if 'IAC' in n), None)
+        if idx is None:
+            STATE['fill'] = 'no IAC port (ports: %s) -- enable IAC Driver in Audio MIDI Setup' % (names or 'none')
+            return False
+        mo.open_port(idx)
+        mo.send_message([0xB0 | 15, num, val])
+        mo.close_port()
+        STATE['fill'] = '%s: CC%d=%d ch16 on %s at %s' % (label, num, val, names[idx], time.strftime('%H:%M:%S'))
+        return True
+    except Exception as e:
+        STATE['fill'] = 'failed: %s: %s' % (e.__class__.__name__, e)
+        return False
+
+
+def fill_on(on):
+    """Nov 12: fill speaker on/off -- CC 103 ch16 -> the fill track's Track Activator in Ableton (127 on, 0 off).
+    Off while producing (the fill makes a weird stereo image); on for movies and shows."""
+    _cc(103, 127 if on else 0, 'fill ON' if on else 'fill OFF (producing)')
+
+
 def fill_boost(on):
     """Fill speaker +6 dB for movies: MIDI CC 102 (channel 16) on the IAC bus -> map it in Ableton to the fill
     track's Utility gain (CC 127 = +6 dB, 0 = 0 dB). Never raises; what happened goes in STATE['fill']."""
@@ -266,6 +292,7 @@ def fill_boost(on):
 def movie_uv():
     movie_lights('movie')
     hub_setting('spot_fx', SPOT_FX_UV_SKY)
+    fill_on(True)
     fill_boost(True)
 
 
@@ -276,7 +303,7 @@ def movie_flag():
 
 def show_full():
     """Button 1: everything moving together to the music, one colour stepping on the beat, strobe only in drops."""
-    wake_zephyrus(); stop_ambient(); fill_boost(False)
+    wake_zephyrus(); stop_ambient(); fill_on(True); fill_boost(False)
     head_power.request_on(quiet=True)
     start_hub('music')
     hub_vibe('rainbow', 0.8)
@@ -334,6 +361,8 @@ LOOKS = {
         'color': {'xy': {'x': 0.27, 'y': 0.12}}, 'dynamics': {'duration': 3000}}))),   # Nov 11: Michael asked for purple at bedtime
     'fillup': ('Fill speaker +6 dB (MIDI CC102 to Ableton)', lambda: fill_boost(True)),
     'filldown': ('Fill speaker back to normal', lambda: fill_boost(False)),
+    'producing': ('Producing: fill speaker off (lights untouched)', lambda: (fill_boost(False), fill_on(False))),
+    'fillon': ('Fill speaker back on', lambda: fill_on(True)),
     'show': ('Light show: everything together to the music, strobe only in drops', lambda: show_full()),
     'night': ('Night mode: heads off, red night light', lambda: night_mode()),
     'hype': ('Hype: every lamp + head one bright colour, fast moves', lambda: (wake_zephyrus(), stop_ambient(),

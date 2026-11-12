@@ -19,3 +19,5 @@ FAVOURITE COLOUR = PURPLE (Nov 11): purple is Michael's favourite light colour. 
 WIND-DOWN (Nov 11): starts 22:30, RED (never amber/warm white): 40% -> 30% -> 22% over ~20 min,
   then the 12% red night light at 23:00.
 LIGHT SHOW COLOURS (Nov 11): head colours changing every beat is distracting -- one colour every 2 bars (flash_beats 8).
+FILL SPEAKER (Nov 12): OFF while producing (weird stereo image). ON for movies (+6 dB) and light shows (0 dB).
+  Ableton: CC102 ch16 -> fill Utility Gain (0..+6 dB); CC103 ch16 -> fill track activator (127 on / 0 off).

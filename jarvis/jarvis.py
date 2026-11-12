@@ -47,6 +47,8 @@ ACTIONS = {
     'heads_on':    'Powering up the heads.',
     'heads_off':   'Parking the heads and powering them off.',
     'bright':      'Bright white.',
+    'producing':   'Producing mode. Fill speaker off.',
+    'fillon':      'Fill speaker back on.',
     'off':         'Lights off.',
     'wake':        'Waking the Zephyrus.',
     'later':       None,                      # tonight only: no dimming until <time>
@@ -64,6 +66,8 @@ RULES = [
     (r'\b(log|weigh|weight)\b.*\b(\d{2,3}(\.\d)?)\b|\b(\d{3}(\.\d)?)\s*(lb|lbs|pounds)\b', 'weight'),
     (r'\bstatus\b|how.*(rig|everything|system).*(doing|going)|you (up|there|alive)', 'status'),
     (r'\bpurple\b.*\b(night|bed|sleep)|\b(night|bed|sleep)\w*\b.*\bpurple\b', 'purplenight'),
+    (r"\b(i.?m producing|producing|production mode|studio mode|making (music|beats?)|working on (a |the )?(track|song|beat))\b|\bfill (speaker )?(off|out)\b", 'producing'),
+    (r'\bfill (speaker )?(on|back)\b', 'fillon'),
     (r'\bnight ?light\b', 'nightlight'),
     (r'\b(show|party|light ?show)\b.*\b(uv|stars?)\b|\b(uv|stars?)\b.*\b(show|party)\b', 'showuv'),
     (r'\b(uv|stars?)\b', 'movieuv'),

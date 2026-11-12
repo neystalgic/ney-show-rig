@@ -69,3 +69,7 @@ for t in ('light show with the uv stars', 'show mode with stars', 'uv stars ligh
     assert j.by_rules(t)['action'] == 'showuv', t
 assert j.by_rules('movie with the stars')['action'] == 'movieuv'
 print('showuv ok')
+for t, w in {"I'm producing": 'producing', 'studio mode': 'producing', 'working on a track': 'producing',
+             'fill speaker off': 'producing', 'fill back on': 'fillon'}.items():
+    assert j.by_rules(t)['action'] == w, t
+print('producing ok')
