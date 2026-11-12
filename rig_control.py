@@ -277,6 +277,7 @@ def show_full():
     start_hub('music')
     hub_vibe('rainbow', 0.8)
     hub_setting('dmx_strobe', 'flash')
+    hub_setting('flash_beats', 8)                   # Nov 11: one colour every 2 bars, not every beat
     hub_setting('dmx_on', True)
 
 

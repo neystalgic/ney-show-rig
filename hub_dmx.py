@@ -295,7 +295,8 @@ class Heads:
             sp = clamp(float(s.get('flash_speed', sp)))          # a fixed speed if you set one
             self.flash_master = int(135 + sp * (239 - 135))
             self.flash_shutter = int(16 + sp * (131 - 16))
-            self.flash_rgbw = FLASH_STEPS[beat_i % len(FLASH_STEPS)]
+            per = max(1, int(s.get('flash_beats', 1) or 1))   # Nov 11: beats per colour (1 per beat was distracting)
+            self.flash_rgbw = FLASH_STEPS[(beat_i // per) % len(FLASH_STEPS)]
             self.flash_strobe = section == 'drop' or now < getattr(self, 'burst_until', 0.0)
         if fire:
             self.last_flash = now

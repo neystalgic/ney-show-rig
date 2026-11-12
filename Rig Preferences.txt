@@ -18,3 +18,4 @@ FAVOURITE COLOUR = PURPLE (Nov 11): purple is Michael's favourite light colour. 
   everyday / "lights on" / "turn them up" (100% xy 0.27, 0.12). Night light stays red, morning stays soft blue.
 WIND-DOWN (Nov 11): starts 22:30, RED (never amber/warm white): 40% -> 30% -> 22% over ~20 min,
   then the 12% red night light at 23:00.
+LIGHT SHOW COLOURS (Nov 11): head colours changing every beat is distracting -- one colour every 2 bars (flash_beats 8).
