@@ -1,3 +1,4 @@
 {"targets": [
+  {"name": "Unreal on the Zephyrus", "host": "zephyrus.local", "port": 7700},
   {"name": "listener on this Mac", "host": "127.0.0.1", "port": 7701}
 ]}

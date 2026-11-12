@@ -124,6 +124,19 @@ def settings():
     return s
 
 
+def resolve(targets):
+    """Names like zephyrus.local -> an IPv4 address, looked up once per settings reload
+    (not every frame), so a machine that changes address is found again within ~30 s."""
+    out = []
+    for t in targets:
+        try:
+            ip = socket.getaddrinfo(t['host'], None, socket.AF_INET, socket.SOCK_DGRAM)[0][4][0]
+            out.append((ip, int(t['port'])))
+        except (OSError, KeyError, ValueError):
+            pass                                             # that machine is off: skip it for now
+    return out
+
+
 def frames(url=STREAM):
     """Yield hub snapshots from the server-sent-events stream."""
     with urllib.request.urlopen(url, timeout=5) as r:
@@ -140,7 +153,7 @@ def run():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     framer, wait, sent = Framer(), 1.0, 0
     while True:
-        targets = [(t['host'], int(t['port'])) for t in settings()['targets']]
+        targets = resolve(settings()['targets'])
         try:
             log('connecting to the hub; sending to %s' % ', '.join('%s:%d' % t for t in targets))
             for snap in frames():
@@ -154,7 +167,7 @@ def run():
                 sent += 1
                 if sent % 600 == 0:                          # about every 30 s
                     log('%d frames sent' % sent)
-                    targets = [(t['host'], int(t['port'])) for t in settings()['targets']]
+                    targets = resolve(settings()['targets'])
             log('hub stream ended')
         except Exception as e:
             log('hub not reachable (%s); retrying in %d s' % (e.__class__.__name__, wait))
