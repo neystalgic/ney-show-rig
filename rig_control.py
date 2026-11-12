@@ -325,6 +325,9 @@ LOOKS = {
     'movienight': ('Movie night', lambda: movie_flag()),
     'movieuv': ('Movie night: UV stars from both spots, fill speaker +6 dB', lambda: movie_uv()),
     'showuv': ('Light show with the UV stars: heads to the music, both spots holding UV on the stars', lambda: show_uv()),
+    'purplenight': ('Purple night light: heads park and power off, lamps dim purple', lambda: (
+        head_power.request_off(why='purplenight'), stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 15.0},
+        'color': {'xy': {'x': 0.27, 'y': 0.12}}, 'dynamics': {'duration': 3000}}))),   # Nov 11: Michael asked for purple at bedtime
     'show': ('Light show: everything together to the music, strobe only in drops', lambda: show_full()),
     'night': ('Night mode: heads off, red night light', lambda: night_mode()),
     'hype': ('Hype: every lamp + head one bright colour, fast moves', lambda: (wake_zephyrus(), stop_ambient(),
