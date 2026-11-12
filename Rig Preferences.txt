@@ -10,3 +10,9 @@ NIGHT LIGHT (Nov 10): deep red, about 12% (3% was too dark to see by). Not purpl
   Applies to the 11 pm schedule and the Siri/phone 'nightlight' look.
 
 MORNING (Nov 10): soft sky blue, about 60%, full at 9:00 am (fade starts 8:40). Same colour for the Siri/phone 'morning' look.
+
+NO WHITE LIGHT (Nov 11): Michael does not like white light. Never use plain or warm white
+  as a default or "brighten up" look. When he wants it brighter: PURPLE at 100% (xy 0.27, 0.12).
+  The "bright" look is white -- only on an explicit ask for white.
+FAVOURITE COLOUR = PURPLE (Nov 11): purple is Michael's favourite light colour. Default to purple for
+  everyday / "lights on" / "turn them up" (100% xy 0.27, 0.12). Night light stays red, morning stays soft blue.
