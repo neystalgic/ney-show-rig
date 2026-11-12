@@ -20,6 +20,12 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
    the 4 heads + 2 spots, nDisplay notes). Plain text, no installs.
    PRIORITY: Michael follows it tonight (Nov 11) -- start with plugins to enable and a
    Blueprint that pulses a light/material on /ney/beat from port 7700.
+2b. [SAFE] todo -- Twin rebuild PLAN (Michael, Nov 11: "the twin still looks like a mess").
+   The raw LiDAR scan is noisy and blotchy in Unreal. Write away/twin-rebuild/PLAN.txt: rebuild
+   the room as clean simple geometry from measured sizes (walls, ceiling, desk, couch, screen,
+   clouds) using Studio Placement Plan.txt / Aim Map.txt / Light Placement v3, keep the scan only
+   as a hidden reference, dark matte materials so the heads' beams and the projection read,
+   and a Blender-or-Unreal-modeling step list Michael can follow in ~1 hour. Plain text only.
 3. [SAFE] todo -- Beat sender autostart: right now beat_sender.py was started by hand
    (Nov 11) and stops on a Mac restart. Patch a COPY of rig_control.py so it starts and
    babysits beat_sender.py like its other modules (restart if it dies, back-off).
