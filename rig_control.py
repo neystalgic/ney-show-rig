@@ -309,6 +309,9 @@ LOOKS = {
     'bright': ('Bright white', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 100.0},
                                                                 'color_temperature': {'mirek': 200},
                                                                 'dynamics': {'duration': 600}}))),
+    'purple': ('Purple, full brightness (Michael\'s favourite)', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 100.0},
+                                                                 'color': {'xy': {'x': 0.27, 'y': 0.12}},
+                                                                 'dynamics': {'duration': 800}}))),   # Nov 11: purple is the default 'lights on'
     'cozy': ('Cozy warm white', lambda: (stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 60.0},
                                                                  'color_temperature': {'mirek': 370},
                                                                  'dynamics': {'duration': 1500}}))),

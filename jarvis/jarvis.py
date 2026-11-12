@@ -14,7 +14,7 @@
 # Actions go through rig_control (port 7040) with its token, exactly like Siri does.
 # Settings (not secret): jarvis/jarvis.json   Log: /tmp/jarvis.log
 # =============================================================================
-import argparse, datetime as dt, json, os, re, subprocess, sys, urllib.request
+import argparse, datetime as dt, json, os, re, subprocess, sys, urllib.error, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RIG = os.path.dirname(HERE)
@@ -188,6 +188,8 @@ def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
             return "I can't reach the rig right now (%s)." % e.__class__.__name__
     try:
         rig(a)
+    except urllib.error.HTTPError as e:
+        return "The rig said no to '%s' (%s %s)." % (a, e.code, e.reason)
     except Exception as e:
         return "I couldn't reach the rig (%s)." % e.__class__.__name__
     return ACTIONS[a]
