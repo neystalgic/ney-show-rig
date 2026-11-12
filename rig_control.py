@@ -352,6 +352,8 @@ LOOKS = {
                                                         hub_setting('dmx_strobe', 'always'), hub_setting('dmx_on', True))),
     'showsafe': ('Photosensitive-safe light show: no strobe, no flashes, gentle colour changes, heads still move',
                  lambda: show_safe()),
+    'uvstars': ('UV on the stars: both spots hold the ceiling stars in UV, whatever else is running', lambda: hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always'))),
+    'uvoff': ('Spots back to the show (UV off the stars)', lambda: hub_setting('spot_fx', {})),
     'nostrobe': ('Light show -- non strobe', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                                       hub_setting('dmx_strobe', 'off'), hub_setting('dmx_on', True))),
     'heads_on': ('Moving heads powering up', lambda: head_power.request_on()),

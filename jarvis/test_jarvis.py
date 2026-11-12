@@ -4,7 +4,7 @@ import jarvis as j
 s = dict(j.DEFAULTS)
 cases = {
  'show mode': 'show', 'light show please': 'show', 'movie night': 'movienight', 'movie with the stars': 'movieuv',
- 'turn on the uv': 'movieuv', 'goodnight': 'night', "I'm going to bed": 'night', 'night light': 'nightlight',
+ 'turn on the uv': 'uvstars', 'goodnight': 'night', "I'm going to bed": 'night', 'night light': 'nightlight',
  'make them purple': 'color', 'turn the lights up': 'purple', "I can't see shit": 'purple', 'lights on': 'purple',
  'bright white please': 'color', 'rainbow': 'rainbow', 'strobe it': 'flash', 'lava lamp': 'lava',
  'heads off': 'heads_off', 'power the heads on': 'heads_on', 'lights off': 'off', 'status': 'status',
