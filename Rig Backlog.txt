@@ -30,7 +30,7 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
    (Nov 11) and stops on a Mac restart. Patch a COPY of rig_control.py so it starts and
    babysits beat_sender.py like its other modules (restart if it dies, back-off).
    away/beat-autostart/ + offline test + DEPLOY.txt.
-4. [SAFE] todo -- Jarvis step 0: command router. A small module that takes a sentence
+4. [SAFE] done Nov 11 (built live: jarvis/jarvis.py, 27-phrase tests) -- Jarvis step 0: command router. A small module that takes a sentence
    (typed for now; voice later) and maps it to ONE allowlisted action: rig_control looks
    (show, movieuv, night, rainbow, flash, hype, cozy, morning, nightlight), 'status', and
    'log weight <n>' (appends to Desktop/Weight Log.csv). Strobe/big moves need a 'yes'.
