@@ -46,3 +46,6 @@ Ney Hub.app/
 
 # preview frames sent to the phone
 previews/
+
+# --- Claude bridge requests/replies (Nov 12) ---
+bridge/

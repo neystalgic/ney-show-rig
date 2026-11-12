@@ -36,6 +36,7 @@ import head_power                                  # Hue Smart Plugs on the movi
 import hub_watchdog                                # restarts a frozen hub on its own (Nov 9)
 import light_schedule                              # wind-down 21:30, night light 23:00, morning 8:40-9:00
 import tap_switch                                  # Hue Tap Switch Mini: 1 show, 2 movie, 3 cycle, 4 night (Nov 11)
+import claude_bridge                               # Claude runs the rig through bridge/inbox, no TouchDesigner (Nov 12)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 7040
@@ -552,4 +553,36 @@ if __name__ == '__main__':
     def _hub_busy():                                # a show is on: running hub that hears sound
         return running('hue_hub.py') and not head_power.hub_quiet()
     light_schedule.start(hue_lights, _sched_stop, lambda: head_power.request_off(why='night light'), _hub_busy)
+    def _hub_summary():
+        try:
+            d = json.loads(urllib.request.urlopen('http://127.0.0.1:7020/api/live', timeout=2).read())
+            out = {k: d.get(k) for k in ('palette', 'vibe', 'bridge', 'blackout', 'heads', 'level')}
+            out.update(audio=(d.get('audio') or {}).get('status'), section=(d.get('audio') or {}).get('section'))
+            return out
+        except Exception as e:
+            return 'not answering (%s)' % e.__class__.__name__
+
+    def _bridge_status():
+        return dict(STATE, hub=running('hue_hub.py'), hub_live=_hub_summary(), beat_sender=running('beat_sender.py'),
+                    head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
+                    tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'))
+
+    def _reload():
+        time.sleep(1.0)
+        os._exit(1)                                 # launchd (KeepAlive) starts rig_control again with the new code
+
+    def _hub_restart():
+        with LOCK:
+            stop_hub()
+            time.sleep(20)                          # never back-to-back
+            launch_hub()
+
+    def _beat_start():
+        if not running('beat_sender.py'):
+            subprocess.Popen(['/usr/bin/python3', '-u', os.path.join(HERE, 'beat_sender.py')], cwd=HERE,
+                             stdout=open('/tmp/beat_sender.out', 'a'), stderr=subprocess.STDOUT, start_new_session=True)
+
+    claude_bridge.start(dict(looks=set(LOOKS), look=lambda n: threading.Thread(target=apply, args=(n,), daemon=True).start(),
+                             ask=ask_jarvis, status=_bridge_status, reload=_reload, hub_restart=_hub_restart,
+                             beat_start=_beat_start))
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
