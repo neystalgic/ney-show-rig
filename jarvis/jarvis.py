@@ -27,6 +27,7 @@ DEFAULTS = {'model': 'qwen2.5:7b', 'ollama': 'http://127.0.0.1:11434', 'rig': 'h
 ACTIONS = {
     'purple':      'Purple, full brightness.',
     'show':        'Light show. Everything moves to the music.',
+    'showuv':      'Light show with the UV stars. Fan off, everyone seated.',
     'flash':       'Multicolour flash.',
     'hype':        'Hype mode.',
     'music':       'Music mode.',
@@ -52,7 +53,7 @@ ACTIONS = {
     'status':      None,                      # says how the rig is doing
     'weight':      None,                      # logs a weight, needs a number
 }
-CONFIRM = {'show', 'flash', 'hype', 'strobe'}   # strobe / fast movement: ask first
+CONFIRM = {'show', 'showuv', 'flash', 'hype', 'strobe'}   # strobe / fast movement: ask first
 
 # Word rules, most specific first. (pattern, action)
 RULES = [
@@ -62,6 +63,7 @@ RULES = [
     (r'\b(log|weigh|weight)\b.*\b(\d{2,3}(\.\d)?)\b|\b(\d{3}(\.\d)?)\s*(lb|lbs|pounds)\b', 'weight'),
     (r'\bstatus\b|how.*(rig|everything|system).*(doing|going)|you (up|there|alive)', 'status'),
     (r'\bnight ?light\b', 'nightlight'),
+    (r'\b(show|party|light ?show)\b.*\b(uv|stars?)\b|\b(uv|stars?)\b.*\b(show|party)\b', 'showuv'),
     (r'\b(uv|stars?)\b', 'movieuv'),
     (r'\bmovie glow\b', 'movieglow'),
     (r'\bmovie|film|netflix\b', 'movienight'),

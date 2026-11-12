@@ -280,6 +280,12 @@ def show_full():
     hub_setting('dmx_on', True)
 
 
+def show_uv():
+    """Nov 11: the light show on the heads + both spots holding the UV stars, glowing with the music."""
+    show_full()
+    hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always'))
+
+
 def night_mode():
     """Button 4: heads park and power off, lamps to the red night light."""
     fill_boost(False)
@@ -317,6 +323,7 @@ LOOKS = {
                                                                  'dynamics': {'duration': 1500}}))),
     'movienight': ('Movie night', lambda: movie_flag()),
     'movieuv': ('Movie night: UV stars from both spots, fill speaker +6 dB', lambda: movie_uv()),
+    'showuv': ('Light show with the UV stars: heads to the music, both spots holding UV on the stars', lambda: show_uv()),
     'show': ('Light show: everything together to the music, strobe only in drops', lambda: show_full()),
     'night': ('Night mode: heads off, red night light', lambda: night_mode()),
     'hype': ('Hype: every lamp + head one bright colour, fast moves', lambda: (wake_zephyrus(), stop_ambient(),

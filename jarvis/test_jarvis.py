@@ -65,3 +65,7 @@ assert ls.settings()['winddown'] == '00:00'
 json.dump({'winddown': '00:00', 'night': '00:20', '_expires': '2000-01-01 12:00'}, open(sp, 'w'))
 assert ls.settings()['winddown'] == '22:30'
 print('night tests passed too')
+for t in ('light show with the uv stars', 'show mode with stars', 'uv stars light show'):
+    assert j.by_rules(t)['action'] == 'showuv', t
+assert j.by_rules('movie with the stars')['action'] == 'movieuv'
+print('showuv ok')
