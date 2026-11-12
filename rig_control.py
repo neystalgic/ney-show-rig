@@ -245,19 +245,22 @@ SPOT_FX_UV_SKY = {"hold": {"az": 192, "lean": 46, "drift": 0}, "hold_when": "mov
 
 def fill_boost(on):
     """Fill speaker +6 dB for movies: MIDI CC 102 (channel 16) on the IAC bus -> map it in Ableton to the fill
-    track's Utility gain (CC 127 = +6 dB, 0 = 0 dB). Quietly does nothing if MIDI isn't available."""
+    track's Utility gain (CC 127 = +6 dB, 0 = 0 dB). Never raises; what happened goes in STATE['fill']."""
     try:
         import rtmidi
         mo = rtmidi.MidiOut()
         names = mo.get_ports()
         idx = next((i for i, n in enumerate(names) if 'IAC' in n), None)
         if idx is None:
+            STATE['fill'] = 'no IAC port (ports: %s) -- enable IAC Driver in Audio MIDI Setup' % (names or 'none')
             return
         mo.open_port(idx)
         mo.send_message([0xB0 | 15, 102, 127 if on else 0])
         mo.close_port()
-    except Exception:
-        pass
+        STATE['fill'] = '%s: sent CC102=%d ch16 on %s at %s' % ('UP +6 dB' if on else 'normal', 127 if on else 0,
+                                                             names[idx], time.strftime('%H:%M:%S'))
+    except Exception as e:
+        STATE['fill'] = 'failed: %s: %s' % (e.__class__.__name__, e)
 
 
 def movie_uv():
@@ -329,6 +332,8 @@ LOOKS = {
     'purplenight': ('Purple night light: heads park and power off, lamps dim purple', lambda: (
         head_power.request_off(why='purplenight'), stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 15.0},
         'color': {'xy': {'x': 0.27, 'y': 0.12}}, 'dynamics': {'duration': 3000}}))),   # Nov 11: Michael asked for purple at bedtime
+    'fillup': ('Fill speaker +6 dB (MIDI CC102 to Ableton)', lambda: fill_boost(True)),
+    'filldown': ('Fill speaker back to normal', lambda: fill_boost(False)),
     'show': ('Light show: everything together to the music, strobe only in drops', lambda: show_full()),
     'night': ('Night mode: heads off, red night light', lambda: night_mode()),
     'hype': ('Hype: every lamp + head one bright colour, fast moves', lambda: (wake_zephyrus(), stop_ambient(),
