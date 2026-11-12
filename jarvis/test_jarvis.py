@@ -5,8 +5,8 @@ s = dict(j.DEFAULTS)
 cases = {
  'show mode': 'show', 'light show please': 'show', 'movie night': 'movienight', 'movie with the stars': 'movieuv',
  'turn on the uv': 'movieuv', 'goodnight': 'night', "I'm going to bed": 'night', 'night light': 'nightlight',
- 'make them purple': 'purple', 'turn the lights up': 'purple', "I can't see shit": 'purple', 'lights on': 'purple',
- 'bright white please': 'bright', 'rainbow': 'rainbow', 'strobe it': 'flash', 'lava lamp': 'lava',
+ 'make them purple': 'color', 'turn the lights up': 'purple', "I can't see shit": 'purple', 'lights on': 'purple',
+ 'bright white please': 'color', 'rainbow': 'rainbow', 'strobe it': 'flash', 'lava lamp': 'lava',
  'heads off': 'heads_off', 'power the heads on': 'heads_on', 'lights off': 'off', 'status': 'status',
  'how is the rig doing': 'status', 'log 268.4': 'weight', 'I weigh 267': 'weight', '266.5 lbs': 'weight',
  'good morning': 'morning', 'cozy': 'cozy', 'wake the zephyrus': 'wake',
@@ -31,7 +31,7 @@ d = tempfile.mkdtemp(); p = os.path.join(d, 'w.csv')
 assert j.do({'action': 'weight', 'value': 268.4}, s, rig, p) == 'Logged 268.4 pounds.'
 assert open(p).read().splitlines()[-1].endswith(',268.4,via Jarvis')
 assert j.do({'action': 'weight', 'value': 26.0}, s, rig, p) == 'What number should I log?'
-assert j.handle('make it purple', s, dry=True).startswith('[dry] would do: purple')
+assert j.handle('make it purple', s, dry=True).startswith('[dry] would do: color')
 print('all jarvis tests passed (%d phrases)' % len(cases))
 
 # --- Nov 11 night: schedule commands, several things in one sentence, Siri mode ---
@@ -50,9 +50,9 @@ assert 'midnight' in msg
 j.SCHEDULE_FILE = sp
 calls.clear()
 both = j.understand_all("turn the lights purple and don't start dimming them till midnight", s)
-assert [i['action'] for i in both] == ['purple', 'later'], both
+assert [i['action'] for i in both] == ['color', 'later'], both
 out = j.handle("Turn the lights purple and dont start dimming them till midnight", s, rig=rig)
-assert calls == ['purple'] and 'midnight' in out, (calls, out)
+assert calls[0].startswith('set:') and 'midnight' in out, (calls, out)
 out = j.handle('show mode', s, rig=rig, confirm=False)
 assert calls[-1] == 'show' and out.startswith('Strobes in the drops'), out
 assert 'normal' in j.handle('schedule back to normal', s, rig=rig) and open(sp).read().strip() == '{}'
@@ -73,3 +73,25 @@ for t, w in {"I'm producing": 'producing', 'studio mode': 'producing', 'working 
              'fill speaker off': 'producing', 'fill back on': 'fillon'}.items():
     assert j.by_rules(t)['action'] == w, t
 print('producing ok')
+
+# --- Nov 12: comprehension upgrade ---
+assert j.by_rules('Jarvis')['action'] == 'nothing' and j.by_rules('')['action'] == 'nothing'
+assert j.by_rules('Jarvis, movie night')['action'] == 'movienight'
+i = j.by_rules('make the lights blue at 40 percent'); assert i['action'] == 'color' and i['value'] == {'name': 'blue', 'bri': 40}, i
+i = j.by_rules('hot pink'); assert i['value']['name'] == 'hot pink'
+i = j.by_rules('dim the lights'); assert i == {'action': 'level', 'value': 30}, i
+i = j.by_rules('lights at 70 percent'); assert i == {'action': 'level', 'value': 70}, i
+assert j.by_rules('what can you do')['action'] == 'help'
+assert j.by_rules('red glow')['action'] == 'redglow' and j.by_rules('purple night lights')['action'] == 'purplenight'
+assert j.by_rules('red night light')['action'] == 'nightlight'
+calls.clear(); out = j.handle('set it to sky blue at 50 percent', s, rig=rig)
+assert out == 'Sky blue, 50 percent.' and json.loads(calls[0][4:])['color']['xy']['x'] == 0.22, (out, calls)
+calls.clear(); out = j.handle('warm white', s, rig=rig); assert 'color_temperature' in calls[0]
+# model path: colour from mood, says what it heard; junk refused; bare name never acts
+out = j.handle('something moody for gaming', s, rig=rig) if False else None
+fake_c = lambda url, body, t: {'message': {'content': json.dumps({'action': 'color', 'color': 'purple', 'brightness': 40})}}
+i = j.by_model('something moody for gaming', s, fake_c); assert i['action'] == 'color' and i['value'] == {'name': 'purple', 'bri': 40}
+fake_bad = lambda url, body, t: {'message': {'content': json.dumps({'action': 'color', 'color': 'chartreuse-ish'})}}
+assert j.by_model('x', s, fake_bad) is None
+calls.clear(); out = j.handle('Jarvis', s, rig=rig); assert calls == [] and "listening" in out
+print('comprehension tests passed')

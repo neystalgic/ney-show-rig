@@ -408,6 +408,16 @@ def ask_jarvis(text):
     def rig(p):
         if p == 'status':
             return json.dumps({'look': STATE.get('look')})
+        if p.startswith('set:'):                    # a colour / brightness from Jarvis (validated there)
+            body = json.loads(p[4:])
+
+            def _set():
+                with LOCK:
+                    stop_all()
+                    hue_lights(body)
+                    STATE.update(look='custom', since=time.strftime('%H:%M'))
+            threading.Thread(target=_set, daemon=True).start()
+            return ''
         if p not in LOOKS:
             raise KeyError(p)
         threading.Thread(target=apply, args=(p,), daemon=True).start()
@@ -599,7 +609,8 @@ if __name__ == '__main__':
     def _bridge_status():
         return dict(STATE, hub=running('hue_hub.py'), hub_live=_hub_summary(), beat_sender=running('beat_sender.py'),
                     head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
-                    tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'))
+                    tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'),
+                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines())
 
     def _reload():
         time.sleep(1.0)

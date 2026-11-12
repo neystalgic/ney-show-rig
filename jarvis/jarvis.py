@@ -53,10 +53,41 @@ ACTIONS = {
     'wake':        'Waking the Zephyrus.',
     'later':       None,                      # tonight only: no dimming until <time>
     'schedule_normal': None,                  # back to the normal 22:30 / 23:00 schedule
+    'color':       None,                      # any colour, optional brightness ("blue at 40 percent")
+    'level':       None,                      # brightness only ("dim the lights", "50 percent")
+    'help':        None,                      # "what can you do"
     'status':      None,                      # says how the rig is doing
     'weight':      None,                      # logs a weight, needs a number
 }
 CONFIRM = {'show', 'showuv', 'flash', 'hype', 'strobe'}   # strobe / fast movement: ask first
+
+# Any colour by name (Hue xy). White/warm white use colour temperature instead.
+COLOURS = {
+    'red': (0.69, 0.30), 'orange': (0.60, 0.38), 'amber': (0.56, 0.41), 'gold': (0.52, 0.44),
+    'yellow': (0.48, 0.47), 'lime': (0.40, 0.50), 'green': (0.17, 0.70), 'teal': (0.17, 0.40),
+    'turquoise': (0.17, 0.36), 'cyan': (0.16, 0.30), 'sky blue': (0.22, 0.27), 'light blue': (0.22, 0.27),
+    'blue': (0.15, 0.06), 'navy': (0.15, 0.05), 'indigo': (0.18, 0.06), 'violet': (0.24, 0.09),
+    'purple': (0.27, 0.12), 'lavender': (0.29, 0.20), 'magenta': (0.38, 0.16), 'pink': (0.45, 0.23),
+    'hot pink': (0.50, 0.24), 'rose': (0.48, 0.28), 'white': 250, 'warm white': 400,
+}
+COLOUR_RE = re.compile(r'\b(%s)\b' % '|'.join(sorted((re.escape(c) for c in COLOURS), key=len, reverse=True)))
+
+
+def find_colour(t):
+    m = COLOUR_RE.search(t)
+    return m.group(1) if m else None
+
+
+def find_percent(t):
+    m = re.search(r'\b(\d{1,3})\s*(%|percent)', t)
+    if m:
+        return max(1, min(100, int(m.group(1))))
+    if re.search(r'\b(dim|dimmer|low|lower|down|soft|softer)\b', t):
+        return 30
+    if re.search(r'\b(full|max|brightest|all the way up)\b', t):
+        return 100
+    return None
+
 
 # Word rules, most specific first. (pattern, action)
 RULES = [
@@ -86,11 +117,13 @@ RULES = [
     (r'\brainbow\b', 'rainbow'),
     (r'\bupbeat\b', 'upbeat'),
     (r'\b(breathe|breathing|calm|chill)\b', 'breathe'),
-    (r'\b(cozy|warm)\b', 'cozy'),
+    (r'\bcozy\b|\bwarm\b(?! white)', 'cozy'),
     (r'\bmusic mode\b', 'music'),
-    (r'\b(bright )?white\b', 'bright'),
+    ('__colour__', 'color'),
+    (r'\b(\d{1,3})\s*(%|percent)|\b(dim|dimmer) (the |them|it)|\b(lights?|them|it) (down|lower|dimmer)\b|^dim\b', 'level'),
+    (r'what can you do|\bhelp\b|what do you (know|understand)|commands', 'help'),
     (r'\b(lights? (off|out)|turn (it|them|everything) off|kill the lights)\b', 'off'),
-    (r'\bpurple\b|lights? on\b|turn (it|them|the lights?) up|brighter|can.?t see|too dark', 'purple'),
+    (r'lights? on\b|turn (it|them|the lights?) up|brighter|can.?t see|too dark', 'purple'),
 ]
 
 
@@ -115,9 +148,19 @@ def log(msg):
 # -- understanding --
 def by_rules(text):
     t = text.lower().strip()
+    t = re.sub(r'^(hey |ok |okay )?(jarvis|siri)[,.!]?\s*', '', t)        # "Jarvis, ..." -> the command
+    if not re.sub(r'[^a-z0-9]', '', t):
+        return {'action': 'nothing', 'value': None}
     for pat, action in RULES:
+        if pat == '__colour__':
+            c = find_colour(t)
+            if c:
+                return {'action': 'color', 'value': {'name': c, 'bri': find_percent(t)}}
+            continue
         m = re.search(pat, t)
         if m:
+            if action == 'level':
+                return {'action': 'level', 'value': find_percent(t) or 30}
             if action == 'later':
                 return {'action': 'later', 'value': m.group('when')}
             if action == 'weight':
@@ -127,17 +170,25 @@ def by_rules(text):
     return None
 
 
-SYSTEM = ("You control a home light rig. Reply with JSON only: {\"action\": <one of %s or \"unknown\">, "
-          "\"value\": <number for weight, else null>}. Pick the single best action for the user's sentence. "
-          "Purple is the owner's favourite colour: use 'purple' for lights on / brighter. Never use 'bright' "
-          "(white) unless the user says white. If nothing fits, action is \"unknown\".")
-
-
+SYSTEM = """You are Jarvis, the voice control for Michael's room lights (Hue lamps, moving heads, UV spots).
+Turn his sentence into ONE action. Reply with JSON only:
+{"action": "<one of the actions below or unknown>", "color": "<colour name or null>", "brightness": <1-100 or null>, "value": <number for weight or null>}
+Actions:
+- color: set every lamp to one colour (put the colour in "color", brightness if he said one)
+- level: change brightness only (put it in "brightness")
+- show: full light show to the music. showuv: light show plus UV stars. flash: multicolour strobe. hype: fast bright party.
+- music: lights react to music calmly. lava: slow lava-lamp show. rainbow: all lamps one colour, breathing through the rainbow.
+- upbeat: bright rainbow drifting. breathe: calm breathing colours. redglow: dim reds/pinks/purples drifting. cozy: warm dim.
+- movienight: movie lights. movieuv: movie with UV stars. movieglow: dim movie glow.
+- morning: soft blue. nightlight: red night light. purplenight: dim purple night light, heads off. night: bedtime, heads off, red.
+- heads_on / heads_off: moving heads power. off: all lights off. producing: fill speaker off for music production. fillon: fill back on.
+- status: how the rig is doing. help: what Jarvis can do. later: no dimming until a time (put the time in "value" as text).
+Mood words map to looks: chill/relax -> breathe; party/turn up -> hype; romantic -> redglow; focus/work -> color (soft blue, 70);
+gaming/moody -> color (purple or blue, 40); sleep -> night. If the sentence is not about the lights, rig or schedule, action is "unknown"."""
 def by_model(text, s, post=None):
     """Ask Ollama. Returns an allowlisted action or None. post() is swappable for tests."""
     body = {'model': s['model'], 'stream': False, 'format': 'json',
-            'messages': [{'role': 'system', 'content': SYSTEM % json.dumps(sorted(ACTIONS))},
-                         {'role': 'user', 'content': text}],
+            'messages': [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': text}],
             'options': {'temperature': 0}}
     try:
         raw = (post or _post)(s['ollama'] + '/api/chat', body, 30)
@@ -148,13 +199,22 @@ def by_model(text, s, post=None):
     action = str(out.get('action', '')).strip().lower()
     if action not in ACTIONS:                     # the allowlist is the law
         return None
+    if action == 'color':
+        c = str(out.get('color') or '').lower().strip()
+        if c not in COLOURS:
+            return None
+        bri = out.get('brightness')
+        return {'action': 'color', 'value': {'name': c, 'bri': int(bri) if isinstance(bri, (int, float)) else None}, 'model': True}
+    if action == 'level':
+        bri = out.get('brightness')
+        return {'action': 'level', 'value': int(bri) if isinstance(bri, (int, float)) else 30, 'model': True}
     value = out.get('value')
     if action == 'weight':
         try:
             value = float(value)
         except (TypeError, ValueError):
             value = None
-    return {'action': action, 'value': value}
+    return {'action': action, 'value': value, 'model': True}
 
 
 def understand(text, s, post=None):
@@ -172,7 +232,9 @@ def understand_all(text, s, post=None):
             found.append(i)
     if len(found) > 1:
         return sorted(found, key=lambda i: i['action'] in ('later', 'schedule_normal', 'weight', 'status'))
-    return [understand(text, s, post)]
+    i = understand(text, s, post)
+    i['heard'] = text
+    return [i]
 
 
 SCHEDULE_FILE = os.path.join(RIG, 'light_schedule.json')
@@ -252,8 +314,27 @@ def log_weight(value, path=WEIGHT_LOG):
 def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
     a, v = intent['action'], intent.get('value')
     rig = rig or (lambda p: _rig(p, s))
+    if a == 'nothing':
+        return "I'm listening. Say what you want after the beep, like 'blue at 50 percent' or 'movie night'."
     if a == 'unknown':
-        return "I didn't catch that. Try: show, movie night, purple, night, or status."
+        return "I heard '%s' but I'm not sure what you want. Try a colour, a look, or 'what can you do'." % intent.get('heard', '')
+    if a == 'help':
+        return ("I can set any colour and brightness, like 'pink at 40 percent'. Looks: light show, show with the stars, "
+                "movie night, rainbow, cozy, chill, morning, night light, goodnight. Also heads on or off, lights off, "
+                "I'm producing, no dimming until midnight, log your weight, and status.")
+    if a == 'color':
+        name, bri = v['name'], v.get('bri') or 100
+        c = COLOURS[name]
+        body = {'on': {'on': True}, 'dimming': {'brightness': float(bri)}, 'dynamics': {'duration': 800}}
+        if isinstance(c, tuple):
+            body['color'] = {'xy': {'x': c[0], 'y': c[1]}}
+        else:
+            body['color_temperature'] = {'mirek': c}
+        rig('set:' + json.dumps(body))
+        return '%s, %d percent.' % (name.capitalize(), bri)
+    if a == 'level':
+        rig('set:' + json.dumps({'on': {'on': True}, 'dimming': {'brightness': float(v)}, 'dynamics': {'duration': 800}}))
+        return 'Lights at %d percent.' % v
     if a == 'weight':
         if v is None or not 150 <= v <= 400:
             return 'What number should I log?'
@@ -299,8 +380,24 @@ def handle(text, s, dry=False, ask=input, rig=None, confirm=True):
             elif ask('That one strobes / moves fast. Everyone seated? (y/n) ').strip().lower()[:1] != 'y':
                 out.append('Okay, skipped the light show.')
                 continue
-        out.append(do(intent, s, rig))
+        said = do(intent, s, rig)
+        if intent.get('model') and intent['action'] not in ('status', 'help'):
+            said = "Heard '%s'. %s" % (intent.get('heard', text), said)
+        out.append(said)
     return ' '.join(out)
+
+
+def ask_rig(text, s):
+    """Everything goes through rig_control's /ask -- the same brain Siri uses."""
+    with open(TOKEN_FILE) as f:
+        token = f.read().strip()
+    req = urllib.request.Request(s['rig'] + '/ask', json.dumps({'text': text}).encode(),
+                                 {'Content-Type': 'application/json', 'X-Token': token})
+    try:
+        with urllib.request.urlopen(req, timeout=40) as r:
+            return r.read().decode('utf-8', 'replace')
+    except Exception as e:
+        return "I can't reach the rig (%s)." % e.__class__.__name__
 
 
 def main():
@@ -310,8 +407,9 @@ def main():
     ap.add_argument('-c', dest='command')
     args = ap.parse_args()
     s = settings()
+    run = (lambda t: handle(t, s, dry=True)) if args.dry else (lambda t: ask_rig(t, s))
     if args.command:
-        out = handle(args.command, s, args.dry)
+        out = run(args.command)
         print(out)
         if args.say:
             say(out, s)
@@ -326,7 +424,7 @@ def main():
             break
         if not text:
             continue
-        out = handle(text, s, args.dry)
+        out = run(text)
         print('%s> %s' % (s['name'].lower(), out))
         if args.say:
             say(out, s)
