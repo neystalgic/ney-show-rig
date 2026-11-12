@@ -27,3 +27,7 @@ STILL TO ORDER
 
 LATER (not yet)
   [ ] Hue Smart Plugs for the 4 heads (fans only stop when power is cut) -- see Rest Mode Plan.txt
+
+Tue Nov 17 (est.)  Hue Tap Switch Mini + extra smart plugs (was Thu Nov 12)
+             -> pair in the Hue app with NO actions on the buttons; name it with "tap";
+                tap_switch.py wakes up on its own (1 show, 2 movie+UV, 3 cycle, 4 night)
