@@ -1,0 +1,45 @@
+UNREAL BEAT DECK -- part 1: make something in Unreal pulse with the rig's music
+================================================================================
+The Mac runs beat_sender.py, which sends the hub's beat to the Zephyrus as OSC on
+port 7700 (addresses listed at the top of beat_sender.py). Unreal listens and reacts.
+Node names below are Unreal 5's; type them into the Blueprint search box.
+
+A. ONE-TIME SETUP (Zephyrus)
+ 1. Edit > Plugins > search "OSC" > tick it > Restart Now.
+ 2. The first time you press Play after step B, Windows asks about the firewall:
+    tick PRIVATE networks and Allow. (If you missed it: Windows Security > Firewall >
+    Allow an app > Unreal Editor > Private.)
+
+B. THE LISTENER (Level Blueprint: toolbar Blueprints icon > Open Level Blueprint)
+ 1. Event BeginPlay -> "Create OSC Server"
+      Receive IP Address: 0.0.0.0   Port: 7700   Multicast Loopback: off
+      Start Listening: ticked        Server Name: Ney
+    Right-click its Return Value > Promote to Variable > name it OSCServer.
+ 2. Drag OSCServer out > "Bind Event to On OSC Message Received".
+    From its red Event pin drag out > "Create Event" > "Create a matching event"
+    > rename it OnNeyOSC.
+ 3. Inside OnNeyOSC: Message > "Get OSC Message Address" > "Convert OSC Address To
+    String" > "Switch on String". Add pins: /ney/kick   /ney/onbeat   /ney/colour
+ 4. /ney/kick pin -> "Get OSC Message Float At Index" (Message, Index 0)
+    -> set a new float variable Kick.
+ 5. /ney/colour pin -> three "Get OSC Message Float At Index" (Index 0, 1, 2)
+    -> "Make LinearColor" (R, G, B, A=1) -> set a new variable RigColour.
+
+C. THE PULSE (the first visible win)
+ 1. Drop a Point Light into the room twin (Place Actors > Lights), near the projector
+    wall. Intensity 0 to start.
+ 2. Select it in the level, then in the Level Blueprint right-click > "Create a
+    Reference to PointLight".
+ 3. Event Tick -> "Set Intensity" (Target: the light, New Intensity: Kick * 8000)
+             -> "Set Light Color" (Target: the light, New Light Color: RigColour).
+ 4. Compile, Play (Alt+P), and play music through the hub. The light should thump on
+    the kicks in the lamps' colour. That's Unreal in the show.
+
+D. IF NOTHING HAPPENS
+ - On the Mac, beat_sender.json must list the Zephyrus's address, port 7700.
+ - Firewall (A2). Both machines on the same network.
+ - The hub must be running for there to be a beat (quiet room = no kicks; /ney/onbeat
+   still ticks with the clock).
+
+NEXT PARTS (the away loop builds these as text): Niagara sacred-geometry system driven
+by /ney/kick and /ney/drop; DMX plugin previs of the 4 heads + 2 spots; nDisplay notes.

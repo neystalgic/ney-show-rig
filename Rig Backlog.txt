@@ -10,12 +10,12 @@ Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never to
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
 --- QUEUE (top = next) --------------------------------------------------------------
-1. [SAFE] todo -- Rig 2.0 Phase 2: beat stream. A module that broadcasts the hub's
+1. [SAFE] done Nov 11 (built live with Michael: beat_sender.py, beat_listen.py) -- Rig 2.0 Phase 2: beat stream. A module that broadcasts the hub's
    beat/tempo/energy/section/colours ~30x a second over UDP (OSC), plus a small
    listener script to prove it. away/beat-stream/. PRIORITY: Michael wants to
    test it with Unreal tonight (Nov 11) -- include an OSC sender mode aimed at the Zephyrus
    (address set in a .json, port 7700) and a DEPLOY.txt for running it on the Mac. Offline test with a fake hub.
-2. [SAFE] todo -- Unreal on the Zephyrus: step-by-step "Unreal Beat Deck.txt" (OSC
+2. [SAFE] in progress (part 1 written Nov 11: OSC listener + pulsing light; next: Niagara, DMX previs, nDisplay) -- Unreal on the Zephyrus: step-by-step "Unreal Beat Deck.txt" (OSC
    receiver from the beat stream, Niagara sacred-geometry system, DMX plugin previs of
    the 4 heads + 2 spots, nDisplay notes). Plain text, no installs.
    PRIORITY: Michael follows it tonight (Nov 11) -- start with plugins to enable and a
@@ -24,7 +24,8 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
    (typed for now; voice later) and maps it to ONE allowlisted action: rig_control looks
    (show, movieuv, night, rainbow, flash, hype, cozy, morning, nightlight), 'status', and
    'log weight <n>' (appends to Desktop/Weight Log.csv). Strobe/big moves need a 'yes'.
-   Rules-based matching first, with an optional LLM hook (Ollama local, Claude API later)
+   Rules-based matching first, with an optional LLM hook (Ollama, local and free only --
+   Michael chose NO paid API)
    that may only return an allowlisted action name. away/jarvis-router/ + offline tests.
    Ready for Michael to try tonight (Nov 11).
 4. [SAFE] todo -- Watchdog: catch a hub stuck at start-up while a look is busy
