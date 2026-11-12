@@ -16,7 +16,7 @@ import json, os, threading, time
 HERE = os.path.dirname(os.path.abspath(__file__))
 SETTINGS = os.path.join(HERE, 'light_schedule.json')
 LOG = '/tmp/light_schedule.log'
-DEFAULTS = {'enabled': True, 'winddown': '21:30', 'night': '23:00', 'sunrise': '08:40', 'sunrise_min': 20}
+DEFAULTS = {'enabled': True, 'winddown': '22:30', 'night': '23:00', 'sunrise': '08:40', 'sunrise_min': 20}
 STATE = {'done': {}, 'last': 'starting', 'running': None}
 
 
@@ -53,7 +53,8 @@ def _ramp(lights, steps):
 
 
 def winddown(lights):
-    _ramp(lights, [(45, 400, None, 3), (40, 430, None, 300), (35, 454, None, 300)])
+    # Nov 11: red, not amber (amber 'looks like shit'); starts 22:30, eases down toward the 12% night light
+    _ramp(lights, [(40, None, (0.69, 0.30), 60), (30, None, (0.69, 0.30), 600), (22, None, (0.69, 0.30), 600)])
 
 
 def night(lights, heads_off):
