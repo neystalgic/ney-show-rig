@@ -318,6 +318,18 @@ def show_uv():
     hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always'))
 
 
+def show_safe():
+    """Nov 12: a light show for guests who may be photosensitive. No strobe of any kind (heads, spots, flash mode),
+    no UV hold, calmer music reaction; heads still move with the music."""
+    wake_zephyrus(); stop_ambient(); fill_on(True); fill_boost(False)
+    head_power.request_on(quiet=True)
+    start_hub('music')
+    hub_setting('dmx_strobe', 'off')
+    hub_setting('spot_fx', {})
+    hub_vibe('rainbow', 0.5)
+    hub_setting('dmx_on', True)
+
+
 def night_mode():
     """Button 4: heads park and power off, lamps to the red night light."""
     fill_boost(False)
@@ -338,6 +350,8 @@ LOOKS = {
     'wake': ('Waking the Zephyrus', lambda: wake_zephyrus()),
     'strobe': ('Light show -- strobe version', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                                         hub_setting('dmx_strobe', 'always'), hub_setting('dmx_on', True))),
+    'showsafe': ('Photosensitive-safe light show: no strobe, no flashes, gentle colour changes, heads still move',
+                 lambda: show_safe()),
     'nostrobe': ('Light show -- non strobe', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                                       hub_setting('dmx_strobe', 'off'), hub_setting('dmx_on', True))),
     'heads_on': ('Moving heads powering up', lambda: head_power.request_on()),
