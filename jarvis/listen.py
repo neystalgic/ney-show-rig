@@ -47,6 +47,15 @@ def pick_mic(sd, want):
     return i, sd.query_devices(i)['name'] if i is not None and i >= 0 else 'default'
 
 
+def my_chime():
+    """Michael's own sound wins: drop a file named my_chime.wav / .aif / .aiff / .mp3 / .m4a into jarvis/sounds."""
+    for ext in ('wav', 'aif', 'aiff', 'mp3', 'm4a'):
+        p = os.path.join(HERE, 'sounds', 'my_chime.' + ext)
+        if os.path.isfile(p):
+            return p
+    return None
+
+
 def ask_rig(text):
     with open(os.path.join(RIG, 'rig_control.token')) as f:
         tok = f.read().strip()
@@ -135,7 +144,7 @@ def main():
                 if score >= WAKE_THRESHOLD and time.time() - last_wake > 2.0:
                     last_wake = time.time()
                     log('wake (%.2f)' % score)
-                    ch = os.path.join(HERE, 'sounds', s.get('chime') or '')
+                    ch = my_chime() or os.path.join(HERE, 'sounds', s.get('chime') or '')
                     subprocess.Popen(['/usr/bin/afplay', ch if os.path.isfile(ch) else '/System/Library/Sounds/Tink.aiff'])
                     ears.reset()
                     mode = 'hear'
