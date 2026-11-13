@@ -351,6 +351,41 @@ def guest_mode(on):
         json.dump({'guest': bool(on), 'since': time.strftime('%Y-%m-%d %H:%M'), 'node': res}, f)
 
 
+COUCH_HOLD = os.path.join(HERE, 'light_schedule.json')
+
+
+def scarlett_present():
+    """Is the MacBook docked? (the Scarlett is on the desk's USB)"""
+    out = subprocess.run(['/usr/sbin/ioreg', '-p', 'IOUSB', '-w0'], capture_output=True, text=True).stdout
+    return 'scarlett' in out.lower()
+
+
+def couch_mode():
+    """Nov 13: producing on the couch (MacBook unplugged, headphones / laptop speakers). The hub stops cleanly so the
+    watchdog never 'restarts a frozen hub', heads power off, lamps go to a dim purple working light, and tonight's
+    wind-down / night light are held until Michael says goodnight (or docks again). Morning blue still runs."""
+    head_power.request_off(why='couch mode')
+    stop_all()
+    hue_lights({'on': {'on': True}, 'dimming': {'brightness': 35.0}, 'color': {'xy': {'x': 0.27, 'y': 0.12}},
+                'dynamics': {'duration': 2000}})
+    tomorrow = time.strftime('%Y-%m-%d', time.localtime(time.time() + 86400))
+    with open(COUCH_HOLD, 'w') as f:
+        json.dump({'enabled': False, '_expires': tomorrow + ' 08:00', '_note': 'couch mode hold (Nov 13 feature)'}, f)
+    STATE['couch'] = True
+
+
+def desk_mode():
+    """Back at the desk: the normal schedule resumes. Lights are left as they are."""
+    try:
+        with open(COUCH_HOLD) as f:
+            if 'couch mode hold' in json.load(f).get('_note', ''):
+                with open(COUCH_HOLD, 'w') as g:
+                    g.write('{}\n')
+    except (OSError, ValueError):
+        pass
+    STATE['couch'] = False
+
+
 def show_safe():
     """Nov 12: a light show for guests who may be photosensitive. No strobe of any kind (heads, spots, flash mode),
     no UV hold, calmer music reaction; heads still move with the music."""
@@ -389,6 +424,8 @@ LOOKS = {
     'uvoff': ('Spots back to the show (UV off the stars)', lambda: hub_setting('spot_fx', {})),
     'guest_on': ('Guest mode ON: strobes blocked at the Pi, any strobe look becomes the safe show', lambda: guest_mode(True)),
     'guest_off': ('Guest mode OFF: strobes allowed again (sparingly)', lambda: guest_mode(False)),
+    'couch': ('Couch mode: hub off, heads off, dim purple, bedtime held until you say goodnight', lambda: couch_mode()),
+    'desk': ('Back at the desk: normal schedule again', lambda: desk_mode()),
     'nostrobe': ('Light show -- non strobe', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                                       hub_setting('dmx_strobe', 'off'), hub_setting('dmx_on', True))),
     'heads_on': ('Moving heads powering up', lambda: head_power.request_on()),
@@ -440,6 +477,8 @@ LOOKS['rest'] = ('Rest mode', LOOKS['off'][1])
 def apply(look):
     if STATE.get('guest') and look in STROBE_LOOKS:  # guest mode: never a strobe look
         look = 'showsafe'
+    if look in ('night', 'purplenight', 'nightlight') and STATE.get('couch'):
+        desk_mode()                                 # saying goodnight ends the couch hold
     with LOCK:
         STATE.update(busy=True, last_error=None)
         try:
@@ -707,7 +746,7 @@ if __name__ == '__main__':
         return dict(STATE, hub=running('hue_hub.py'), hub_live=_hub_summary(), beat_sender=running('beat_sender.py'),
                     head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
                     tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'),
-                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(), rotate=STATE.get('rotate'),
+                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(), rotate=STATE.get('rotate'), dock=STATE.get('dock'), couch=STATE.get('couch'),
                     pi_hue_key=__import__('pi_hue_key').STATUS.get('last'), pi_deploy=__import__('pi_deploy').STATUS)
 
     def _brain_poll():                              # the Pi brain's own status, once a minute over SSH
@@ -795,6 +834,26 @@ if __name__ == '__main__':
                 pass
             time.sleep(60)
     threading.Thread(target=_beat_keeper, name='beat-keeper', daemon=True).start()
+
+    def _dock_watch():                              # Nov 13: unplug the MacBook -> couch mode by itself
+        last = None
+        time.sleep(15)
+        while True:
+            try:
+                now_docked = scarlett_present()
+                if last is True and not now_docked:
+                    STATE['dock'] = 'undocked %s -> couch mode' % time.strftime('%H:%M')
+                    apply('couch')
+                elif last is False and now_docked:
+                    STATE['dock'] = 'docked %s -> normal schedule' % time.strftime('%H:%M')
+                    desk_mode()
+                elif last is None:
+                    STATE['dock'] = 'docked' if now_docked else 'undocked'
+                last = now_docked
+            except Exception as e:
+                STATE['dock'] = 'check failed: %s' % e.__class__.__name__
+            time.sleep(30)
+    threading.Thread(target=_dock_watch, name='dock-watch', daemon=True).start()
 
     def _jarvis_warm():                             # Nov 12: keep Jarvis's local brain loaded (no slow first answer)
         jd = os.path.join(HERE, 'jarvis')
