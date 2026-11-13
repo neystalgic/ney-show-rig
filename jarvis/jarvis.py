@@ -407,7 +407,8 @@ def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
             return "I couldn't write the food log (%s). That needs the Mac." % e.__class__.__name__
         if f.get('kcal') is None:
             return "Logged %s, but I couldn't estimate it. Tell me the calories and I'll add them." % f['item']
-        bits = '%d calories' % f['kcal'] + (', %d grams of protein' % f['protein'] if f.get('protein') is not None else '')
+        g = lambda n: '%d gram%s' % (n, '' if n == 1 else 's')
+        bits = '%d calories' % f['kcal'] + (', %s of protein' % g(f['protein']) if f.get('protein') is not None else '')
         t = _body_log().today()
         return 'Logged %s: %s%s. Today so far: %d calories, %d grams of protein.' % (f['item'], bits, est, t['calories'], t['protein'])
     if a == 'today':
