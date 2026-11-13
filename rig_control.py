@@ -643,6 +643,16 @@ if __name__ == '__main__':
             subprocess.Popen(['/usr/bin/python3', '-u', os.path.join(HERE, 'beat_sender.py')], cwd=HERE,
                              stdout=open('/tmp/beat_sender.out', 'a'), stderr=subprocess.STDOUT, start_new_session=True)
 
+    def _beat_keeper():                             # Nov 12: the beat sender starts with the rig and comes back if it dies
+        time.sleep(20)
+        while True:
+            try:
+                _beat_start()
+            except Exception:
+                pass
+            time.sleep(60)
+    threading.Thread(target=_beat_keeper, name='beat-keeper', daemon=True).start()
+
     claude_bridge.start(dict(looks=set(LOOKS), look=lambda n: threading.Thread(target=apply, args=(n,), daemon=True).start(),
                              ask=ask_jarvis, status=_bridge_status, reload=_reload, hub_restart=_hub_restart,
                              beat_start=_beat_start))

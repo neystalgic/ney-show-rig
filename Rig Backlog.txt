@@ -44,7 +44,7 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
    clouds) using Studio Placement Plan.txt / Aim Map.txt / Light Placement v3, keep the scan only
    as a hidden reference, dark matte materials so the heads' beams and the projection read,
    and a Blender-or-Unreal-modeling step list Michael can follow in ~1 hour. Plain text only.
-5. [SAFE] todo -- Beat sender autostart: right now beat_sender.py was started by hand
+5. [SAFE] done Nov 12 (rig_control beat-keeper thread) -- Beat sender autostart: right now beat_sender.py was started by hand
    (Nov 11) and stops on a Mac restart. Patch a COPY of rig_control.py so it starts and
    babysits beat_sender.py like its other modules (restart if it dies, back-off).
    away/beat-autostart/ + offline test + DEPLOY.txt.
@@ -77,7 +77,7 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
 
 --- NEEDS MICHAEL (the loop never does these) -------------------------------------
 - [MICHAEL] Pair the Tap Switch Mini + set up the extra smart plugs (now arriving ~Tue Nov 17), then test buttons 1-4.
-- [MICHAEL] Ableton: map CC 102 / ch 16 (IAC) to the fill track's Utility gain (+6 dB).
+- [LATER, Michael parked Nov 12] Fill control via AbletonOSC (already installed) instead of MIDI mapping: mute fill track for producing, fader 0 dB for shows, +6 dB (fader max) for movies. Needs only a track named "...fill...". Hub owns OSC reply port 11001 -> do the track-name lookup inside hub_liveosc. ~20 min + test with Ableton open.
 - [MICHAEL] Check Head 2 by eye (flag scene, art-wall cap) -- loosen if wall looks empty.
 - [MICHAEL] Turn on "allow all domains" so Claude can SSH to the Pi directly.
 - [MICHAEL] Review + deploy anything marked "ready for Michael".
