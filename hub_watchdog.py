@@ -21,12 +21,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SETTINGS = os.path.join(HERE, 'hub_watchdog.json')
 LOG = '/tmp/hub_watchdog.log'
 DEFAULTS = {'enabled': True, 'api_dead_s': 45, 'bridge_lost_s': 90, 'audio_stuck_s': 30,
-            'no_sound_s': 60, 'settle_s': 30, 'max_per_hour': 3, 'grace_s': 120}
+            'no_sound_s': 60, 'settle_s': 30, 'max_per_hour': 3, 'grace_s': 120,
+            'busy_max_s': 150}                     # Nov 12: a look 'busy' longer than this no longer hides a stuck hub
 BAD_BRIDGE = re.compile(r'^(not connected|lost the bridge|rehearsal)', re.I)   # rehearsal = it couldn't reach the bridge at start
 
 STATE = {'last': 'starting', 'restarts': [], 'dead_since': None, 'bridge_since': None,
          'deaf_since': None, 'blocks': None, 'blocks_t': None, 'grace_until': 0.0,
-         'restarting': False, 'last_ok': None, 'last_good': {}}
+         'restarting': False, 'last_ok': None, 'last_good': {}, 'busy_since': None}
 
 
 def log(msg):
@@ -119,9 +120,16 @@ def _tick(busy, stop_hub, start_hub, after_start):
     if not s['enabled']:
         STATE['last'] = 'disabled in hub_watchdog.json'
         return
-    if busy() or STATE['restarting'] or now < STATE['grace_until']:
+    if busy():
+        STATE['busy_since'] = STATE['busy_since'] or now
+    else:
+        STATE['busy_since'] = None
+    stuck_busy = STATE['busy_since'] is not None and now - STATE['busy_since'] >= s['busy_max_s']
+    if (busy() and not stuck_busy) or STATE['restarting'] or now < STATE['grace_until']:
         _reset_timers()
         return
+    if stuck_busy and 'stuck' not in STATE['last']:
+        log('a look has been busy for %d s -- checking the hub anyway (start-up may be stuck)' % (now - STATE['busy_since']))
     if not hub_running():                                  # stopped on purpose (or not started): leave it be
         _reset_timers()
         STATE['last'] = 'hub not running -- nothing to watch'

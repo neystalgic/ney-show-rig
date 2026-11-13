@@ -56,7 +56,7 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
    Michael chose NO paid API)
    that may only return an allowlisted action name. away/jarvis-router/ + offline tests.
    Ready for Michael to try tonight (Nov 11).
-7. [SAFE] todo -- Watchdog: catch a hub stuck at start-up while a look is busy
+7. [SAFE] done Nov 12 (busy_max_s 150, tested) -- Watchdog: catch a hub stuck at start-up while a look is busy
    (Nov 11: API never came up while the "flash" look held busy, watchdog skipped it).
    Build away/watchdog-startup/: patched hub_watchdog.py + offline test with fake hub.
 8. [SAFE] todo -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
