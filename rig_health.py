@@ -51,18 +51,18 @@ def check_all(extra):
             live = _get(HUB)
             audio = str((live.get('audio') or {}).get('status') or '')
             m = re.search(r'peak (-?\d+) dB', audio)
-            out.append(row('Hue hub', 'ok', '%s / %s%s' % (live.get('palette'), live.get('vibe'),
+            out.append(row('Music engine (hub)', 'ok', 'reacting to music: %s / %s%s' % (live.get('palette'), live.get('vibe'),
                                                          (', sound %s dB' % m.group(1)) if m else '')))
         except Exception:
-            out.append(row('Hue hub', 'down', 'running but not answering'))
+            out.append(row('Music engine (hub)', 'down', 'running but not answering (watchdog will restart it)'))
     else:
-        out.append(row('Hue hub', 'idle', 'stopped (no show running)'))
+        out.append(row('Music engine (hub)', 'idle', 'off -- only runs for shows, music and movies. Lamps work without it.'))
     # Hue bridge
     try:
         b = _get(HUE_BRIDGE)
-        out.append(row('Hue bridge', 'ok', b.get('name') or 'answering'))
+        out.append(row('Hue lamps (bridge)', 'ok', 'connected -- lamps can be controlled'))
     except Exception as e:
-        out.append(row('Hue bridge', 'down', 'not answering (%s)' % e.__class__.__name__))
+        out.append(row('Hue lamps (bridge)', 'down', 'bridge not answering (%s) -- check its power / cable' % e.__class__.__name__))
     # Pi DMX node
     try:
         n = _get(PI)
