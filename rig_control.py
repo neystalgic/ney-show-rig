@@ -746,7 +746,8 @@ if __name__ == '__main__':
         return dict(STATE, hub=running('hue_hub.py'), hub_live=_hub_summary(), beat_sender=running('beat_sender.py'),
                     head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
                     tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'),
-                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(), rotate=STATE.get('rotate'), dock=STATE.get('dock'), couch=STATE.get('couch'),
+                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(), rotate=STATE.get('rotate'), dock=STATE.get('dock'), couch=STATE.get('couch'), py_env=STATE.get('py_env'), jarvis_app=STATE.get('jarvis_app'), jarvis_ears=STATE.get('jarvis_ears'),
+                    listen_log=sh('tail -6 /tmp/jarvis_listen.log /tmp/jarvis_listen.out 2>/dev/null').splitlines(),
                     pi_hue_key=__import__('pi_hue_key').STATUS.get('last'), pi_deploy=__import__('pi_deploy').STATUS)
 
     def _brain_poll():                              # the Pi brain's own status, once a minute over SSH
@@ -772,6 +773,53 @@ if __name__ == '__main__':
             STATE['rotate'] = 'dry run: signed %s%s' % (', '.join(made), ('; FAILED ' + '; '.join(failed)) if failed else '')
         except Exception as e:
             STATE['rotate'] = 'dry run failed: %s: %s' % (e.__class__.__name__, e)
+
+    JARVIS_APP = os.path.join(HERE, 'Ney Jarvis.app')
+
+    def _build_jarvis_app():                        # Nov 13: the app that holds the mic for "Hey Jarvis"
+        pl = os.path.join(JARVIS_APP, 'Contents', 'Info.plist')
+        steps = [['/usr/bin/osacompile', '-o', JARVIS_APP, os.path.join(HERE, 'tools', 'ney_jarvis_launcher.applescript')],
+                 ['/usr/libexec/PlistBuddy', '-c', 'Add :NSMicrophoneUsageDescription string "Jarvis listens for Hey Jarvis on this Mac. Nothing leaves the Mac."', pl],
+                 ['/usr/libexec/PlistBuddy', '-c', 'Add :LSUIElement bool true', pl],
+                 ['/usr/bin/codesign', '--force', '--deep', '-s', '-', JARVIS_APP]]
+        for c in steps:
+            if c[0].endswith('PlistBuddy'):
+                key = c[2].split()[1].lstrip(':')
+                subprocess.run(['/usr/libexec/PlistBuddy', '-c', 'Delete :%s' % key, pl], capture_output=True)
+            r = subprocess.run(c, capture_output=True, text=True)
+            if r.returncode:
+                STATE['jarvis_app'] = 'build failed at %s: %s' % (os.path.basename(c[0]), (r.stderr or r.stdout).strip()[:120])
+                return
+        STATE['jarvis_app'] = 'built %s' % time.strftime('%H:%M')
+
+    def _jarvis_ears():                             # keep "Hey Jarvis" running (only once the app exists)
+        time.sleep(40)
+        while True:
+            try:
+                on = True
+                try:
+                    with open(os.path.join(HERE, 'jarvis', 'jarvis.json')) as f:
+                        on = json.load(f).get('listen', True)
+                except (OSError, ValueError):
+                    pass
+                if on and os.path.isdir(JARVIS_APP) and not running('jarvis/listen.py'):
+                    subprocess.Popen(['/usr/bin/open', '-n', '-g', '-a', JARVIS_APP], stdin=subprocess.DEVNULL,
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    STATE['jarvis_ears'] = 'started %s' % time.strftime('%H:%M')
+                elif running('jarvis/listen.py'):
+                    STATE['jarvis_ears'] = 'listening'
+            except Exception as e:
+                STATE['jarvis_ears'] = 'check failed: %s' % e.__class__.__name__
+            time.sleep(60)
+    threading.Thread(target=_jarvis_ears, name='jarvis-ears', daemon=True).start()
+
+    def _py_env():                                  # read-only: which Python the hub/Jarvis use + what's installed
+        cmd = ('which python3; python3 --version; python3 -c "import sys;print(sys.executable)"; '
+               'for m in sounddevice numpy onnxruntime openwakeword faster_whisper; do '
+               'python3 -c "import $m" 2>/dev/null && echo "$m: yes" || echo "$m: no"; done; '
+               'system_profiler SPAudioDataType 2>/dev/null | grep -E "^        [A-Za-z].*:$" | head -12')
+        STATE['py_env'] = subprocess.run(['/usr/bin/arch', '-arm64', '/bin/zsh', '-lc', cmd], capture_output=True,
+                                         text=True, timeout=60).stdout.strip().splitlines()
 
     def _make_missing():                            # any shortcut whose signed file is older than the token (or missing)
         try:
@@ -876,5 +924,6 @@ if __name__ == '__main__':
                                     'pi_brain_status': lambda: __import__('pi_deploy').read_status(),
                                     'pi_door_test': lambda: __import__('pi_deploy').door_test(),
                                     'shortcut_test': _shortcut_test, 'rotate_token': _rotate_token,
-                                    'make_missing_shortcuts': _make_missing}))
+                                    'make_missing_shortcuts': _make_missing, 'py_env': _py_env,
+                                    'build_jarvis_app': _build_jarvis_app}))
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
