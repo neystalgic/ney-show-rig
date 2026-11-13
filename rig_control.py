@@ -746,7 +746,7 @@ if __name__ == '__main__':
         return dict(STATE, hub=running('hue_hub.py'), hub_live=_hub_summary(), beat_sender=running('beat_sender.py'),
                     head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
                     tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'),
-                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(), rotate=STATE.get('rotate'), dock=STATE.get('dock'), couch=STATE.get('couch'), py_env=STATE.get('py_env'), jarvis_app=STATE.get('jarvis_app'), jarvis_ears=STATE.get('jarvis_ears'),
+                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(), rotate=STATE.get('rotate'), dock=STATE.get('dock'), couch=STATE.get('couch'), py_env=STATE.get('py_env'), jarvis_app=STATE.get('jarvis_app'), voices=STATE.get('voices'), jarvis_ears=STATE.get('jarvis_ears'),
                     listen_log=sh('tail -6 /tmp/jarvis_listen.log /tmp/jarvis_listen.out 2>/dev/null').splitlines(),
                     pi_hue_key=__import__('pi_hue_key').STATUS.get('last'), pi_deploy=__import__('pi_deploy').STATUS)
 
@@ -812,6 +812,18 @@ if __name__ == '__main__':
                 STATE['jarvis_ears'] = 'check failed: %s' % e.__class__.__name__
             time.sleep(60)
     threading.Thread(target=_jarvis_ears, name='jarvis-ears', daemon=True).start()
+
+    def _voices():                                  # English voices on this Mac (Premium / Enhanced first)
+        out = subprocess.run(['/usr/bin/say', '-v', '?'], capture_output=True, text=True).stdout.splitlines()
+        en = [l.split('#')[0].strip() for l in out if ' en_' in l or ' en-' in l]
+        STATE['voices'] = sorted(en, key=lambda l: (not ('Premium' in l or 'Enhanced' in l), l))[:40]
+
+    def _chime_demo():                              # Michael asked to hear the chimes (sound only, no lights)
+        for i, f in enumerate(('chime1_rise.wav', 'chime2_glass.wav', 'chime3_warm.wav'), 1):
+            subprocess.run(['/usr/bin/say', '-v', 'Daniel', 'Chime %d.' % i])
+            time.sleep(0.3)
+            subprocess.run(['/usr/bin/afplay', os.path.join(HERE, 'jarvis', 'sounds', f)])
+            time.sleep(1.0)
 
     def _py_env():                                  # read-only: which Python the hub/Jarvis use + what's installed
         cmd = ('which python3; python3 --version; python3 -c "import sys;print(sys.executable)"; '
@@ -925,5 +937,6 @@ if __name__ == '__main__':
                                     'pi_door_test': lambda: __import__('pi_deploy').door_test(),
                                     'shortcut_test': _shortcut_test, 'rotate_token': _rotate_token,
                                     'make_missing_shortcuts': _make_missing, 'py_env': _py_env,
-                                    'build_jarvis_app': _build_jarvis_app}))
+                                    'build_jarvis_app': _build_jarvis_app, 'voices': _voices, 'chime_demo': _chime_demo,
+                                    'jarvis_restart': lambda: sh('pkill -f "[j]arvis/listen.py" || true')}))
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()

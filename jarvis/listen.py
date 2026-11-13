@@ -30,7 +30,7 @@ def log(msg):
 
 
 def settings():
-    s = {'voice': 'Daniel', 'whisper': 'base.en', 'mic': 'MacBook Pro Microphone'}
+    s = {'voice': 'Daniel', 'whisper': 'base.en', 'mic': 'MacBook Pro Microphone', 'chime': 'chime1_rise.wav'}
     try:
         with open(os.path.join(HERE, 'jarvis.json')) as f:
             s.update(json.load(f))
@@ -135,7 +135,8 @@ def main():
                 if score >= WAKE_THRESHOLD and time.time() - last_wake > 2.0:
                     last_wake = time.time()
                     log('wake (%.2f)' % score)
-                    subprocess.Popen(['/usr/bin/afplay', '/System/Library/Sounds/Tink.aiff'])
+                    ch = os.path.join(HERE, 'sounds', s.get('chime') or '')
+                    subprocess.Popen(['/usr/bin/afplay', ch if os.path.isfile(ch) else '/System/Library/Sounds/Tink.aiff'])
                     ears.reset()
                     mode = 'hear'
                 continue
