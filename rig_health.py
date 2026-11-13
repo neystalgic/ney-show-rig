@@ -64,12 +64,22 @@ def check_all(extra):
     except Exception as e:
         out.append(row('Hue lamps (bridge)', 'down', 'bridge not answering (%s) -- check its power / cable' % e.__class__.__name__))
     # Pi DMX node
+    n = None
     try:
         n = _get(PI)
         out.append(row('Pi DMX node', 'warn' if n.get('error') else 'ok',
                        n.get('error') or '%s, %s' % (n.get('version', '?'), re.sub(r'\s*\(serial[^)]*\)', '', str(n.get('output', 'output ?'))))))
     except Exception as e:
         out.append(row('Pi DMX node', 'down', 'not answering (%s) -- heads can\'t move' % e.__class__.__name__))
+    # guest mode (strobes blocked at the node)
+    try:
+        u = (n or {}).get('unlock') or {}
+        locked = not u.get('strobe')
+        out.append(row('Guest mode', 'ok' if locked else 'idle',
+                       'ON -- strobes blocked at the Pi (max %s flashes/s)' % n.get('flash_hz') if locked
+                       else 'off -- strobes allowed (max %s flashes/s)' % n.get('flash_hz')))
+    except Exception:
+        out.append(row('Guest mode', 'warn', 'unknown (Pi node not answering)'))
     # heads power
     hp = extra.get('head_power') or {}
     on = [k for k, v in (hp.get('on') or {}).items() if v]

@@ -50,3 +50,4 @@ previews/
 # --- Claude bridge requests/replies (Nov 12) ---
 bridge/
 rig_last_look.json
+guest_mode.json

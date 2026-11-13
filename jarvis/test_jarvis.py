@@ -53,8 +53,12 @@ both = j.understand_all("turn the lights purple and don't start dimming them til
 assert [i['action'] for i in both] == ['color', 'later'], both
 out = j.handle("Turn the lights purple and dont start dimming them till midnight", s, rig=rig)
 assert calls[0].startswith('set:') and 'midnight' in out, (calls, out)
-out = j.handle('show mode', s, rig=rig, confirm=False)
-assert calls[-1] == 'show' and out.startswith('Strobes in the drops'), out
+n0 = len(calls); out = j.handle('show mode', s, rig=rig, confirm=False)
+assert len(calls) == n0 and 'confirmed' in out, out                    # Siri: no spoken yes -> nothing runs
+out = j.handle('light show confirmed', s, rig=rig, confirm=False, voice_yes=True)
+assert calls[-1] == 'show' and out.startswith('Confirmed'), out
+out = j.handle('light show', s, rig=rig, confirm=False, guest=True)
+assert calls[-1] == 'show' and 'Guest mode' in out, out                # rig_control swaps it for the safe show
 assert 'normal' in j.handle('schedule back to normal', s, rig=rig) and open(sp).read().strip() == '{}'
 # light_schedule honours / ignores the tonight-only file
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -95,3 +99,7 @@ fake_bad = lambda url, body, t: {'message': {'content': json.dumps({'action': 'c
 assert j.by_model('x', s, fake_bad) is None
 calls.clear(); out = j.handle('Jarvis', s, rig=rig); assert calls == [] and "listening" in out
 print('comprehension tests passed')
+
+assert j.by_rules('guest mode')['action'] == 'guest_on' and j.by_rules('friends are over')['action'] == 'guest_on'
+assert j.by_rules('guest mode off')['action'] == 'guest_off' and j.by_rules('guests are gone')['action'] == 'guest_off'
+print('guest mode tests passed')

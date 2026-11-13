@@ -30,7 +30,7 @@
 # Runs at login via ~/Library/LaunchAgents/com.ney.rigcontrol.plist.
 # The Mac, Scarlett and projector are never switched off by this.
 # =============================================================================
-import hmac, json, os, secrets, subprocess, sys, threading, time, urllib.parse, urllib.request
+import hmac, json, os, re, secrets, subprocess, sys, threading, time, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import head_power                                  # Hue Smart Plugs on the moving heads (dormant until they exist)
 import hub_watchdog                                # restarts a frozen hub on its own (Nov 9)
@@ -319,6 +319,38 @@ def show_uv():
     hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always'))
 
 
+PI_NODE = ('http://192.168.1.80:7060', 'http://100.127.200.67:7060')
+GUEST_FILE = os.path.join(HERE, 'guest_mode.json')
+STROBE_LOOKS = {'show', 'showuv', 'flash', 'strobe', 'hype'}
+
+
+def node_post(path, body):
+    last = None
+    for base in PI_NODE:
+        try:
+            req = urllib.request.Request(base + path, json.dumps(body).encode(), {'Content-Type': 'application/json'})
+            with urllib.request.urlopen(req, timeout=4) as r:
+                return json.loads(r.read() or b'{}')
+        except Exception as e:
+            last = e
+    raise RuntimeError('Pi node not answering (%s)' % last.__class__.__name__)
+
+
+def guest_mode(on):
+    """Nov 12: GUEST MODE -- strobes blocked AT THE PI NODE (not just by look choice). On: the node's strobe unlock is
+    switched off and its flash limit drops to 2 a second; any strobe look becomes the safe show. Off: back to
+    Michael's settings (strobe allowed, flash limit 20)."""
+    res = node_post('/unlock', {'strobe': False, 'flash_hz': 2} if on else {'strobe': True, 'flash_hz': 20})
+    if on and hub_up():
+        try:
+            hub_setting('dmx_strobe', 'off')
+        except Exception:
+            pass
+    STATE['guest'] = bool(on)
+    with open(GUEST_FILE, 'w') as f:
+        json.dump({'guest': bool(on), 'since': time.strftime('%Y-%m-%d %H:%M'), 'node': res}, f)
+
+
 def show_safe():
     """Nov 12: a light show for guests who may be photosensitive. No strobe of any kind (heads, spots, flash mode),
     no UV hold, calmer music reaction; heads still move with the music."""
@@ -355,6 +387,8 @@ LOOKS = {
                  lambda: show_safe()),
     'uvstars': ('UV on the stars: both spots hold the ceiling stars in UV, whatever else is running', lambda: hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always'))),
     'uvoff': ('Spots back to the show (UV off the stars)', lambda: hub_setting('spot_fx', {})),
+    'guest_on': ('Guest mode ON: strobes blocked at the Pi, any strobe look becomes the safe show', lambda: guest_mode(True)),
+    'guest_off': ('Guest mode OFF: strobes allowed again (sparingly)', lambda: guest_mode(False)),
     'nostrobe': ('Light show -- non strobe', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                                       hub_setting('dmx_strobe', 'off'), hub_setting('dmx_on', True))),
     'heads_on': ('Moving heads powering up', lambda: head_power.request_on()),
@@ -404,6 +438,8 @@ LOOKS['rest'] = ('Rest mode', LOOKS['off'][1])
 
 
 def apply(look):
+    if STATE.get('guest') and look in STROBE_LOOKS:  # guest mode: never a strobe look
+        look = 'showsafe'
     with LOCK:
         STATE.update(busy=True, last_error=None)
         try:
@@ -420,16 +456,31 @@ def apply(look):
             STATE['busy'] = False
 
 
+JOBS = __import__('queue').Queue()                  # Jarvis actions run in the order he said them (Nov 12 race fix)
+
+
+def _job_worker():
+    while True:
+        fn = JOBS.get()
+        try:
+            fn()
+        except Exception as e:
+            STATE['last_error'] = 'jarvis job: %s' % e
+
+
 def ask_jarvis(text):
-    """Nov 11: 'Hey Siri, Ney' -> /ask?text=... -> Jarvis picks allowlisted actions -> the reply Siri speaks."""
+    """'Hey Siri, Jarvis' -> /ask?text=... -> Jarvis picks allowlisted actions -> the reply Siri speaks."""
     jd = os.path.join(HERE, 'jarvis')
     if jd not in sys.path:
         sys.path.insert(0, jd)
     import jarvis
+    if not getattr(ask_jarvis, 'worker', None):
+        ask_jarvis.worker = threading.Thread(target=_job_worker, name='jarvis-jobs', daemon=True)
+        ask_jarvis.worker.start()
 
     def rig(p):
         if p == 'status':
-            return json.dumps({'look': STATE.get('look')})
+            return json.dumps({'look': STATE.get('look'), 'guest': STATE.get('guest', False)})
         if p.startswith('set:'):                    # a colour / brightness from Jarvis (validated there)
             body = json.loads(p[4:])
 
@@ -438,14 +489,16 @@ def ask_jarvis(text):
                     stop_all()
                     hue_lights(body)
                     STATE.update(look='custom', since=time.strftime('%H:%M'))
-            threading.Thread(target=_set, daemon=True).start()
+            JOBS.put(_set)
             return ''
         if p not in LOOKS:
             raise KeyError(p)
-        threading.Thread(target=apply, args=(p,), daemon=True).start()
+        JOBS.put(lambda: apply(p))
         return ''
+    yes = bool(re.search(r'\b(confirm(ed)?|yes|seated)\b', (text or '').lower()))
     try:
-        return jarvis.handle(text or '', jarvis.settings(), rig=rig, confirm=False)
+        return jarvis.handle(text or '', jarvis.settings(), rig=rig, confirm=False, voice_yes=yes,
+                             guest=bool(STATE.get('guest')))
     except Exception as e:
         return 'Jarvis hit a snag: %s.' % e.__class__.__name__
 
@@ -600,6 +653,11 @@ if __name__ == '__main__':
             STATE.update(json.load(f))
     except (OSError, ValueError):
         pass
+    try:
+        with open(GUEST_FILE) as f:
+            STATE['guest'] = bool(json.load(f).get('guest'))
+    except (OSError, ValueError):
+        STATE['guest'] = False
     head_power.start()
 
     def _wd_stop():
@@ -649,7 +707,8 @@ if __name__ == '__main__':
         return dict(STATE, hub=running('hue_hub.py'), hub_live=_hub_summary(), beat_sender=running('beat_sender.py'),
                     head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
                     tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'),
-                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot())
+                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(),
+                    pi_hue_key=__import__('pi_hue_key').STATUS.get('last'))
 
     rig_health.start(lambda: dict(state=dict(STATE), head_power=head_power.status(), watchdog=hub_watchdog.status(),
                                   schedule=light_schedule.status(), bridge=claude_bridge.status(),
@@ -682,5 +741,5 @@ if __name__ == '__main__':
 
     claude_bridge.start(dict(looks=set(LOOKS), look=lambda n: threading.Thread(target=apply, args=(n,), daemon=True).start(),
                              ask=ask_jarvis, status=_bridge_status, reload=_reload, hub_restart=_hub_restart,
-                             beat_start=_beat_start))
+                             beat_start=_beat_start, tasks={'pi_hue_key': lambda: __import__('pi_hue_key').create(180)}))
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()

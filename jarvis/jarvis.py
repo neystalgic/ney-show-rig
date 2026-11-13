@@ -31,6 +31,8 @@ ACTIONS = {
     'showsafe':    'Photosensitive-safe light show. No strobe, no flashes.',
     'uvstars':     'UV on the stars.',
     'uvoff':       'UV off the stars.',
+    'guest_on':    'Guest mode on. Strobes are blocked at the Pi.',
+    'guest_off':   'Guest mode off. Strobes allowed again, sparingly.',
     'flash':       'Multicolour flash.',
     'hype':        'Hype mode.',
     'music':       'Music mode.',
@@ -103,6 +105,8 @@ RULES = [
     (r"\b(i.?m producing|producing|production mode|studio mode|making (music|beats?)|working on (a |the )?(track|song|beat))\b|\bfill (speaker )?(off|out)\b", 'producing'),
     (r'\bfill (speaker )?(on|back)\b', 'fillon'),
     (r'\bnight ?light\b', 'nightlight'),
+    (r'\bguest mode (off|done|over)\b|\b(guests?|company) (are |is )?(gone|left)\b', 'guest_off'),
+    (r'\bguest mode\b|\b(guests?|company|friends?) (are |is )?(over|here|coming)\b', 'guest_on'),
     (r'\b(safe|no strobe|without (the )?strobe|photosensitiv\w*|epilep\w*|gentle)\b', 'showsafe'),
     (r'\b(show|party|light ?show)\b.*\b(uv|stars?)\b|\b(uv|stars?)\b.*\b(show|party)\b', 'showuv'),
     (r'\b(uv|stars?)\b.*\b(off|stop)\b|\b(turn )?off (the )?(uv|stars)', 'uvoff'),
@@ -372,7 +376,7 @@ def say(text, s):
         pass
 
 
-def handle(text, s, dry=False, ask=input, rig=None, confirm=True):
+def handle(text, s, dry=False, ask=input, rig=None, confirm=True, voice_yes=False, guest=False):
     intents = understand_all(text, s)
     log('heard %r -> %s' % (text, intents))
     if dry:
@@ -381,8 +385,14 @@ def handle(text, s, dry=False, ask=input, rig=None, confirm=True):
     out = []
     for intent in intents:
         if intent['action'] in CONFIRM:
-            if not confirm:
-                out.append('Strobes in the drops, everyone seated.')
+            if guest:
+                out.append('Guest mode is on, so you get the safe show: no strobes.')
+            elif not confirm and not voice_yes:
+                out.append("That one strobes. Make sure everyone's seated, then say it again with 'confirmed', "
+                           "like 'light show confirmed'.")
+                continue
+            elif not confirm:
+                out.append('Confirmed. Strobes in the drops only.')
             elif ask('That one strobes / moves fast. Everyone seated? (y/n) ').strip().lower()[:1] != 'y':
                 out.append('Okay, skipped the light show.')
                 continue

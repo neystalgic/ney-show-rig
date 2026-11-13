@@ -21,6 +21,7 @@ button:active{background:var(--accent)}.msg{color:var(--muted);font-size:13px;mi
 <div class="btns">
 <button data-look="purple">Purple</button><button data-look="rainbow">Rainbow</button><button data-look="showsafe">Safe show</button>
 <button data-look="movienight">Movie</button><button data-look="purplenight">Night (purple)</button><button data-look="off">Lights off</button>
+<button data-look="guest_on" style="grid-column:span 3" id="guestbtn">Guest mode: block strobes</button>
 </div><div class="msg" id="msg"></div>
 <script>
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -34,6 +35,10 @@ async function load(){
     document.getElementById('nok').textContent=n('ok');document.getElementById('nidle').textContent=n('idle');
     document.getElementById('nbad').textContent=n('warn')+n('down');
     document.getElementById('sub').textContent='Checked '+(d.at||'?')+' · refreshes every 5 s';
+    const g=c.find(x=>x.name==='Guest mode'),gb=document.getElementById('guestbtn');
+    if(g&&gb){const on=g.detail.startsWith('ON');gb.dataset.look=on?'guest_off':'guest_on';
+      gb.textContent=on?'Guest mode is ON — tap to allow strobes again':'Guest mode: block strobes';
+      gb.style.borderColor=on?'var(--ok)':'#2c2440'}
   }catch(e){document.getElementById('sub').textContent='Can’t reach the Mac — is it awake and on home Wi-Fi?'}
 }
 document.querySelectorAll('button').forEach(b=>b.onclick=async()=>{

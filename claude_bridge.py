@@ -55,8 +55,8 @@ def handle_file(path, h, now=None):
             out = {'ok': True, 'did': 'ask', 'reply': h['ask'](str(req.get('text', '')))}
         elif do == 'status':
             out = {'ok': True, 'did': 'status', 'status': h['status']()}
-        elif do in ('reload', 'hub_restart', 'beat_start'):
-            out = {'ok': True, 'did': do}
+        elif do in ('reload', 'hub_restart', 'beat_start') or do in (h.get('tasks') or {}):
+            out = {'ok': True, 'did': do, 'note': 'started in the background; check status'}
         else:
             raise ValueError('not allowed: %r' % do)
     except Exception as e:
@@ -66,8 +66,9 @@ def handle_file(path, h, now=None):
     _reply(name, out)
     _move(path, 'done')
     STATE['handled'] += 1
-    if out['did'] in ('reload', 'hub_restart', 'beat_start'):     # after the reply is written
-        threading.Thread(target=h[out['did']], daemon=True).start()
+    job = h.get(out['did']) if out['did'] in ('reload', 'hub_restart', 'beat_start') else (h.get('tasks') or {}).get(out['did'])
+    if job:                                                         # after the reply is written
+        threading.Thread(target=job, daemon=True).start()
     return True
 
 

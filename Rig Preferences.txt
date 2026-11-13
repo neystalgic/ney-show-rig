@@ -22,3 +22,5 @@ LIGHT SHOW COLOURS (Nov 11): head colours changing every beat is distracting -- 
 FILL SPEAKER (Nov 12): OFF while producing (weird stereo image). ON for movies (+6 dB) and light shows (0 dB).
   Ableton: CC102 ch16 -> fill Utility Gain (0..+6 dB); CC103 ch16 -> fill track activator (127 on / 0 off).
 PHOTOSENSITIVE GUESTS (Nov 12): use look "showsafe" -- no strobe of any kind, no UV hold, calmer reaction.
+GUEST MODE (Nov 12): strobes blocked AT THE PI NODE (strobe unlock off, flash limit 2/s); strobe looks become the safe show.
+  Toggle on the health page or tell Jarvis "guest mode" / "guests are gone". Siri strobe looks need "confirmed".
