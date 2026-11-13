@@ -59,7 +59,7 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
 7. [SAFE] done Nov 12 (busy_max_s 150, tested) -- Watchdog: catch a hub stuck at start-up while a look is busy
    (Nov 11: API never came up while the "flash" look held busy, watchdog skipped it).
    Build away/watchdog-startup/: patched hub_watchdog.py + offline test with fake hub.
-8. [SAFE] todo -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
+8. [SAFE] in progress Nov 12 (Pi brain v1 LIVE: schedule failover + catch-up via pi_deploy; calm looks next) -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
    synced breathing, night red 12%, morning soft blue, cozy) using Hue v2 + DMX node
    HTTP. away/pi-brain/looks.py + tests with a mocked bridge and node. No real calls.
 9. [SAFE] todo -- Rig 2.0 Phase 1b: hand-off rule (Mac hub leads while alive and

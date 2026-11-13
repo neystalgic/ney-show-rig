@@ -80,6 +80,23 @@ def check_all(extra):
                        else 'off -- strobes allowed (max %s flashes/s)' % n.get('flash_hz')))
     except Exception:
         out.append(row('Guest mode', 'warn', 'unknown (Pi node not answering)'))
+    # Pi brain (schedule failover)
+    pb = extra.get('pi_brain')
+    if not pb or pb.get('error'):
+        out.append(row('Pi brain', 'idle' if not pb else 'warn', 'not deployed yet' if not pb else 'status unknown (%s)' % pb['error']))
+    else:
+        fresh = False
+        try:
+            fresh = time.time() - time.mktime(time.strptime(pb.get('at', ''), '%Y-%m-%d %H:%M:%S')) < 150
+        except ValueError:
+            pass
+        lvl = 'ok' if fresh and pb.get('key') else 'warn'
+        det = (pb.get('last') or '') if fresh else 'not reporting (stopped?)'
+        if not pb.get('key'):
+            det = 'no Hue key on the Pi'
+        if fresh and pb.get('boot') == 'not-installed':
+            lvl, det = 'warn', det + ' -- won\'t restart after a Pi reboot until the one sudo line is run'
+        out.append(row('Pi brain', lvl, det))
     # heads power
     hp = extra.get('head_power') or {}
     on = [k for k, v in (hp.get('on') or {}).items() if v]

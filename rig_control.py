@@ -708,11 +708,17 @@ if __name__ == '__main__':
                     head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
                     tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'),
                     jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(),
-                    pi_hue_key=__import__('pi_hue_key').STATUS.get('last'))
+                    pi_hue_key=__import__('pi_hue_key').STATUS.get('last'), pi_deploy=__import__('pi_deploy').STATUS)
 
+    def _brain_poll():                              # the Pi brain's own status, once a minute over SSH
+        import pi_deploy
+        while True:
+            pi_deploy.read_status()
+            time.sleep(60)
+    threading.Thread(target=_brain_poll, name='pi-brain-poll', daemon=True).start()
     rig_health.start(lambda: dict(state=dict(STATE), head_power=head_power.status(), watchdog=hub_watchdog.status(),
                                   schedule=light_schedule.status(), bridge=claude_bridge.status(),
-                                  tap_switch=tap_switch.status()))
+                                  tap_switch=tap_switch.status(), pi_brain=__import__('pi_deploy').STATUS.get('brain')))
 
     def _reload():
         time.sleep(1.0)
@@ -741,5 +747,7 @@ if __name__ == '__main__':
 
     claude_bridge.start(dict(looks=set(LOOKS), look=lambda n: threading.Thread(target=apply, args=(n,), daemon=True).start(),
                              ask=ask_jarvis, status=_bridge_status, reload=_reload, hub_restart=_hub_restart,
-                             beat_start=_beat_start, tasks={'pi_hue_key': lambda: __import__('pi_hue_key').create(180)}))
+                             beat_start=_beat_start, tasks={'pi_hue_key': lambda: __import__('pi_hue_key').create(180),
+                                    'pi_deploy': lambda: __import__('pi_deploy').deploy(),
+                                    'pi_brain_status': lambda: __import__('pi_deploy').read_status()}))
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
