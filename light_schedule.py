@@ -11,11 +11,29 @@
 # Change times or switch it off in light_schedule.json (copy the DEFAULTS below).
 # Runs inside rig_control (always on).  Log: /tmp/light_schedule.log
 # =============================================================================
-import json, os, threading, time
+import datetime as dt, json, os, threading, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SETTINGS = os.path.join(HERE, 'light_schedule.json')
 LOG = '/tmp/light_schedule.log'
+DONE_FILE = os.path.join(HERE, 'light_schedule_done.json')
+CATCH_UP = {'winddown': 30, 'night': 360, 'sunrise': 110}   # minutes a missed step may still run late (Nov 12)
+
+
+def due(name, at, now, done):
+    """The day-key this step is due for, or None. Window = its time + CATCH_UP minutes (may cross midnight)."""
+    h, m = map(int, at.split(':'))
+    since = (now.hour * 60 + now.minute - (h * 60 + m)) % 1440       # minutes since the step's time
+    if since >= CATCH_UP[name]:
+        return None
+    key = (now - dt.timedelta(minutes=since)).date().isoformat()   # the day the step started
+    if done.get(name) == key:
+        return None
+    if name == 'winddown' and done.get('night') == key:
+        return None
+    return key
+
+
 DEFAULTS = {'enabled': True, 'winddown': '22:30', 'night': '23:00', 'sunrise': '08:40', 'sunrise_min': 20}
 STATE = {'done': {}, 'last': 'starting', 'running': None}
 
@@ -93,24 +111,41 @@ def _fire(name, s, lights, stop_all, heads_off, hub_busy):
         STATE['running'] = None
 
 
+def _load_done():
+    try:
+        with open(DONE_FILE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_done(done):
+    try:
+        with open(DONE_FILE, 'w') as f:
+            json.dump(done, f)
+    except OSError:
+        pass
+
+
 def watch(lights, stop_all, heads_off, hub_busy):
-    log('schedule started')
+    log('schedule started (catch-up on)')
+    STATE['done'] = _load_done()
     while True:
         try:
             s = settings()
             if s['enabled'] and not STATE['running']:
-                now = time.localtime()
-                hm, today = time.strftime('%H:%M', now), time.strftime('%Y-%m-%d', now)
-                for name in ('sunrise', 'winddown', 'night'):
-                    at = s[name]
-                    # fire within 5 min of the time (survives a short sleep / restart), once a day
-                    h, m = map(int, at.split(':'))
-                    late = (now.tm_hour * 60 + now.tm_min) - (h * 60 + m)
-                    if 0 <= late < 5 and STATE['done'].get(name) != today:
-                        STATE['done'][name] = today
-                        threading.Thread(target=_fire, args=(name, s, lights, stop_all, heads_off, hub_busy),
-                                         daemon=True).start()
-                        break
+                now = dt.datetime.now()
+                for name in ('night', 'winddown', 'sunrise'):   # night first: after a long gap, skip the wind-down
+                    key = due(name, s[name], now, STATE['done'])
+                    if not key:
+                        continue
+                    STATE['done'][name] = key
+                    if name == 'night':
+                        STATE['done']['winddown'] = key
+                    _save_done(STATE['done'])
+                    threading.Thread(target=_fire, args=(name, s, lights, stop_all, heads_off, hub_busy),
+                                     daemon=True).start()
+                    break
         except Exception as e:
             STATE['last'] = 'check failed: %s' % e.__class__.__name__
         time.sleep(20)

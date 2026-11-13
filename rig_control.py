@@ -745,6 +745,20 @@ if __name__ == '__main__':
             time.sleep(60)
     threading.Thread(target=_beat_keeper, name='beat-keeper', daemon=True).start()
 
+    def _jarvis_warm():                             # Nov 12: keep Jarvis's local brain loaded (no slow first answer)
+        jd = os.path.join(HERE, 'jarvis')
+        if jd not in sys.path:
+            sys.path.insert(0, jd)
+        time.sleep(30)
+        while True:
+            try:
+                import jarvis
+                jarvis.warm()
+            except Exception:
+                pass
+            time.sleep(1500)
+    threading.Thread(target=_jarvis_warm, name='jarvis-warm', daemon=True).start()
+
     claude_bridge.start(dict(looks=set(LOOKS), look=lambda n: threading.Thread(target=apply, args=(n,), daemon=True).start(),
                              ask=ask_jarvis, status=_bridge_status, reload=_reload, hub_restart=_hub_restart,
                              beat_start=_beat_start, tasks={'pi_hue_key': lambda: __import__('pi_hue_key').create(180),

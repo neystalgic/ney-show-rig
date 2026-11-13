@@ -199,7 +199,7 @@ def by_model(text, s, post=None):
     """Ask Ollama. Returns an allowlisted action or None. post() is swappable for tests."""
     body = {'model': s['model'], 'stream': False, 'format': 'json',
             'messages': [{'role': 'system', 'content': SYSTEM}, {'role': 'user', 'content': text}],
-            'options': {'temperature': 0}}
+            'options': {'temperature': 0}, 'keep_alive': '3h'}      # stay loaded: no 10-20 s cold start (Nov 12)
     try:
         raw = (post or _post)(s['ollama'] + '/api/chat', body, 30)
         out = json.loads(raw['message']['content'])
@@ -225,6 +225,17 @@ def by_model(text, s, post=None):
         except (TypeError, ValueError):
             value = None
     return {'action': action, 'value': value, 'model': True}
+
+
+def warm(s=None, post=None):
+    """Load the model into memory (empty request) so the first real command is fast."""
+    s = s or settings()
+    try:
+        (post or _post)(s['ollama'] + '/api/generate', {'model': s['model'], 'prompt': '', 'keep_alive': '3h'}, 60)
+        return True
+    except Exception as e:
+        log('warm-up failed: %s' % e)
+        return False
 
 
 def understand(text, s, post=None):

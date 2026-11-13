@@ -108,7 +108,10 @@ def check_all(extra):
     # Jarvis brain
     try:
         v = _get(OLLAMA, 1.5)
-        out.append(row('Jarvis brain (Ollama)', 'ok', 'local model ready (v%s)' % v.get('version', '?')))
+        loaded = [m.get('name') for m in (_get('http://127.0.0.1:11434/api/ps', 1.5).get('models') or [])]
+        out.append(row('Jarvis brain (Ollama)', 'ok' if loaded else 'warn',
+                       ('loaded and fast (%s)' % ', '.join(loaded)) if loaded else
+                       'running but model asleep -- first fuzzy command will be slow'))
     except Exception:
         out.append(row('Jarvis brain (Ollama)', 'warn', 'not running -- simple commands still work; open Ollama'))
     # Zephyrus
