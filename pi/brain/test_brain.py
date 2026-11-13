@@ -23,3 +23,17 @@ sent = []; b.run_steps(b.SCHEDULE['night'][2], sleep=lambda s: None, put=sent.ap
 assert sent[-1]['dimming']['brightness'] == 12.0 and sent[-1]['color']['xy'] == {'x': 0.69, 'y': 0.30}
 assert b.is_plug({'metadata': {'name': 'Head 1'}, 'dimming': {}}) and not b.is_plug({'metadata': {'name': 'Couch lamp'}, 'dimming': {}})
 print('brain tests passed')
+
+# --- front door (Nov 12) ---
+import front_door as fd, json, tempfile
+sent = []
+fd.B.update(lamps=sent.append, hue=lambda *a, **k: {'data': [1, 2]}, mac_urls=lambda: [], log=lambda m: None)
+assert fd.run_look('purple') == 'Purple, full brightness.' and sent[-1]['color']['xy'] == {'x': 0.27, 'y': 0.12}
+assert fd.run_look('show') is None                      # shows need the Mac
+g = fd.FD['gen']; fd.run_look('off'); assert fd.FD['gen'] == g + 1 and sent[-1]['on'] == {'on': False}
+out = fd.pi_ask('blue at 40 percent'); assert 'Pi' in out and 'Blue, 40 percent' in out, out
+out = fd.pi_ask('light show'); assert "Mac" in out, out    # strobe/show look never runs from the Pi
+out = fd.pi_ask('goodnight'); assert 'night' in out.lower(), out
+assert fd.mac_base(ttl=0) is None                          # no Mac addresses -> asleep
+h = fd.health_json(); assert h['checks'][0]['level'] == 'down'
+print('front door tests passed')

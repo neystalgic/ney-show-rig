@@ -707,7 +707,7 @@ if __name__ == '__main__':
         return dict(STATE, hub=running('hue_hub.py'), hub_live=_hub_summary(), beat_sender=running('beat_sender.py'),
                     head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
                     tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'),
-                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(),
+                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(), rotate=STATE.get('rotate'),
                     pi_hue_key=__import__('pi_hue_key').STATUS.get('last'), pi_deploy=__import__('pi_deploy').STATUS)
 
     def _brain_poll():                              # the Pi brain's own status, once a minute over SSH
@@ -719,6 +719,45 @@ if __name__ == '__main__':
     rig_health.start(lambda: dict(state=dict(STATE), head_power=head_power.status(), watchdog=hub_watchdog.status(),
                                   schedule=light_schedule.status(), bridge=claude_bridge.status(),
                                   tap_switch=tap_switch.status(), pi_brain=__import__('pi_deploy').STATUS.get('brain')))
+
+    def _factory():
+        jd = os.path.join(HERE, 'jarvis')
+        if jd not in sys.path:
+            sys.path.insert(0, jd)
+        import shortcut_factory
+        return shortcut_factory
+
+    def _shortcut_test():                           # build + sign every shortcut WITHOUT opening them (dry run)
+        try:
+            made, failed = _factory().build_all(open_them=False, only=['Purple', 'Rig Health'])
+            STATE['rotate'] = 'dry run: signed %s%s' % (', '.join(made), ('; FAILED ' + '; '.join(failed)) if failed else '')
+        except Exception as e:
+            STATE['rotate'] = 'dry run failed: %s: %s' % (e.__class__.__name__, e)
+
+    def _rotate_token():
+        """Nov 12 (Michael: 'Run it'): new rig token -> Mac + Pi, rebuild every shortcut (Pi front door, token in a
+        header), open them for Add, then restart rig_control so the old token dies."""
+        try:
+            new = secrets.token_urlsafe(24)
+            tmp = TOKEN_FILE + '.new'
+            with open(tmp, 'w') as f:
+                f.write(new)
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, TOKEN_FILE)
+            new = None
+            import pi_deploy
+            if not pi_deploy.sync_token():
+                STATE['rotate'] = 'new token on the Mac, but the Pi copy FAILED -- run pi_deploy'
+            made, failed = _factory().build_all(open_them=True)
+            STATE['rotate'] = 'rotated %s; opened %d shortcuts%s' % (time.strftime('%H:%M'), len(made),
+                                                                  ('; FAILED ' + '; '.join(failed)) if failed else '')
+            with open(os.path.join(HERE, 'rig_last_look.json'), 'w') as f:
+                json.dump({'look': STATE.get('look'), 'since': STATE.get('since'), 'rotate': STATE['rotate']}, f)
+        except Exception as e:
+            STATE['rotate'] = 'rotation failed: %s: %s' % (e.__class__.__name__, e)
+            return
+        time.sleep(3)
+        os._exit(1)                                 # launchd restarts rig_control with the new token
 
     def _reload():
         time.sleep(1.0)
@@ -763,5 +802,7 @@ if __name__ == '__main__':
                              ask=ask_jarvis, status=_bridge_status, reload=_reload, hub_restart=_hub_restart,
                              beat_start=_beat_start, tasks={'pi_hue_key': lambda: __import__('pi_hue_key').create(180),
                                     'pi_deploy': lambda: __import__('pi_deploy').deploy(),
-                                    'pi_brain_status': lambda: __import__('pi_deploy').read_status()}))
+                                    'pi_brain_status': lambda: __import__('pi_deploy').read_status(),
+                                    'pi_door_test': lambda: __import__('pi_deploy').door_test(),
+                                    'shortcut_test': _shortcut_test, 'rotate_token': _rotate_token}))
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()

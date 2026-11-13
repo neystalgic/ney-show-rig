@@ -154,6 +154,11 @@ def _save(path, obj):
 def main():
     os.makedirs(BASE, exist_ok=True)
     done = _load(DONE_FILE, {})
+    try:
+        import front_door                            # Nov 12: the Pi is the front door (passes to the Mac, covers when it sleeps)
+        front_door.start(lamps, hue, mac_urls, log)
+    except Exception as e:
+        log('front door failed to start: %s: %s' % (e.__class__.__name__, e))
     log('Ney brain started (schedule failover, catch-up on)')
     while True:
         now = dt.datetime.now()

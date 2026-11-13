@@ -5,12 +5,12 @@
 # and only then restarts the brain. Bridge task: {"do": "pi_deploy"}.  Result: STATUS['last'] (and bridge status).
 # Also: {"do": "pi_brain_status"} reads ~/NeyBrain/status.json + the last log lines.
 # =============================================================================
-import json, os, subprocess, time
+import json, os, re, subprocess, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, 'pi', 'brain')
 PI = 'mjney99@100.127.200.67'
-FILES = ('ney_brain.py', 'test_brain.py', 'ney-brain.service', 'restart.sh')
+FILES = ('ney_brain.py', 'front_door.py', 'jarvis.py', 'health.html', 'test_brain.py', 'ney-brain.service', 'restart.sh')
 STATUS = {'last': 'not run', 'brain': None}
 
 
@@ -32,14 +32,52 @@ def _mac_urls():
     for ts in ('/Applications/Tailscale.app/Contents/MacOS/Tailscale', '/usr/local/bin/tailscale', '/opt/homebrew/bin/tailscale'):
         if os.path.exists(ts):
             ip = subprocess.run([ts, 'ip', '-4'], capture_output=True, text=True).stdout.strip().splitlines()
-            if ip:
-                urls.append('http://%s:7040/' % ip[0])
+            if ip and re.fullmatch(r'\d+\.\d+\.\d+\.\d+', ip[0].strip()):     # ignore CLI error text
+                urls.append('http://%s:7040/' % ip[0].strip())
             break
     return urls
 
 
+def _refresh_copies():
+    """The Pi gets the SAME Jarvis rules and health page as the Mac (copied fresh at every deploy)."""
+    import shutil
+    shutil.copyfile(os.path.join(HERE, 'jarvis', 'jarvis.py'), os.path.join(SRC, 'jarvis.py'))
+    shutil.copyfile(os.path.join(HERE, 'health.html'), os.path.join(SRC, 'health.html'))
+
+
+def sync_token():
+    """Michael's call (Nov 12): the rig token also lives on the Pi, locked down, outside every backup."""
+    with open(os.path.join(HERE, 'rig_control.token')) as f:
+        tok = f.read().strip()
+    r = ssh('umask 077 && mkdir -p ~/.ney_secrets && chmod 700 ~/.ney_secrets && cat > ~/.ney_secrets/rig_token.new && '
+            'mv ~/.ney_secrets/rig_token.new ~/.ney_secrets/rig_token && chmod 600 ~/.ney_secrets/rig_token && echo ok',
+            stdin=tok)
+    tok = None
+    return 'ok' in r.stdout
+
+
+def door_test():
+    """From the Mac: ask the Pi's front door for its status and pass a harmless request through it."""
+    import urllib.request
+    with open(os.path.join(HERE, 'rig_control.token')) as f:
+        tok = f.read().strip()
+    res = {}
+    for name, path in (('door', '/door'), ('status_via_pi', '/status'), ('ask_via_pi', '/ask?text=status')):
+        try:
+            req = urllib.request.Request('http://192.168.1.80:7041' + path, headers={'X-Token': tok})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                res[name] = r.read().decode('utf-8', 'replace')[:300]
+        except Exception as e:
+            res[name] = 'ERROR %s: %s' % (e.__class__.__name__, e)
+    STATUS['door_test'] = res
+    return res
+
+
 def deploy():
     try:
+        _refresh_copies()
+        if not sync_token():
+            return _say('failed: could not put the rig token on the Pi')
         _say('copying the brain to the Pi')
         r = ssh('mkdir -p ~/NeyBrain')
         if r.returncode:
@@ -59,8 +97,13 @@ def deploy():
             ssh('bash ~/NeyBrain/restart.sh', timeout=30)
         except subprocess.TimeoutExpired:
             pass                                   # the check below decides
-        r = ssh('pgrep -f "[n]ey_brain.py" >/dev/null && echo running; systemctl is-enabled ney-brain 2>/dev/null || echo not-installed')
-        out = r.stdout.split()
+        out = []
+        for _ in range(8):                         # systemd restarts it after ~10 s
+            r = ssh('pgrep -f "[n]ey_brain.py" >/dev/null && echo running; systemctl is-enabled ney-brain 2>/dev/null || echo not-installed')
+            out = r.stdout.split()
+            if 'running' in out:
+                break
+            time.sleep(3)
         if 'running' not in out:
             return _say('brain did not start -- see ~/NeyBrain/brain.log on the Pi')
         _say('DONE: brain running on the Pi%s' % ('' if 'enabled' in out else
