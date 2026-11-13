@@ -734,6 +734,18 @@ if __name__ == '__main__':
         except Exception as e:
             STATE['rotate'] = 'dry run failed: %s: %s' % (e.__class__.__name__, e)
 
+    def _make_missing():                            # any shortcut whose signed file is older than the token (or missing)
+        try:
+            f = _factory()
+            tok_t = os.path.getmtime(TOKEN_FILE)
+            need = [n for n, k, p in f.SET
+                    if not os.path.exists(os.path.join(f.OUT, '%s.shortcut' % n))
+                    or os.path.getmtime(os.path.join(f.OUT, '%s.shortcut' % n)) < tok_t]
+            made, failed = f.build_all(open_them=True, only=need) if need else ([], [])
+            STATE['rotate'] = 'remade %s%s' % (', '.join(made) or 'nothing', ('; FAILED ' + '; '.join(failed)) if failed else '')
+        except Exception as e:
+            STATE['rotate'] = 'remake failed: %s: %s' % (e.__class__.__name__, e)
+
     def _rotate_token():
         """Nov 12 (Michael: 'Run it'): new rig token -> Mac + Pi, rebuild every shortcut (Pi front door, token in a
         header), open them for Add, then restart rig_control so the old token dies."""
@@ -804,5 +816,6 @@ if __name__ == '__main__':
                                     'pi_deploy': lambda: __import__('pi_deploy').deploy(),
                                     'pi_brain_status': lambda: __import__('pi_deploy').read_status(),
                                     'pi_door_test': lambda: __import__('pi_deploy').door_test(),
-                                    'shortcut_test': _shortcut_test, 'rotate_token': _rotate_token}))
+                                    'shortcut_test': _shortcut_test, 'rotate_token': _rotate_token,
+                                    'make_missing_shortcuts': _make_missing}))
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()
