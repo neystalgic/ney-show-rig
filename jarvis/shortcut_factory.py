@@ -19,6 +19,7 @@ SET = [
     ('Play Pause', 'silent', '/m/key?k=space'), ('Intermission', 'silent', '/m/lights?l=intermission'),
     ('Back to the Movie', 'silent', '/m/lights?l=resume'), ('Lights Up', 'silent', '/m/lights?l=up'),
     ('Purple', 'speak', '/purple'), ('Rainbow Fade', 'speak', '/rainbow'), ('Goodnight', 'speak', '/night'),
+    ('Morning', 'silent', '/morning'),
     ('Lights Off', 'speak', '/off'), ('Guest Mode', 'speak', '/guest_on'),
     ('Rig Health', 'page', '/health'), ('Movie Hub', 'page', '/hub'),
 ]
