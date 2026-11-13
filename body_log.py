@@ -13,7 +13,7 @@ WEIGHT = os.path.join(DESK, 'Weight Log.csv')
 FOOD = os.path.join(DESK, 'Food Log.csv')
 ACTIVITY = os.path.join(DESK, 'Activity Log.csv')
 HEADERS = {FOOD: ['Date', 'Time', 'Item', 'Calories', 'Protein (g)', 'Source'],
-           ACTIVITY: ['Date', 'Active kcal', 'Steps', 'Exercise min', 'Sleep h']}
+           ACTIVITY: ['Date', 'Active kcal', 'Steps', 'Exercise min', 'Sleep h', 'Resting HR', 'HRV ms', 'VO2max']}
 
 
 def _append(path, row):
@@ -31,13 +31,27 @@ def add_food(item, kcal=None, protein=None, source='Jarvis', when=None):
                    '' if kcal is None else int(round(kcal)), '' if protein is None else int(round(protein)), source])
 
 
-def add_activity(day, active_kcal='', steps='', exercise_min='', sleep_h=''):
-    rows = [r for r in _rows(ACTIVITY) if r.get('Date') != day]          # one row per day: newest wins
-    rows.append({'Date': day, 'Active kcal': active_kcal, 'Steps': steps, 'Exercise min': exercise_min, 'Sleep h': sleep_h})
+FIELDS = {'active_kcal': 'Active kcal', 'steps': 'Steps', 'exercise_min': 'Exercise min', 'sleep_h': 'Sleep h',
+          'resting_hr': 'Resting HR', 'hrv': 'HRV ms', 'vo2max': 'VO2max'}
+
+
+def add_activity(day, **vals):
+    """One row per day (a later sync for the same day fills in / replaces its numbers)."""
+    rows = {r['Date']: r for r in _rows(ACTIVITY) if r.get('Date')}
+    row = rows.get(day, {'Date': day})
+    for k, col in FIELDS.items():
+        v = vals.get(k)
+        if v not in (None, ''):
+            try:
+                row[col] = round(float(v), 1)
+            except (TypeError, ValueError):
+                pass
+    rows[day] = row
     with open(ACTIVITY, 'w', newline='') as f:
-        w = csv.DictWriter(f, HEADERS[ACTIVITY])
+        w = csv.DictWriter(f, HEADERS[ACTIVITY], extrasaction='ignore')
         w.writeheader()
-        w.writerows(sorted(rows, key=lambda r: r['Date']))
+        w.writerows(sorted(rows.values(), key=lambda r: r['Date']))
+    return row
 
 
 def _rows(path):
@@ -81,7 +95,7 @@ def summary(days=60):
             d['meals'] += 1
     for r in _rows(ACTIVITY):
         if r.get('Date', '') >= start.isoformat():
-            act[r['Date']] = {k: _num(r.get(k)) for k in ('Active kcal', 'Steps', 'Exercise min', 'Sleep h')}
+            act[r['Date']] = {k: _num(r.get(k)) for k in FIELDS.values()}
     days_list = [(start + dt.timedelta(days=i)).isoformat() for i in range(days)]
     avg7, wins = {}, []
     for d in days_list:

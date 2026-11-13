@@ -606,6 +606,19 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             return self.wfile.write(body)
+        if path == 'body/activity':                     # Nov 13: the iPhone "Health Sync" shortcut posts the Watch's numbers
+            import body_log, datetime as _dt
+            n = min(int(self.headers.get('Content-Length') or 0), 5000)
+            try:
+                data = json.loads(self.rfile.read(n) or b'{}')
+            except ValueError:
+                return self.reply(400, 'Send JSON.')
+            day = str(data.get('day') or 'yesterday')
+            if day in ('yesterday', 'today'):
+                day = (_dt.date.today() - _dt.timedelta(days=1 if day == 'yesterday' else 0)).isoformat()
+            row = body_log.add_activity(day, **{k: data.get(k) for k in body_log.FIELDS})
+            got = ', '.join('%s %s' % (v, k) for k, v in row.items() if k != 'Date')
+            return self.reply(200, 'Health synced for %s: %s.' % (day, got or 'no numbers yet'))
         if path == 'body.json':
             import body_log
             return self.reply_json(200, body_log.summary())
