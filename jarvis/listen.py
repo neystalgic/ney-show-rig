@@ -65,36 +65,37 @@ def ask_rig(text):
         return r.read().decode('utf-8', 'replace')
 
 
-class Ears:
-    """Pure logic for 'listen until the sentence ends' (testable without a mic)."""
-    def __init__(self, rate=RATE, block=BLOCK, max_s=7.0, wait_s=4.0, tail_s=0.8):
-        self.rate, self.block = rate, block
-        self.max_n, self.wait_n, self.tail_n = (int(x * rate / block) for x in (max_s, wait_s, tail_s))
-        self.reset()
+HALLUCINATIONS = {'', 'you', 'thank you', 'thank you.', 'thanks for watching', 'thanks for watching!', '.', 'bye.', 'okay.'}
 
-    def reset(self):
-        self.frames, self.started, self.quiet, self.n = [], False, 0, 0
-        self.floor = None
+
+def rms(frame):
+    return float(np.sqrt(np.mean((frame.astype(np.float32) / 32768.0) ** 2)) + 1e-9)
+
+
+class Ears:
+    """'Listen until the sentence ends' (testable without a mic). Nov 13 fix: the room's quiet level comes from BEFORE
+    the wake word (the chime used to set it), every frame after the wake word is kept (so 'Hey Jarvis, status' in one
+    breath works), and it always hands the audio to Whisper instead of giving up."""
+    def __init__(self, rate=RATE, block=BLOCK, max_s=6.0, min_s=1.2, tail_s=0.8):
+        self.max_n, self.min_n, self.tail_n = (int(x * rate / block) for x in (max_s, min_s, tail_s))
+        self.reset(0.01)
+
+    def reset(self, floor):
+        self.frames, self.heard, self.quiet, self.n = [], False, 0, 0
+        self.threshold = max(0.008, floor * 2.5)
 
     def feed(self, frame):
-        """Returns None while listening, 'done' with speech, 'nothing' if no speech came."""
-        rms = float(np.sqrt(np.mean((frame.astype(np.float32) / 32768.0) ** 2)) + 1e-9)
+        """None while listening, 'done' when the sentence has ended (or 6 s passed)."""
+        self.frames.append(frame)
         self.n += 1
-        if self.floor is None:
-            self.floor = rms
-        speaking = rms > max(0.012, self.floor * 3.0)
-        if not speaking and not self.started:
-            self.floor = 0.9 * self.floor + 0.1 * rms
-        if speaking:
-            self.started, self.quiet = True, 0
-        elif self.started:
+        if rms(frame) > self.threshold:
+            self.heard, self.quiet = True, 0
+        else:
             self.quiet += 1
-        if self.started:
-            self.frames.append(frame)
-        if self.started and (self.quiet >= self.tail_n or self.n >= self.max_n):
+        if self.n >= self.max_n:
             return 'done'
-        if not self.started and self.n >= self.wait_n:
-            return 'nothing'
+        if self.n >= self.min_n and self.heard and self.quiet >= self.tail_n:
+            return 'done'
         return None
 
     def audio(self):
@@ -135,31 +136,34 @@ def main():
             wake.reset()
             speaking.clear()
 
+    import collections
     ears, mode, last_wake = Ears(), 'wake', 0.0
+    room = collections.deque(maxlen=40)            # the last ~3 s of room level before a wake word
     with sd.InputStream(device=dev, channels=1, samplerate=RATE, blocksize=BLOCK, dtype='int16', callback=cb):
         while True:
             frame = q.get()
             if mode == 'wake':
+                room.append(rms(frame))
                 score = max(wake.predict(frame).values())
                 if score >= WAKE_THRESHOLD and time.time() - last_wake > 2.0:
                     last_wake = time.time()
                     log('wake (%.2f)' % score)
                     ch = my_chime() or os.path.join(HERE, 'sounds', s.get('chime') or '')
                     subprocess.Popen(['/usr/bin/afplay', ch if os.path.isfile(ch) else '/System/Library/Sounds/Tink.aiff'])
-                    ears.reset()
+                    ears.reset(float(np.percentile(list(room), 20)) if room else 0.01)
                     mode = 'hear'
                 continue
             r = ears.feed(frame)
             if r is None:
                 continue
             mode = 'wake'
-            if r == 'nothing':
-                log('no command after the wake word')
-                continue
             segs, _ = stt.transcribe(ears.audio(), language='en', beam_size=1, initial_prompt=VOCAB)
             text = ' '.join(x.text for x in segs).strip()
             log('heard: %r' % text)
-            if not text:
+            bare = text.lower().strip(' .,!?')
+            bare = bare.replace('hey jarvis', '').replace('jarvis', '').strip(' .,!?')
+            if bare in HALLUCINATIONS:
+                log('nothing said after the wake word')
                 continue
             try:
                 reply = ask_rig(text)
