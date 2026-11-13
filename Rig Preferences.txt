@@ -1,3 +1,6 @@
+NOTE (Nov 12): this file is the dated HISTORY of Michael's preferences. The current, single source of truth is
+      the Preferences section of Ney System/BRAIN.md -- update both together.
+
 RIG PREFERENCES (Michael) -- read this before changing looks
 =============================================================
 RAINBOW (Nov 10): "rainbow" always means EVERY BULB THE SAME COLOUR, in sync, breathing

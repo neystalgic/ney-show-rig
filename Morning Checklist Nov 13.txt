@@ -1,0 +1,19 @@
+MORNING CHECKLIST -- Fri Nov 13   (about 15 minutes total)
+==========================================================
+[ ] 1. WEIGHT: tell Claude (or Jarvis) "log <number>".
+
+[ ] 2. TOKEN SWITCH (10 min, at the Mac)
+       a. Shortcuts app on the Mac: select and DELETE these old ones:
+          Jarvis, Movie Night, Movie Hub, Play Pause, Intermission, Back to the Movie, Lights Up,
+          Movie Mode, Light Show, Rainbow Fade, Rainbow Room, Bright Studio, Studio Off, Rest Mode
+       b. Tell Claude "go". 17 new shortcuts open one at a time -> click "Add Shortcut" on each.
+       c. iPhone: Settings > Accessibility > Touch > Back Tap > Double Tap > Jarvis (pick it again).
+       d. iPhone: run "Rig Health" once (logs the health page back in). Add it to the Home Screen.
+
+[ ] 3. APPLE WATCH (10 min)
+       a. Charged? Settings > General > About: Series 4 or newer = good.
+       b. Old account on it? Settings > General > Reset, then pair from the Watch app on the iPhone.
+       c. iPhone Shortcuts: on Jarvis, Purple, Movie Night, Goodnight -> (i) -> Show on Apple Watch.
+
+[ ] 4. SLEEP AUTOMATIONS (2 min, with Claude)
+       Shortcuts > Automation: Sleep Focus turns on -> Goodnight.  Alarm stopped -> morning blue.
