@@ -37,6 +37,7 @@ import hub_watchdog                                # restarts a frozen hub on it
 import light_schedule                              # wind-down 21:30, night light 23:00, morning 8:40-9:00
 import tap_switch                                  # Hue Tap Switch Mini: 1 show, 2 movie, 3 cycle, 4 night (Nov 11)
 import claude_bridge                               # Claude runs the rig through bridge/inbox, no TouchDesigner (Nov 12)
+import rig_health                                  # /health: green/red per part of the rig, for the phone (Nov 12)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 7040
@@ -408,6 +409,11 @@ def apply(look):
         try:
             LOOKS[look][1]()
             STATE.update(look=look, since=time.strftime('%H:%M'))
+            try:                                    # remembered across rig_control restarts (Nov 12)
+                with open(os.path.join(HERE, 'rig_last_look.json'), 'w') as f:
+                    json.dump({'look': look, 'since': STATE['since']}, f)
+            except OSError:
+                pass
         except Exception as e:
             STATE['last_error'] = '%s: %s' % (look, e)
         finally:
@@ -489,6 +495,18 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             return self.wfile.write(body)
+        if path == 'health':                            # the phone health page (remembers the key in a cookie)
+            with open(os.path.join(HERE, 'health.html'), 'rb') as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Set-Cookie', 'rig_key=%s; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly' % TOKEN)
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
+        if path == 'health.json':
+            return self.reply_json(200, rig_health.snapshot())
         if path == 'ask':                               # Jarvis from Siri / Shortcuts / anywhere
             text = (q.get('text') or [''])[0]
             n = int(self.headers.get('Content-Length') or 0)
@@ -577,6 +595,11 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     print('Rig control on port %d' % PORT, flush=True)
+    try:
+        with open(os.path.join(HERE, 'rig_last_look.json')) as f:
+            STATE.update(json.load(f))
+    except (OSError, ValueError):
+        pass
     head_power.start()
 
     def _wd_stop():
@@ -626,7 +649,11 @@ if __name__ == '__main__':
         return dict(STATE, hub=running('hue_hub.py'), hub_live=_hub_summary(), beat_sender=running('beat_sender.py'),
                     head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
                     tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'),
-                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines())
+                    jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot())
+
+    rig_health.start(lambda: dict(state=dict(STATE), head_power=head_power.status(), watchdog=hub_watchdog.status(),
+                                  schedule=light_schedule.status(), bridge=claude_bridge.status(),
+                                  tap_switch=tap_switch.status()))
 
     def _reload():
         time.sleep(1.0)
