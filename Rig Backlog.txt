@@ -65,7 +65,7 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
 9. [SAFE] todo -- Rig 2.0 Phase 1b: hand-off rule (Mac hub leads while alive and
    playing; Pi takes over within seconds when it goes quiet). away/pi-brain/handoff.py
    + tests that simulate the Mac dropping out.
-10. [SAFE] todo -- Rig 2.0 Phase 1c: health page (one phone page, green/red per
+10. [SAFE] done Nov 12 on the Mac (/health in rig_control; move to the Pi in Phase 1) -- Rig 2.0 Phase 1c: health page (one phone page, green/red per
    machine and service). away/pi-brain/health.py + a static preview HTML.
 11. [SAFE] todo -- Tap Switch dry-run harness: simulate button 1-4 events against a
    fake bridge and check each maps to show / movieuv / cycle / night. away/tap-test/.
