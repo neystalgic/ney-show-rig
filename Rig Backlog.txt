@@ -10,6 +10,12 @@ Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never to
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
 --- QUEUE (top = next) --------------------------------------------------------------
+0. [SAFE] todo -- Health Report v2 (Michael, Nov 13: "track heart rate and other factors").
+   The new Health Sync posts steps, active kcal, resting HR, HRV, sleep and VO2max into
+   Activity Log.csv (see body_log.py FIELDS). Build away/health-report-v2/: a copy of body.html
+   + body_log.py that adds a resting HR + HRV chart, a sleep-hours bar chart, those columns in
+   the weekly table, and a "today vs 7-day average" line for resting HR. Same canvas style,
+   purple accents, no libraries. Offline test with a fake CSV. DEPLOY.txt = copy two files + reload.
 1. [SAFE] in progress (part 1 written Nov 11: OSC listener + pulsing light; next: Niagara, DMX previs, nDisplay) -- Unreal on the Zephyrus: step-by-step "Unreal Beat Deck.txt" (OSC
    receiver from the beat stream, Niagara sacred-geometry system, DMX plugin previs of
    the 4 heads + 2 spots, nDisplay notes). Plain text, no installs.

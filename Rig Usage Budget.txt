@@ -9,6 +9,8 @@ MAX_TASKS_PER_RUN = 1    # one backlog task per run, then stop
 MAX_TOOL_CALLS_PER_RUN = 40   # stop, save progress and log if a task needs more
 STOP_AFTER_FAILED_RUNS = 2    # two failed/blocked runs in a row -> loop pauses itself
 IDLE_MINUTES = 20        # skip if Michael touched the Mac, edited code or committed in the last 20 min
+WORK_HOURS = 15-20       # Michael is out 3-8 pm: the loop's main shift (runs ~3:07, 4:07, 5:07, 6:07, 7:07)
+OFF_HOURS_MAX_RUNS = 3   # at most 3 idle runs a day outside work hours, so the shift always has its slots
 QUIET_HOURS = 01-11      # no runs between 1 am and 11 am (sleep + Michael's morning)
 
 Hard guarantee against extra fees: claude.ai Settings > Usage -> keep "usage credits"

@@ -9,7 +9,7 @@ ROOT = os.path.dirname(HERE)
 BUDGET = os.path.join(ROOT, 'Rig Usage Budget.txt')
 LEDGER = os.path.join(HERE, 'runs.csv')
 DEF = {'PAUSE': 'no', 'MAX_RUNS_PER_DAY': '4', 'MAX_RUNS_PER_WEEK': '20',
-       'STOP_AFTER_FAILED_RUNS': '2', 'QUIET_HOURS': '01-11', 'IDLE_MINUTES': '20'}
+       'STOP_AFTER_FAILED_RUNS': '2', 'QUIET_HOURS': '01-11', 'IDLE_MINUTES': '20', 'WORK_HOURS': '15-20', 'OFF_HOURS_MAX_RUNS': '3'}
 
 def budget():
     b = dict(DEF)
@@ -88,6 +88,14 @@ def start():
     starts = [dt.datetime.fromisoformat(r['start']) for r in rs if r.get('start')]
     day = sum(1 for s in starts if s.date() == t.date())
     week = sum(1 for s in starts if t - s < dt.timedelta(days=7))
+    try:   # Michael's away block is the main shift; idle runs outside it can't eat its slots
+        wa, wz = [int(x) for x in b['WORK_HOURS'].split('-')]
+        if not (wa <= t.hour < wz):
+            off = sum(1 for s in starts if s.date() == t.date() and not (wa <= s.hour < wz))
+            if off >= int(b['OFF_HOURS_MAX_RUNS']):
+                return 'SKIP saving runs for work hours %s (off-hours cap %s reached)' % (b['WORK_HOURS'], b['OFF_HOURS_MAX_RUNS'])
+    except ValueError:
+        pass
     if day >= int(b['MAX_RUNS_PER_DAY']):
         return 'SKIP daily cap %s reached' % b['MAX_RUNS_PER_DAY']
     if week >= int(b['MAX_RUNS_PER_WEEK']):
