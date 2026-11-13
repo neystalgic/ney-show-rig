@@ -9,7 +9,7 @@ ROOT = os.path.dirname(HERE)
 BUDGET = os.path.join(ROOT, 'Rig Usage Budget.txt')
 LEDGER = os.path.join(HERE, 'runs.csv')
 DEF = {'PAUSE': 'no', 'MAX_RUNS_PER_DAY': '4', 'MAX_RUNS_PER_WEEK': '20',
-       'STOP_AFTER_FAILED_RUNS': '2', 'QUIET_HOURS': '01-11'}
+       'STOP_AFTER_FAILED_RUNS': '2', 'QUIET_HOURS': '01-11', 'IDLE_MINUTES': '20'}
 
 def budget():
     b = dict(DEF)
@@ -42,6 +42,36 @@ def now():
     except Exception:
         return dt.datetime.now()
 
+def busy(mins, clock=None):
+    """Why Michael looks active right now, or '' if he's idle.
+    Active = touched the Mac's keyboard/mouse, edited code, or committed in the last `mins` minutes."""
+    import json, subprocess, time
+    clock = clock or time.time()
+    try:   # written every minute by rig_control's idle-watch thread
+        d = json.load(open(os.path.join(ROOT, 'bridge', 'idle.json')))
+        if clock - d['at'] < 300 and d['hid_idle_s'] < mins * 60:
+            return 'Michael is at the Mac (idle %d min)' % (d['hid_idle_s'] // 60)
+    except (OSError, ValueError, KeyError):
+        pass
+    newest = 0
+    for sub in ('', 'jarvis', 'pi/brain', 'pi'):
+        try:
+            for f in os.listdir(os.path.join(ROOT, sub)):
+                if f.endswith(('.py', '.html', '.applescript')):
+                    newest = max(newest, os.path.getmtime(os.path.join(ROOT, sub, f)))
+        except OSError:
+            pass
+    if clock - newest < mins * 60:
+        return 'project code edited %d min ago' % ((clock - newest) // 60)
+    try:
+        ct = int(subprocess.run(['git', '-C', ROOT, 'log', '-1', '--format=%ct', '--invert-grep', '--grep=^Away loop'],
+                                capture_output=True, text=True, timeout=10).stdout.strip() or 0)
+        if clock - ct < mins * 60:
+            return 'commit %d min ago' % ((clock - ct) // 60)
+    except Exception:
+        pass
+    return ''
+
 def start():
     b, rs, t = budget(), rows(), now()
     if b['PAUSE'].lower().startswith('y'):
@@ -52,6 +82,9 @@ def start():
             return 'SKIP quiet hours %s' % b['QUIET_HOURS']
     except ValueError:
         pass
+    why = busy(int(b['IDLE_MINUTES']))
+    if why:
+        return 'SKIP Michael is active: %s' % why
     starts = [dt.datetime.fromisoformat(r['start']) for r in rs if r.get('start')]
     day = sum(1 for s in starts if s.date() == t.date())
     week = sum(1 for s in starts if t - s < dt.timedelta(days=7))

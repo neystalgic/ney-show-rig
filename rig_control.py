@@ -940,6 +940,23 @@ if __name__ == '__main__':
             time.sleep(30)
     threading.Thread(target=_dock_watch, name='dock-watch', daemon=True).start()
 
+    def _idle_watch():                                    # Nov 13: away loop only runs when Michael is idle
+        import re as _re
+        out_p = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bridge', 'idle.json')
+        while True:
+            try:
+                out = subprocess.run(['/usr/sbin/ioreg', '-c', 'IOHIDSystem', '-d', '4'], capture_output=True, text=True, timeout=10).stdout
+                m = _re.search(r'"HIDIdleTime" = (\d+)', out)
+                if m:
+                    os.makedirs(os.path.dirname(out_p), exist_ok=True)
+                    with open(out_p + '.tmp', 'w') as f:
+                        json.dump({'hid_idle_s': int(m.group(1)) // 1000000000, 'at': time.time()}, f)
+                    os.replace(out_p + '.tmp', out_p)
+            except Exception:
+                pass
+            time.sleep(60)
+    threading.Thread(target=_idle_watch, name='idle-watch', daemon=True).start()
+
     def _jarvis_warm():                             # Nov 12: keep Jarvis's local brain loaded (no slow first answer)
         jd = os.path.join(HERE, 'jarvis')
         if jd not in sys.path:
