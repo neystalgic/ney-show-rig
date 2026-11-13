@@ -60,6 +60,8 @@ ACTIONS = {
     'wake':        'Waking the Zephyrus.',
     'later':       None,                      # tonight only: no dimming until <time>
     'schedule_normal': None,                  # back to the normal 22:30 / 23:00 schedule
+    'food':        None,                      # Nov 13: "log burger, 900 calories, 55 protein" (or estimate)
+    'today':       None,                      # today's calories + protein so far
     'color':       None,                      # any colour, optional brightness ("blue at 40 percent")
     'level':       None,                      # brightness only ("dim the lights", "50 percent")
     'help':        None,                      # "what can you do"
@@ -80,6 +82,51 @@ COLOURS = {
 COLOUR_RE = re.compile(r'\b(%s)\b' % '|'.join(sorted((re.escape(c) for c in COLOURS), key=len, reverse=True)))
 
 
+FOOD_VERB = re.compile(r'^(log|logged|i ate|ate|i had|had|just ate|i just ate|i just had|eating|i.?m eating)\b\s*', re.I)
+
+
+def parse_food(t):
+    """'log half a burger, 600 calories, 35 protein' -> {'item':..., 'kcal':600, 'protein':35}. None if it's not food
+    (e.g. 'log 263.8' is a weight)."""
+    t = t.lower().strip(' .!')
+    if not FOOD_VERB.match(t) or re.search(r'\b(lb|lbs|pounds|weigh|weight)\b', t):
+        return None
+    kc = re.search(r'(\d{2,4})\s*(calories|calorie|cals?|kcal)\b', t)
+    pr = re.search(r'(\d{1,3})\s*(g|grams?)?\s*(of\s*)?protein\b', t)
+    item = FOOD_VERB.sub('', t)
+    for m in (kc, pr):
+        if m:
+            item = item.replace(m.group(0), ' ')
+    item = re.sub(r'\b(with|and)\s*$', '', re.sub(r'[,;]+', ' ', item)).strip(' ,.')
+    item = re.sub(r'\s+', ' ', item)
+    if not re.search(r'[a-z]{2,}', item):
+        return None
+    return {'item': item, 'kcal': int(kc.group(1)) if kc else None, 'protein': int(pr.group(1)) if pr else None}
+
+
+def estimate_food(item, s, post=None):
+    """Local model's guess for a typical portion. None if unavailable or silly."""
+    body = {'model': s['model'], 'stream': False, 'format': 'json', 'keep_alive': '3h', 'options': {'temperature': 0},
+            'messages': [{'role': 'system', 'content': 'Estimate calories and protein in grams for this food as a typical '
+                          'US portion. Reply JSON only: {"calories": int, "protein": int}'},
+                         {'role': 'user', 'content': item}]}
+    try:
+        out = json.loads((post or _post)(s['ollama'] + '/api/chat', body, 30)['message']['content'])
+        kc, pr = int(out.get('calories')), int(out.get('protein'))
+        if 0 < kc <= 3000 and 0 <= pr <= 250:
+            return kc, pr
+    except Exception as e:
+        log('food estimate failed: %s' % e)
+    return None
+
+
+def _body_log():
+    if RIG not in sys.path:
+        sys.path.insert(0, RIG)
+    import body_log
+    return body_log
+
+
 def find_colour(t):
     m = COLOUR_RE.search(t)
     return m.group(1) if m else None
@@ -98,6 +145,8 @@ def find_percent(t):
 
 # Word rules, most specific first. (pattern, action)
 RULES = [
+    ('__food__', 'food'),
+    (r"\bhow (am i|i.?m) doing\b|\btoday.?s? (calories|totals|food|numbers|macros)\b|\bcalories (so far|today)\b|\bwhat (have|did) i (eat|eaten|ate)\b", 'today'),
     (r'\b(schedule|bedtime|lights?) back to normal\b|\bnormal schedule\b|\breset (the )?schedule\b', 'schedule_normal'),
     (r"(no dimming|don.?t (start )?dim\w*|push (bed ?time|the schedule|wind ?down)|bed ?time (at|to)|stay up|keep (them|the lights|it) (on|up|bright))"
      r".*?\b(until|till|til|to|at)\s+(?P<when>midnight|\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?)", 'later'),
@@ -166,6 +215,11 @@ def by_rules(text):
     if not re.sub(r'[^a-z0-9]', '', t):
         return {'action': 'nothing', 'value': None}
     for pat, action in RULES:
+        if pat == '__food__':
+            f = parse_food(t)
+            if f:
+                return {'action': 'food', 'value': f}
+            continue
         if pat == '__colour__':
             c = find_colour(t)
             if c:
@@ -339,6 +393,32 @@ def log_weight(value, path=WEIGHT_LOG):
 def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
     a, v = intent['action'], intent.get('value')
     rig = rig or (lambda p: _rig(p, s))
+    if a == 'food':
+        f = dict(v)
+        est = ''
+        if f.get('kcal') is None:
+            guess = estimate_food(f['item'], s)
+            if guess:
+                f['kcal'], f['protein'] = guess[0], (f['protein'] if f.get('protein') is not None else guess[1])
+                est = ' (my estimate)'
+        try:
+            _body_log().add_food(f['item'], f.get('kcal'), f.get('protein'), 'Jarvis' + (' estimate' if est else ''))
+        except Exception as e:
+            return "I couldn't write the food log (%s). That needs the Mac." % e.__class__.__name__
+        if f.get('kcal') is None:
+            return "Logged %s, but I couldn't estimate it. Tell me the calories and I'll add them." % f['item']
+        bits = '%d calories' % f['kcal'] + (', %d grams of protein' % f['protein'] if f.get('protein') is not None else '')
+        t = _body_log().today()
+        return 'Logged %s: %s%s. Today so far: %d calories, %d grams of protein.' % (f['item'], bits, est, t['calories'], t['protein'])
+    if a == 'today':
+        try:
+            t = _body_log().today()
+        except Exception as e:
+            return "I can't read the food log right now (%s)." % e.__class__.__name__
+        if not t['meals']:
+            return "Nothing logged today yet. Tell me what you ate, like 'log a banana with peanut butter'."
+        extra = (' %d of them without numbers.' % t['unknown']) if t['unknown'] else ''
+        return 'Today so far: %d calories and %d grams of protein across %d meals.%s' % (t['calories'], t['protein'], t['meals'], extra)
     if a == 'nothing':
         return "I'm listening. Say what you want after the beep, like 'blue at 50 percent' or 'movie night'."
     if a == 'unknown':

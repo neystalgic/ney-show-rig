@@ -103,3 +103,21 @@ print('comprehension tests passed')
 assert j.by_rules('guest mode')['action'] == 'guest_on' and j.by_rules('friends are over')['action'] == 'guest_on'
 assert j.by_rules('guest mode off')['action'] == 'guest_off' and j.by_rules('guests are gone')['action'] == 'guest_off'
 print('guest mode tests passed')
+
+# --- Nov 13: food logging ---
+assert j.parse_food('log 263.8') is None and j.by_rules('log 263.8')['action'] == 'weight'
+f = j.parse_food('log half a burger, 600 calories, 35 protein'); assert f == {'item': 'half a burger', 'kcal': 600, 'protein': 35}, f
+f = j.parse_food('I ate a banana with peanut butter'); assert f == {'item': 'a banana with peanut butter', 'kcal': None, 'protein': None}, f
+f = j.parse_food('log protein shake 160 cal 30g protein'); assert f['kcal'] == 160 and f['protein'] == 30 and f['item'] == 'protein shake', f
+assert j.by_rules('log a banana')['action'] == 'food' and j.by_rules('how am I doing today')['action'] == 'today'
+assert j.by_rules('i weigh 265')['action'] == 'weight'
+import body_log as BL
+BL.FOOD = os.path.join(d, 'food.csv'); BL.HEADERS = {BL.FOOD: ['Date', 'Time', 'Item', 'Calories', 'Protein (g)', 'Source']}
+j._body_log = lambda: BL
+out = j.do({'action': 'food', 'value': {'item': 'half a burger', 'kcal': 600, 'protein': 35}}, s, rig)
+assert out.startswith('Logged half a burger: 600 calories, 35 grams of protein.') and '600 calories, 35 grams' in out, out
+j.estimate_food = lambda item, s, post=None: (105, 1)
+out = j.do({'action': 'food', 'value': {'item': 'a banana', 'kcal': None, 'protein': None}}, s, rig)
+assert '(my estimate)' in out and 'Today so far: 705 calories, 36 grams' in out, out
+assert 'Today so far: 705 calories' in j.do({'action': 'today'}, s, rig)
+print('food logging tests passed')

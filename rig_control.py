@@ -597,6 +597,18 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             return self.wfile.write(body)
+        if path == 'body':                              # Nov 13: the Body page (weight, food, activity)
+            with open(os.path.join(HERE, 'body.html'), 'rb') as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
+        if path == 'body.json':
+            import body_log
+            return self.reply_json(200, body_log.summary())
         if path == 'health.json':
             return self.reply_json(200, rig_health.snapshot())
         if path == 'ask':                               # Jarvis from Siri / Shortcuts / anywhere

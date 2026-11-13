@@ -21,7 +21,7 @@ SET = [
     ('Purple', 'speak', '/purple'), ('Rainbow Fade', 'speak', '/rainbow'), ('Goodnight', 'speak', '/night'),
     ('Morning', 'silent', '/morning'),
     ('Lights Off', 'speak', '/off'), ('Guest Mode', 'speak', '/guest_on'),
-    ('Rig Health', 'page', '/health'), ('Movie Hub', 'page', '/hub'),
+    ('Rig Health', 'page', '/health'), ('Movie Hub', 'page', '/hub'), ('Body', 'page', '/body'),
 ]
 
 

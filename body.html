@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><title>Body</title>
+<style>
+:root{--bg:#0e0b14;--card:#1a1524;--text:#efe9f7;--muted:#9a8fae;--accent:#a36bff;--avg:#3ddc84;--warn:#ffb020;--grid:#2c2440}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.35 -apple-system,system-ui,sans-serif;padding:16px 16px 40px}
+h1{font-size:22px;margin:4px 0 2px}.sub{color:var(--muted);font-size:13px;margin-bottom:12px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.tile{background:var(--card);border-radius:12px;padding:10px;text-align:center}.tile b{display:block;font-size:22px}.tile span{color:var(--muted);font-size:12px}
+.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px}.card h2{font-size:15px;margin:0 0 8px}
+canvas{width:100%;height:180px;display:block}.legend{color:var(--muted);font-size:12px;margin-top:6px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 4px 0 10px;vertical-align:middle}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--grid)}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:500}
+form{display:flex;gap:8px}input{flex:1;background:#120e1a;color:var(--text);border:1px solid var(--grid);border-radius:10px;padding:12px;font-size:15px}
+button{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:0 16px;font:600 15px -apple-system,system-ui}.msg{color:var(--muted);font-size:13px;margin-top:8px;min-height:18px}
+</style></head><body>
+<h1>Body</h1><div class="sub" id="sub">loading…</div>
+<div class="tiles"><div class="tile"><b id="t_w">–</b><span>latest lb</span></div><div class="tile"><b id="t_ch">–</b><span>since start</span></div><div class="tile"><b id="t_cal">–</b><span>kcal today</span></div></div>
+<div class="card"><h2>Log food or weight</h2><form id="f"><input id="q" placeholder="log chicken bowl, 650 calories, 50 protein" autocomplete="off"><button>Log</button></form><div class="msg" id="msg"></div></div>
+<div class="card"><h2>Weight</h2><canvas id="cw"></canvas><div class="legend"><span class="dot" style="background:var(--accent)"></span>daily<span class="dot" style="background:var(--avg)"></span>7-day average</div></div>
+<div class="card"><h2>Calories &amp; protein</h2><canvas id="cc"></canvas><div class="legend"><span class="dot" style="background:var(--accent)"></span>calories in<span class="dot" style="background:var(--warn)"></span>active calories out (watch)<span class="dot" style="background:var(--avg)"></span>protein ×10</div></div>
+<div class="card"><h2>By week</h2><table id="wk"><thead><tr><th>Week of</th><th>Weight</th><th>kcal/day</th><th>Protein</th><th>Active</th><th>Days</th></tr></thead><tbody></tbody></table></div>
+<script>
+const $=id=>document.getElementById(id), css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function prep(c){const r=window.devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*r;c.height=h*r;const x=c.getContext('2d');x.scale(r,r);return [x,w,h]}
+function axes(x,w,h,lo,hi,fmt){x.strokeStyle=css('--grid');x.fillStyle=css('--muted');x.font='11px -apple-system';x.lineWidth=1;
+ for(let i=0;i<=3;i++){const y=8+(h-26)*i/3;x.beginPath();x.moveTo(34,y);x.lineTo(w,y);x.stroke();x.fillText(fmt(hi-(hi-lo)*i/3),0,y+4)}}
+function line(x,pts,color,width,dots){x.strokeStyle=color;x.fillStyle=color;x.lineWidth=width;x.beginPath();let s=false;
+ pts.forEach(p=>{if(p.y==null){s=false;return}s?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y);s=true});x.stroke();
+ if(dots)pts.forEach(p=>{if(p.y!=null){x.beginPath();x.arc(p.x,p.y,3,0,7);x.fill()}})}
+function draw(d){
+ const days=d.days.slice(-30),W=d.weight,A=d.weight_avg7,F=d.food,AC=d.activity;
+ {const [x,w,h]=prep($('cw'));const vals=days.map(k=>W[k]).concat(days.map(k=>A[k])).filter(v=>v!=null);
+  if(!vals.length){x.fillStyle=css('--muted');x.fillText('No weigh-ins yet — tell Jarvis "log 263.8".',40,90)}else{
+  const lo=Math.floor(Math.min(...vals)-1),hi=Math.ceil(Math.max(...vals)+1);axes(x,w,h,lo,hi,v=>v.toFixed(0));
+  const X=i=>34+(w-40)*i/(days.length-1),Y=v=>v==null?null:8+(h-26)*(hi-v)/(hi-lo);
+  line(x,days.map((k,i)=>({x:X(i),y:Y(A[k])})),css('--avg'),2,false);line(x,days.map((k,i)=>({x:X(i),y:W[k]!=null?Y(W[k]):null})),css('--accent'),0,true)}}
+ {const [x,w,h]=prep($('cc'));const hi=Math.max(2500,...days.map(k=>F[k]?F[k].calories:0),...days.map(k=>AC[k]&&AC[k]['Active kcal']||0));
+  axes(x,w,h,0,hi,v=>Math.round(v/100)/10+'k');const bw=(w-40)/days.length;
+  days.forEach((k,i)=>{const bx=34+bw*i;if(F[k]){x.fillStyle=css('--accent');const bh=(h-26)*F[k].calories/hi;x.fillRect(bx+1,8+(h-26)-bh,bw*0.45,bh)}
+   if(AC[k]&&AC[k]['Active kcal']){x.fillStyle=css('--warn');const bh=(h-26)*AC[k]['Active kcal']/hi;x.fillRect(bx+bw*0.5,8+(h-26)-bh,bw*0.4,bh)}});
+  line(x,days.map((k,i)=>({x:34+bw*(i+.5),y:F[k]?8+(h-26)*(hi-F[k].protein*10)/hi:null})),css('--avg'),2,true)}
+ $('wk').querySelector('tbody').innerHTML=(d.weekly||[]).slice(0,8).map(r=>`<tr><td>${r.week_of.slice(5)}</td><td>${r.avg_weight??'–'}</td><td>${r.avg_calories??'–'}</td><td>${r.avg_protein??'–'}</td><td>${r.avg_active_kcal??'–'}</td><td>${r.days_logged}</td></tr>`).join('');
+ $('t_w').textContent=d.latest?d.latest[1]:'–';$('t_ch').textContent=d.change!=null?(d.change>0?'+':'')+d.change:'–';$('t_cal').textContent=d.today.calories||0;
+ $('sub').textContent='Today: '+d.today.calories+' kcal, '+d.today.protein+' g protein · '+d.today.meals+' meals logged';}
+async function load(){try{const r=await fetch('/body.json',{cache:'no-store'});if(!r.ok){$('sub').textContent='Not allowed — open this page from the Rig Health shortcut once.';return}draw(await r.json())}catch(e){$('sub').textContent='Can’t reach the rig.'}}
+$('f').onsubmit=async e=>{e.preventDefault();const t=$('q').value.trim();if(!t)return;$('msg').textContent='…';
+ try{const r=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:/^(log|i ate|ate|had)/i.test(t)?t:'log '+t})});$('msg').textContent=await r.text();$('q').value='';load()}catch(e){$('msg').textContent='Couldn’t reach the rig.'}};
+load();setInterval(load,60000);addEventListener('resize',load);
+</script></body></html>
