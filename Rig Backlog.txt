@@ -69,6 +69,23 @@ N5. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-meals/DEPLO
 6. [SAFE] todo -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
    (input / decks / mixer / output, only the on-screen deck cooks, labels) as
    away/td-tidy/PLAN.txt. Do NOT edit the live TouchDesigner project.
+J1. [SAFE] todo -- Jarvis morning briefing (Jarvis Status Report #2, Nov 14): when the Health Sync posts (alarm off),
+   Jarvis speaks ~20 s: sleep hours, resting HR vs 7-day avg, weight trend, yesterday's eaten vs burned + deficit,
+   protein, and a one-line nudge. Text built from body_log.summary(); also "Jarvis, brief me" any time. away/jarvis-brief/
+   with fake summaries in tests; no lights involved. Plain, encouraging, never preachy.
+J2. [SAFE] todo -- Jarvis reminders + timers (Report #6): "remind me at 9 to take my meds", "10 minute timer",
+   "what are my reminders", "cancel the 9 o'clock". Stored in jarvis/reminders.json (gitignored), spoken by the Mac
+   (say, Moira) via a rig_control thread; survives restarts; missed ones (Mac asleep) spoken once on wake.
+   away/jarvis-reminders/ + tests with a fake clock. Lights untouched.
+J3. [SAFE] todo -- Jarvis craving support (Report #5; Michael is quitting cannabis -- CHS): "Jarvis, I'm craving" ->
+   a calm 4-7-8 breathing count spoken over ~1 min, days-clean streak (from jarvis/quit.json, start date Michael sets),
+   one line from his own reasons list (quit.json, he writes them), and offers a calm look (purple breathe) only if he
+   says yes. Supportive, short, never preachy; no medical claims. away/jarvis-craving/ + tests.
+J4. [SAFE] todo -- Jarvis workout mode (Report #7): "starting a walk/run/hike" logs start time to Activity notes,
+   asks nothing; "done with my walk" asks "how did it feel, 1 to 10?" and logs it; next Health Sync fills the numbers.
+   Optional energetic look only if he asks. away/jarvis-workout/ + tests.
+J5. [SAFE] todo -- Shortcut trim PLAN (Report #11): propose the ~6 shortcuts to keep (Jarvis + the most used), which
+   to retire, and the regenerate command via shortcut_factory. away/shortcut-trim/PLAN.txt only.
 7. [SAFE] ready for Michael (built + tested Nov 14, see away/housekeeping/DEPLOY.txt) -- Housekeeping list: list the .bak-* files older than 7 days that are
    also in git history, as away/housekeeping/candidates.txt. List only; move nothing.
 
