@@ -1,6 +1,14 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 11:08 UTC | Jarvis food logging polish (N1) | away/jarvis-food/jarvis.py (copy): parse_food drops filler
+  words + stray punctuation (fixes 'quesadilla about'), reads '1,050 calories', fractions (half / a third / two
+  thirds / a quarter / 3/4) scale the Ollama estimate only, 'the extra chicken' = one extra side portion, 'the rest
+  of X' works back from the earlier part in today's/yesterday's Food Log, several foods in one sentence -> separate
+  rows ('chips and queso' stays one); understand_all ignores a bare 'Jarvis,' piece | tests: test_jarvis.py all old
+  tests + 30-odd new food cases passed offline (estimate_food faked, sockets blocked, temp Food Log); live
+  jarvis/test_jarvis.py untouched and still passes | Michael: one-paste block in away/jarvis-food/DEPLOY.txt (backs
+  up, copies jarvis.py, reloads rig_control via the bridge) | Layer updates for Michael: none needed.
 2026-11-14 09:07 UTC | Unreal Beat Deck parts 2-4 | away/unreal-beat-deck/: full deck = part 1 unchanged + E. Niagara
   Flower of Life (252 points, 7 circles, swells on /ney/kick, spins on /ney/drop, rig colour, purple default; HLSL
   scratch pad), F. DMX previs (Art-Net input, LM70S 14ch + Focus Spot 17ch fixture types, patch from heads_config.json

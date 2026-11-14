@@ -10,7 +10,7 @@ Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never to
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
 --- TONIGHT (Nov 14, 1:30 am): Michael asleep -- NON-LIGHTING work only, these first ----------
-N1. [SAFE] todo -- Jarvis food logging polish. Bugs seen Nov 13: "I ate a Chipotle chicken quesadilla, about 1050
+N1. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-food/DEPLOY.txt) -- Jarvis food logging polish. Bugs seen Nov 13: "I ate a Chipotle chicken quesadilla, about 1050
    calories and 60 grams of protein" logged the item as "a chipotle chicken quesadilla about" (strip trailing
    about/around/roughly/like and stray punctuation). Add: fractions ("half the chips and queso", "a third of",
    "two thirds") scale the estimate; "the extra chicken"/"the rest of X" work; multiple items in one sentence

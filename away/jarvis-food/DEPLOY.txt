@@ -1,0 +1,57 @@
+JARVIS FOOD LOGGING POLISH -- built + tested by the Rig away loop, Nov 14 2026. Not live yet.
+=============================================================================================
+
+WHAT IT DOES
+- Fixes the Nov 13 bug: "I ate a Chipotle chicken quesadilla, about 1050 calories and 60 grams of
+  protein" now logs "a chipotle chicken quesadilla", 1050 kcal, 60 g. Filler words (about, around,
+  roughly, like, approximately, maybe...) and stray punctuation never end up in the item name.
+  "1,050 calories" with a comma works too.
+- Fractions scale the ESTIMATE: "half the chips and queso", "a third of a pizza", "two thirds of the
+  burrito", "a quarter of the cake", "3/4 of my sandwich". Jarvis asks Ollama for the whole thing and
+  logs that share. If you say the numbers yourself ("half a burger, 600 calories") they're logged
+  exactly as said, never scaled. "a quarter pounder" / "half pound burger" are not fractions.
+- "the extra chicken" logs as "extra chicken", estimated as one extra side portion.
+- "the rest of X": Jarvis looks for the earlier part of X in today's/yesterday's Food Log (e.g. "half
+  the chips and queso") and logs the remaining share, worked back from the calories you already
+  logged -- no new guess, so the two rows add up to one whole. If it can't find the first part it
+  counts half an estimated portion and says so.
+- Several foods in one sentence become separate rows: "the extra chicken and half the chips and
+  queso" -> 2 rows. A new food starts after a comma, or after and/plus/then when the next word sounds
+  like a new portion (a, the, half, two, some, my, extra, a number). So "chips and queso", "mac and
+  cheese", "rice and beans" stay one food. Numbers attach to the food they follow
+  ("a burger 700 calories and a coke 140 calories").
+- Reply for several foods: "Logged 2 things: extra chicken: 250 calories, 45 grams of protein (my
+  estimate); and half the chips and queso: 600 calories... Today so far: ..."
+- Small fix: "Jarvis, ..." with a comma no longer counts as a separate empty command when a
+  sentence is split into pieces.
+Everything else in jarvis.py is unchanged (all 27 phrases + every older test still pass).
+
+FILES
+  away/jarvis-food/jarvis.py       -> replaces  Hue Rig/jarvis/jarvis.py
+  away/jarvis-food/test_jarvis.py  (the old tests + Nov 14 food tests; stays in away/ -- it checks it
+                                    is testing the away copy, and blocks all network use)
+
+DEPLOY (one Terminal paste, on the Mac)
+  cd ~/"Touchdesigner Designs/Hue Rig" && \
+  python3 away/jarvis-food/test_jarvis.py && \
+  cp jarvis/jarvis.py jarvis/jarvis.py.bak-nov14 && \
+  cp away/jarvis-food/jarvis.py jarvis/jarvis.py && \
+  python3 jarvis/test_jarvis.py && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-jarvis-food.json && echo "deployed -- reload sent"
+
+  rig_control imports jarvis, so it needs the reload (last line, via the Claude bridge; launchd brings
+  it back in a few seconds). If the Mac listener (listen.py) is running, it picks the new code up the
+  next time it starts.
+  Then try: "Jarvis, I ate the extra chicken and half the chips and queso" -> 2 rows in Food Log.csv.
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && cp jarvis/jarvis.py.bak-nov14 jarvis/jarvis.py && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-jarvis-undo.json
+
+WATCH FOR
+- Splitting is word-rule based. Two foods joined by plain "and" with no portion word ("burger and
+  fries") stay ONE row (estimated together -- usually fine). Say "a burger and some fries" to split.
+- Mixing food and a lights command with a comma ("I ate chicken, and turn the lights purple") may
+  log the command words as a food. Keep food sentences on their own for now.
+- "the rest of X" matches by words, so say X the same way both times ("chips and queso").
+- Item names are stored lower-case (as before).
