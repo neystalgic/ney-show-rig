@@ -1,6 +1,19 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 23:06 UTC | Tap Switch dry-run harness (item 5) | away/tap-test/ (NEW): tap_dryrun.py = fake bridge + fake clock
+  that "presses" buttons 1-4 (tap, quick tap, hold with repeats) against any copy of tap_switch.py and writes down the
+  looks it asks for -- no switch, no bridge, no lights. Layout confirmed: 1 show, 2 movieuv, 3 cycle (rainbow, flash,
+  hype, movieglow, cozy, wraps), 4 night; all are real rig_control.LOOKS. FOUND in the live tap_switch.py: (1) holding
+  a button fired it TWICE (initial_press + long_press) -> button 3 skipped a look per hold, 1/2/4 re-ran their look;
+  (2) a first-ever quick tap of a never-pressed button could be swallowed. Fixed copy away/tap-test/tap_switch.py
+  (should_act: one press = one action; same layout/functions; still read-only on the bridge) | tests:
+  test_tap_switch.py 37/37 passed (layout, LOOKS cross-check via ast, cycle wrap, holds, missed-between-polls presses,
+  fast double tap, two buttons at once, old presses ignored, other switches ignored, dormant, discovery, settings,
+  bridge outage, read-only bridge, live bugs reproduced); sockets blocked | Michael: one Terminal paste in
+  away/tap-test/DEPLOY.txt (backs up, tests, swaps tap_switch.py, adds the selftest line, reload, selftest). Your
+  call: button 3's cycle includes "flash" (strobe) -- DEPLOY.txt shows a calm cycle for tap_switch.json |
+  Layer updates for Michael: none.
 2026-11-14 22:08 UTC | Pi calm looks (item 3, Rig 2.0 Phase 1a) | away/pi-brain/ (NEW): looks.py = the Pi look engine,
   matched number-for-number to rig_control.LOOKS: rainbow now really BREATHES (75<->22%, 10 s breath, all lamps one
   colour, wheel every 90 s -- before the Pi stepped 8 fixed colours, no breathing); morning fade 8 s (was 3), night

@@ -1,0 +1,61 @@
+TAP SWITCH DRY RUN (backlog item 5) -- built + tested by the away loop, Nov 14 2026
+==================================================================================
+WHAT IT DOES
+A dry-run harness that "presses" the Tap Switch Mini's buttons 1-4 against a FAKE bridge (no switch, no
+lights, no network) and checks each one lands on the right look. It already ran against your live
+tap_switch.py and found two things worth fixing before the switch arrives (~Tue Nov 17):
+
+  Button layout -- all correct:  1 -> show   2 -> movieuv   3 -> cycle (rainbow, flash, hype, movieglow,
+  cozy, then round again)   4 -> night.  Every one of those is a real look in rig_control.LOOKS.
+
+  BUG 1 (the real one): HOLDING a button fired it TWICE (once on press, again on Hue's "long_press").
+    Button 3 skipped a look on every hold; buttons 1/2/4 re-ran their look twice in a row.
+  BUG 2 (small): a very first quick tap of a never-pressed button could be swallowed if it fell
+    between two polls.
+  Fixed copy: away/tap-test/tap_switch.py -- one press = one action, however you press it.
+  Nothing else changed (same layout, same cycle, same functions, still only READS the bridge).
+
+FILES
+  away/tap-test/tap_switch.py       REPLACES tap_switch.py  (the fix; ~30 lines, see should_act)
+  away/tap-test/tap_dryrun.py       NEW (stays here)  -- the harness. Try it:  python3 away/tap-test/tap_dryrun.py
+  away/tap-test/test_tap_switch.py  NEW (stays here)  -- 37 offline checks
+  selftest.py                       gets ONE new line: the "Tap Switch (dry run)" suite
+
+DEPLOY -- one paste in Terminal (backs up, tests, swaps, reloads rig_control, self-test)
+-----------------------------------------------------------------------------------
+cd ~/"Touchdesigner Designs/Hue Rig" && S=$(date +%Y-%m-%d) && \
+python3 away/tap-test/test_tap_switch.py && \
+cp tap_switch.py tap_switch.py.bak-$S-tap && cp selftest.py selftest.py.bak-$S-tap && \
+cp away/tap-test/tap_switch.py tap_switch.py && \
+python3 - <<'PY'
+s = open('selftest.py').read()
+line = "    ('Tap Switch (dry run)', 'away/tap-test/test_tap_switch.py', [('tap_switch.py', 'away/tap-test/tap_switch.py')]),\n"
+if line not in s:
+    i = s.index('SUITES = [')
+    j = s.index('\n', i) + 1
+    open('selftest.py', 'w').write(s[:j] + line + s[j:])
+    print('selftest: Tap Switch suite added')
+else:
+    print('selftest: Tap Switch suite already there')
+PY
+echo '{"do": "reload"}' > bridge/inbox/reload-tap.json && echo "reload sent, waiting 30 s" && sleep 30 && \
+python3 selftest.py --quiet
+-----------------------------------------------------------------------------------
+Done = the last line shows 0 FAIL. (The paste is safe to run twice. If you deploy away/pi-brain AFTER this,
+its selftest.py replaces yours -- just paste this block again to put the Tap Switch line back.)
+The reload is needed because rig_control loaded tap_switch.py when it started.
+
+UNDO
+cd ~/"Touchdesigner Designs/Hue Rig" && S=$(date +%Y-%m-%d) && cp tap_switch.py.bak-$S-tap tap_switch.py && \
+cp selftest.py.bak-$S-tap selftest.py && echo '{"do": "reload"}' > bridge/inbox/reload-tap-undo.json
+(If you undo on a later day, use the date in the .bak file name instead of $S.)
+
+WHAT TO WATCH FOR (when the switch is paired, ~Nov 17)
+- In the Hue app leave all 4 buttons with NO action, and put "tap" in its name (or set device_id in tap_switch.json).
+- First press of each button should work right away. Hold button 3 -> exactly one step in the cycle.
+- Watch /tmp/tap_switch.log: one "button N (...) -> look" line per press. Two lines for one press = tell me.
+- Heads-up, your call: button 3's cycle includes "flash" (heads + spots strobing). Strobe is "drops only" in
+  your preferences -- if you'd rather the cycle stay calm, set "cycle" in tap_switch.json, e.g.
+  {"cycle": ["rainbow", "hype", "movieglow", "cozy", "purple"]}. Guest mode still limits strobe at the Pi node.
+- The finder matches any device with "tap" in its name/product -- a Hue Tap DIAL would match too. If you ever
+  add one, put the Mini's id in tap_switch.json ("device_id").

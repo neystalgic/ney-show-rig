@@ -69,7 +69,7 @@ N5. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-meals/DEPLO
 4. [SAFE] mostly covered Nov 12 by the Pi front door + brain (Mac leads when up, Pi covers calm looks + schedule); remaining: heads power from the Pi -- Rig 2.0 Phase 1b: hand-off rule (Mac hub leads while alive and
    playing; Pi takes over within seconds when it goes quiet). away/pi-brain/handoff.py
    + tests that simulate the Mac dropping out.
-5. [SAFE] todo -- Tap Switch dry-run harness: simulate button 1-4 events against a
+5. [SAFE] ready for Michael (built + tested Nov 14, see away/tap-test/DEPLOY.txt; found + fixed a hold double-fire) -- Tap Switch dry-run harness: simulate button 1-4 events against a
    fake bridge and check each maps to show / movieuv / cycle / night. away/tap-test/.
 6. [SAFE] todo -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
    (input / decks / mixer / output, only the on-screen deck cooks, labels) as
