@@ -1,0 +1,34 @@
+GOOGLE CALENDAR PLAN -- deploy notes (away loop, Nov 14)
+=========================================================
+WHAT IT IS: PLAN.txt = how the Pi brain + Jarvis read your Google Calendar, read-only.
+Recommendation: OAuth "Desktop app" login (stdlib Python, no installs), scope
+calendar.events.readonly, secret in ~/.ney_secrets/google_calendar.json (never git).
+Jarvis answers "what's my day" / "when do I work"; the away loop runs during your real shifts.
+cal_core.py = the offline half, already working: Jarvis's wording + the away-loop hours.
+
+NOTHING GOES LIVE. No live file is replaced or added; rig_control, jarvis, budget_check and
+the Pi are untouched. cal_core.py is a prototype the next builds will copy.
+
+TO DO (read, then decide):
+  open ~/"Touchdesigner Designs/Hue Rig/away/calendar/PLAN.txt"
+  1. Answer section 7: which calendar has your shifts + what they're titled.
+  2. If you like option A, do step 1 in section 6 (~15-20 min in Google Cloud console --
+     remember PUBLISH APP -> "In production", or the login dies after 7 days).
+  3. Add the three build lines below to Rig Backlog.txt as [SAFE] todo (or reword them).
+
+PROPOSED BACKLOG LINES (copy into Rig Backlog.txt if you agree):
+  N4a. [SAFE] todo -- Calendar fetch: away/calendar-fetch/ney_calendar.py (stdlib, read-only, 30-min
+       cache to ~/.ney_cache/calendar.json + times-only bridge/calendar/shifts.json) + cal_login.py
+       (one-time browser login, token to ~/.ney_secrets 600, prints nothing) + tests with a fake Google.
+  N4b. [SAFE] todo -- Jarvis calendar answers: copy of jarvis.py with calendar_day / calendar_shift
+       using cal_core; all old tests pass.
+  N4c. [SAFE] todo -- Away loop follows shifts: copies of budget_check.py (WORK_HOURS_FROM_CALENDAR,
+       SLEEP_HOURS) + rig_control fetch thread; tests.
+
+UNDO: nothing to undo (plan + prototype only). If you go ahead later, cutting access is one click:
+myaccount.google.com > Security > third-party connections > Ney Rig > remove.
+
+WATCH FOR: Google's "hasn't verified this app" screen is expected for your own private app.
+
+TEST AGAIN ANY TIME (offline, no network):
+  cd ~/"Touchdesigner Designs/Hue Rig/away/calendar" && python3 test_cal_core.py

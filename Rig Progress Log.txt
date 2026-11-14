@@ -1,6 +1,18 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 14:07 UTC | Google Calendar PLAN (N4) | away/calendar/ (NEW): PLAN.txt -- recommends an OAuth "Desktop app"
+  login (stdlib only, no installs), scope calendar.events.readonly, consent screen "In production" (Testing mode
+  kills the token after 7 days); service account (needs an RSA install) and secret iCal URL compared as fallbacks.
+  Secret: ~/.ney_secrets/google_calendar.json on Mac + Pi, never git. Fetch every 30 min; full events cached OUTSIDE
+  the repo, shift TIMES only in bridge/calendar/shifts.json (already gitignored) for the away loop; budget_check
+  would use SLEEP_HOURS + today's shift hours, falling back to fixed WORK_HOURS if the file is missing/stale.
+  cal_core.py = tested prototype of Jarvis's "what's my day" / "when do I work" replies + the away-loop hours |
+  tests: test_cal_core.py 48/48 passed offline (fake events.list replies, sockets blocked; no live file changed) |
+  Michael: read PLAN.txt, answer which calendar/titles hold your shifts, do the ~15-20 min Google Cloud step if you
+  like option A, and paste the 3 proposed build lines (N4a-c) from DEPLOY.txt into the backlog |
+  Layer updates for Michael: if you approve, BRAIN Decisions + "2026-11-xx Calendar = OAuth Desktop app, read-only
+  events scope, secret in ~/.ney_secrets, titles never in git".
 2026-11-14 13:15 UTC | Health Sync Setup sheet (N3) | away/health-sync-setup/Health Sync Setup.txt (NEW): iPhone
   Shortcuts taps, 7 short sections (3 steps max each): duplicate "Rig Health" (keeps the X-Token header, POST+JSON,
   harmless if run by mistake), URL http://192.168.1.80:7041/body/activity, all 8 body_log fields with Health type +

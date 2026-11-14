@@ -27,7 +27,7 @@ N3. [SAFE] ready for Michael (built + tested Nov 14, see away/health-sync-setup/
    http://192.168.1.80:7041/body/activity, POST + JSON, day=yesterday, and the "When I stop my alarm" automation.
    Duplicate an existing generated shortcut so the X-Token header carries over -- never write the token. Plain text,
    short numbered steps (Michael likes 3 steps max per section).
-N4. [SAFE] todo -- Google Calendar PLAN only (Michael picked Google Nov 13): away/calendar/PLAN.txt -- how the Pi
+N4. [SAFE] ready for Michael (plan + tested prototype Nov 14, see away/calendar/DEPLOY.txt) -- Google Calendar PLAN only (Michael picked Google Nov 13): away/calendar/PLAN.txt -- how the Pi
    brain + Jarvis read his Google Calendar (OAuth "installed app" vs service-account share, read-only scope, where the
    secret lives: ~/.ney_secrets, never git), what Jarvis answers ("what's my day", "when do I work"), and how the
    away loop could read his shift times instead of fixed WORK_HOURS. No installs, no network, plan + effort estimate.

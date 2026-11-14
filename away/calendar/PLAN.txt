@@ -1,0 +1,127 @@
+GOOGLE CALENDAR PLAN -- Pi brain + Jarvis read Michael's Google Calendar (away loop, Nov 14)
+============================================================================================
+PLAN ONLY. Nothing installed, nothing connected, no Google account touched. The offline half
+(the wording Jarvis uses + the away-loop hours) is already prototyped and tested: cal_core.py.
+
+IN ONE BREATH
+  A small read-only "Desktop app" login to Google (stdlib Python, no installs) fetches the next
+  7 days every 30 min on the Mac and on the Pi. Jarvis answers "what's my day" and "when do I
+  work". The away loop gets shift TIMES only and runs while you're actually out.
+  You: ~30-40 min total. Loop: ~3 runs.
+
+--------------------------------------------------------------------------------------------
+1. HOW THE RIG GETS READ-ONLY ACCESS (3 ways, pick one)
+--------------------------------------------------------------------------------------------
+A. OAuth "installed app" (Desktop client)  <-- RECOMMENDED
+   + Pure Python stdlib (urllib): no installs on the Mac or the Pi.
+   + One-time login in a browser on the Mac (a tiny script opens Google, you click Allow,
+     it catches the reply on 127.0.0.1 and saves a refresh token). The Pi reuses that token.
+   + Scope: https://www.googleapis.com/auth/calendar.events.readonly
+     -> can read events, can NOT create, change or delete anything. Ever.
+   + Revoke any time: myaccount.google.com > Security > Your connections to third-party apps.
+   ! MUST set the consent screen to "In production". Left in "Testing", Google kills the
+     refresh token after 7 days and Jarvis silently goes quiet -- the #1 way this breaks.
+   ! Expect Google's "Google hasn't verified this app" screen (it's your own private app):
+     Advanced > Go to Ney Rig (unsafe) > Allow. Normal for a personal app, no verification needed.
+
+B. Service account + share the calendar with it
+   + No consent screen, no expiry. You share your calendar with the robot's e-mail address
+     ("See all event details") and un-share to cut it off.
+   - Signing its login needs RSA, which plain Python can't do -> an install (google-auth or
+     cryptography) on BOTH the Mac and the Pi (you'd run those).
+   - Its private key file is a stronger secret than A's token.
+   Use it only if A's login ever becomes a nuisance.
+
+C. Secret iCal address (Calendar settings > Integrate calendar)
+   + No Google Cloud at all -- one private URL.
+   - The URL IS the secret: anyone holding it reads that whole calendar, no scope limits.
+   - Repeating events arrive as rules (RRULE) that stdlib can't expand; updates can lag hours.
+   Last resort.
+
+--------------------------------------------------------------------------------------------
+2. WHERE THE SECRET LIVES
+--------------------------------------------------------------------------------------------
+  ~/.ney_secrets/google_calendar.json   (client id + client secret + refresh token)
+     folder 700, file 600 -- same pattern as hue_pi.json and rig_token.
+     On the Mac and on the Pi. Copied to the Pi the way pi_deploy copies rig_token
+     (umask 077, cat over ssh) -- you run it.
+  Never in Hue Rig/, never git, never in the Pi autosave backups, never printed or logged.
+  The 1-hour access token lives in memory only.
+  Not secret (fine in git): jarvis/calendar.json
+     {"calendars": ["primary"], "shift_words": ["work", "shift"], "sleep_hours": "01-09",
+      "days_ahead": 7, "every_min": 30}
+
+--------------------------------------------------------------------------------------------
+3. WHO FETCHES, WHEN, AND WHERE IT LANDS
+--------------------------------------------------------------------------------------------
+  New ney_calendar.py (stdlib only, identical on Mac and Pi):
+    refresh token -> access token -> GET calendar/v3/calendars/<id>/events
+      ?timeMin=<now-1 day>&timeMax=<now+7 days>&singleEvents=true&orderBy=startTime
+    singleEvents=true makes Google expand repeating shifts for us (no RRULE work).
+    10 s timeout, never blocks; on failure keeps the last good copy.
+  Mac: a background thread in rig_control (like the beat-keeper) every 30 min writes
+    ~/.ney_cache/calendar.json        full events for Jarvis (titles are personal -> OUTSIDE the repo)
+    Hue Rig/bridge/calendar/shifts.json  shift start/end times ONLY, no titles (bridge/ is already
+                                         in .gitignore) -> what the away loop reads
+  Pi: ney_brain does the same fetch into ~/NeyBrain/calendar.json so Pi-Jarvis still answers
+    when the Mac sleeps.
+  Stale data: answers add "as of 2:30" when the copy is older than an hour.
+
+--------------------------------------------------------------------------------------------
+4. WHAT JARVIS ANSWERS (wording already in cal_core.py, 40+ tests)
+--------------------------------------------------------------------------------------------
+  "what's my day" / "what's on today" / "what do I have tomorrow" / "...on Friday"
+     -> "You have 3 things today: Mom birthday (all day); Dentist, 10:30 am to 11:15 am;
+         Work, 3 pm to 8 pm."     (5 max, then "and 2 more")
+     -> "Nothing on your calendar tomorrow."
+  "when do I work" / "do I work tomorrow" / "when's my next shift"
+     -> "You work today, 3 pm to 8 pm."   "You're on shift now, until 8 pm."
+     -> "Your next shift is Monday, 3:30 pm to 8:15 pm."   "No shifts on your calendar in the next 7 days."
+  How: two new RULES lines in jarvis.py -> actions 'calendar_day' and 'calendar_shift'. They are
+  read-only like 'status' (never need a "yes"), sit in the ACTIONS allowlist so the local model
+  may pick them too, and read the cached file -- no Google call while you wait.
+  Declined and cancelled events are skipped. Jarvis never creates or moves events (the scope
+  makes that impossible anyway).
+
+--------------------------------------------------------------------------------------------
+5. THE AWAY LOOP FOLLOWS YOUR REAL SHIFTS (instead of fixed WORK_HOURS)
+--------------------------------------------------------------------------------------------
+  Two new lines in Rig Usage Budget.txt:
+     WORK_HOURS_FROM_CALENDAR = yes
+     SLEEP_HOURS = 01-09
+  budget_check.py: if bridge/calendar/shifts.json exists and is under 36 h old, today's
+  WORK_HOURS = SLEEP_HOURS + today's shift hours (start rounded down, end rounded up),
+  e.g. a 3:30-8:15 pm shift -> "01-09,15-21". Day off -> "01-09" only.
+  Missing / stale / broken file -> the fixed WORK_HOURS line, exactly as today. Google being
+  down can never stop or flood the loop. QUIET_HOURS, IDLE_MINUTES, the daily/weekly caps and
+  OFF_HOURS_MAX_RUNS all stay as they are. (cal_core.work_hours_for does this, tested against
+  budget_check's own parsing.)
+  Later, optional: start 30 min into a shift (commute) -- one number in calendar.json.
+
+--------------------------------------------------------------------------------------------
+6. STEPS + EFFORT ESTIMATE
+--------------------------------------------------------------------------------------------
+  1. YOU, ~15-20 min (Google logins are yours): console.cloud.google.com
+       a) New project "Ney Rig" > enable "Google Calendar API".
+       b) OAuth consent screen: External, app name Ney Rig, your e-mail; add the scope
+          calendar.events.readonly; then PUBLISH APP -> "In production".
+       c) Credentials > Create OAuth client ID > "Desktop app" > download the JSON into
+          ~/.ney_secrets/ (chmod 600). Don't paste it anywhere.
+  2. LOOP, 1 run: ney_calendar.py (fetch + cache writers) + cal_login.py (one-time browser
+     login, saves the refresh token 600, prints nothing secret) + tests with a fake Google.
+  3. YOU, ~5 min: run cal_login.py once on the Mac, click Allow; copy the token to the Pi.
+  4. LOOP, 1 run: jarvis copy with calendar_day / calendar_shift + tests (all old tests pass).
+  5. LOOP, 1 run: budget_check + rig_control fetch-thread copies + tests.
+  6. YOU, ~10 min: deploy 4 + 5 from their DEPLOY.txt, then "Jarvis, what's my day".
+  TOTAL: ~30-40 min of you, ~3 loop runs. No money: the Calendar API is free at this volume.
+
+--------------------------------------------------------------------------------------------
+7. QUESTIONS FOR YOU / RISKS
+--------------------------------------------------------------------------------------------
+  - Which calendar holds your shifts, and what are they titled? ("Work"? the place's name?)
+    -> sets "calendars" and "shift_words". Until then: primary calendar, words work/shift.
+  - Time zone: answers use each machine's clock. Check the Pi matches the Mac
+    (timedatectl on the Pi -- you run it).
+  - Personal event titles never reach git or the Pi backups: only times go into the repo
+    folder, and that path is already ignored.
+  - "Testing" mode = 7-day token death. Publish to production in step 1b.
