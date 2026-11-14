@@ -97,9 +97,10 @@ def start():
     day = sum(1 for s in starts if s.date() == t.date())
     week = sum(1 for s in starts if t - s < dt.timedelta(days=7))
     try:   # Michael's away block is the main shift; idle runs outside it can't eat its slots
-        wa, wz = [int(x) for x in b['WORK_HOURS'].split('-')]
-        if not (wa <= t.hour < wz):
-            off = sum(1 for s in starts if s.date() == t.date() and not (wa <= s.hour < wz))
+        spans = [[int(x) for x in w.split('-')] for w in b['WORK_HOURS'].split(',') if w.strip()]
+        work = lambda h: any(a <= h < z for a, z in spans)       # several shifts allowed, e.g. 01-09,15-20
+        if not work(t.hour):
+            off = sum(1 for s in starts if s.date() == t.date() and not work(s.hour))
             if off >= int(b['OFF_HOURS_MAX_RUNS']):
                 return 'SKIP saving runs for work hours %s (off-hours cap %s reached)' % (b['WORK_HOURS'], b['OFF_HOURS_MAX_RUNS'])
     except ValueError:
