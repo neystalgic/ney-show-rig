@@ -13,6 +13,7 @@
 # Strobe / fast-movement looks ask "are you sure?" first.
 # Actions go through rig_control (port 7040) with its token, exactly like Siri does.
 # Settings (not secret): jarvis/jarvis.json   Log: /tmp/jarvis.log
+# Saved meals ("my usual Chipotle"): jarvis/meals.json -- plain JSON, edit it by hand any time (Nov 14).
 # =============================================================================
 import argparse, datetime as dt, json, os, re, subprocess, sys, urllib.error, urllib.request
 
@@ -84,24 +85,91 @@ COLOUR_RE = re.compile(r'\b(%s)\b' % '|'.join(sorted((re.escape(c) for c in COLO
 
 FOOD_VERB = re.compile(r'^(log|logged|i ate|ate|i had|had|just ate|i just ate|i just had|eating|i.?m eating)\b\s*', re.I)
 
+# Nov 14 polish: the numbers may come with 'about' in front; leftover filler words never end up in the item name;
+# 'half / a third / two thirds of X' scale an estimate; 'the rest of X' finishes something logged earlier;
+# several foods in one sentence become separate rows.
+_ABOUT = r'(?:\b(?:about|around|roughly|like|approximately|approx|maybe|probably|almost|nearly|over|under)\s+)?~?'
+KCAL_RE = re.compile(_ABOUT + r'(\d{1,2},\d{3}|\d{2,4})\s*(?:calories|calorie|cals?|kcal)\b')
+PROT_RE = re.compile(_ABOUT + r'(\d{1,3})\s*(?:g|grams?)?\s*(?:of\s*)?protein\b')
+FILLER = r'(?:about|around|roughly|like|approximately|approx|maybe|probably|or so|ish|and|with|of|plus|also|then|um|uh|so)'
+# a new food starts after a comma, or after 'and / plus / also / then' when the next word sounds like a new portion
+# ('the extra chicken and half the chips and queso' -> 2 foods; 'chips and queso' stays one food)
+STARTER = r'(?:a|an|the|half|one|two|three|four|five|six|some|my|another|extra|\d+)\b'
+SPLIT_RE = re.compile(r'\s*[,;](?!\d{3}\b)\s*|\s+(?:and then|and also|and|plus|also|then)\s+(?=%s)' % STARTER)
+FRACTIONS = [                     # (spoken start, fraction) -- checked in this order
+    (r'(?:the )?rest of', 'rest'),
+    (r'(?:two|2) thirds?|2/3', 2 / 3.0),
+    (r'(?:three|3) quarters?|3/4', 0.75),
+    (r'(?:a|one|1) third|1/3', 1 / 3.0),
+    (r'(?:a|one|1) quarter(?!\s*pound)|1/4', 0.25),
+    (r'(?:a |one )?half(?!\s*(?:pound|lb|and half))|1/2', 0.5),
+]
 
-def parse_food(t):
-    """'log half a burger, 600 calories, 35 protein' -> {'item':..., 'kcal':600, 'protein':35}. None if it's not food
-    (e.g. 'log 263.8' is a weight)."""
-    t = t.lower().strip(' .!')
-    if not FOOD_VERB.match(t) or re.search(r'\b(lb|lbs|pounds|weigh|weight)\b', t):
-        return None
-    kc = re.search(r'(\d{2,4})\s*(calories|calorie|cals?|kcal)\b', t)
-    pr = re.search(r'(\d{1,3})\s*(g|grams?)?\s*(of\s*)?protein\b', t)
-    item = FOOD_VERB.sub('', t)
+
+def _fraction(label):
+    """'half the chips and queso' -> (0.5, 'chips and queso'); 'rest of the pizza' -> ('rest', 'pizza');
+    'a burger' -> (None, 'a burger')."""
+    for pat, val in FRACTIONS:
+        m = re.match(r'(?:%s)\b\s*(?:of\s+)?(?:(?:a|an|the|my)\s+)?' % pat, label)
+        if m and re.search(r'[a-z]{2,}', label[m.end():]):
+            return val, label[m.end():].strip()
+    return None, label
+
+
+def _tidy(item):
+    """Drop stray punctuation and filler words left at either end ('quesadilla about' -> 'quesadilla')."""
+    item = re.sub(r"[^a-z0-9'/ -]+", ' ', item.lower())
+    prev = None
+    while prev != item:
+        prev = item
+        item = re.sub(r'\s+', ' ', item).strip(" -'")
+        item = re.sub(r'\s*\b%s$' % FILLER, '', item)
+        item = re.sub(r'^(?:and|plus|also|then|um|uh|so)\b\s*', '', item)
+        item = re.sub(r'^the\s+', '', item)                  # 'the extra chicken' -> 'extra chicken'
+    return item
+
+
+def _has_food(chunk):
+    c = PROT_RE.sub(' ', KCAL_RE.sub(' ', chunk))
+    return bool(re.search(r'[a-z]{2,}', re.sub(r'\b%s\b' % FILLER, ' ', c)))
+
+
+def _one_food(chunk):
+    kc, pr = KCAL_RE.search(chunk), PROT_RE.search(chunk)
+    item = chunk
     for m in (kc, pr):
         if m:
             item = item.replace(m.group(0), ' ')
-    item = re.sub(r'\b(with|and)\s*$', '', re.sub(r'[,;]+', ' ', item)).strip(' ,.')
-    item = re.sub(r'\s+', ' ', item)
+    item = _tidy(item)
     if not re.search(r'[a-z]{2,}', item):
         return None
-    return {'item': item, 'kcal': int(kc.group(1)) if kc else None, 'protein': int(pr.group(1)) if pr else None}
+    f = {'item': item, 'kcal': int(kc.group(1).replace(',', '')) if kc else None, 'protein': int(pr.group(1)) if pr else None}
+    if kc is None:                       # numbers given = totals for what he ate; otherwise scale the estimate
+        frac, base = _fraction(item)
+        if frac is not None:
+            f['fraction'], f['base'] = frac, base
+    return f
+
+
+def parse_food(t):
+    """'log half a burger, 600 calories, 35 protein' -> {'item':..., 'kcal':600, 'protein':35}. None if it's not food
+    (e.g. 'log 263.8' is a weight). Several foods -> {'items': [food, food, ...]}. A food with no numbers and a
+    fraction also carries 'fraction' (0.5, 'rest', ...) and 'base' (the food without the fraction words)."""
+    t = t.lower().strip(' .!')
+    if not FOOD_VERB.match(t) or re.search(r'\b(lb|lbs|pounds|weigh|weight)\b', t):
+        return None
+    chunks = []
+    for c in SPLIT_RE.split(FOOD_VERB.sub('', t)):
+        if c is None or not c.strip():
+            continue
+        if chunks and not _has_food(c):
+            chunks[-1] += ' ' + c        # 'about 1050 calories' / '60 grams of protein' belong to the food before
+        else:
+            chunks.append(c)
+    foods = [f for f in (_one_food(c) for c in chunks) if f]
+    if not foods:
+        return None
+    return foods[0] if len(foods) == 1 else {'items': foods}
 
 
 def estimate_food(item, s, post=None):
@@ -127,6 +195,118 @@ def _body_log():
     return body_log
 
 
+# --- Nov 14 (away loop): saved meals ----------------------------------------------------------------------------
+# "Jarvis, my usual Chipotle" logs the saved numbers instead of a guess; "save that as my usual Chipotle" saves what
+# was just logged (one food or several). The list is jarvis/meals.json -- plain JSON, edit it by hand any time:
+#   {"meals": [{"name": "chipotle", "kcal": 1050, "protein": 60, "aliases": ["chipotle chicken quesadilla"]}]}
+# Saying a name or alias exactly ("I had a chipotle chicken quesadilla") also uses the saved numbers.
+MEALS_FILE = os.path.join(HERE, 'meals.json')
+USUAL_RE = re.compile(r'^(?:(?:my|the)\s+)?usual\b')
+LAST_FOOD = {'when': '', 'foods': []}       # what the last food command logged in this process (for "save that")
+
+
+def _meal_key(name):
+    """'My usual Chipotle!' -> 'chipotle'; 'a chipotle chicken quesadilla' -> 'chipotle chicken quesadilla';
+    'the usual' -> 'usual'."""
+    k = re.sub(r'^usual\b\s*', '', re.sub(r'^(?:a|an|my|some)\s+', '', _tidy(str(name or ''))))
+    return re.sub(r'^(?:a|an|my|some|the)\s+', '', k).strip() or 'usual'
+
+
+def _usual(name, who='your'):
+    return '%s usual' % who if name == 'usual' else '%s usual %s' % (who, name)
+
+
+def _whole(x):
+    try:
+        return int(round(float(x)))
+    except (TypeError, ValueError):
+        return None
+
+
+def _meals_raw(path=None):
+    try:
+        with open(path or MEALS_FILE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def load_meals(path=None):
+    """The saved meals. A hand-edited file with a typo just means 'no meals', never a crash."""
+    raw = _meals_raw(path)
+    meals = raw.get('meals', []) if isinstance(raw, dict) else raw
+    out = []
+    for m in meals if isinstance(meals, list) else []:
+        if isinstance(m, dict) and m.get('name'):
+            al = m.get('aliases') or []
+            m = dict(m, kcal=_whole(m.get('kcal')), protein=_whole(m.get('protein')),
+                     aliases=[al] if isinstance(al, str) else [a for a in al if isinstance(a, str)])
+            out.append(m)
+    return out
+
+
+def find_meal(said, loose=False, meals=None):
+    """The saved meal for what he said, or None. Exact name / alias first. loose=True ("my usual X") also accepts
+    the one meal whose words match ('usual chipotle' -> 'chipotle bowl'), or the only saved meal for 'the usual'."""
+    meals = load_meals() if meals is None else meals
+    key = _meal_key(said)
+    names = lambda m: [_meal_key(n) for n in [m['name']] + m['aliases']]
+    for m in meals:
+        if key in names(m):
+            return m
+    if loose:
+        hits = meals if (key == 'usual' and len(meals) == 1) else \
+            [m for m in meals if any(_same_food(key, n) for n in names(m))]
+        if len(hits) == 1:
+            return hits[0]
+    return None
+
+
+def _last_logged():
+    """The Food Log's newest entry (rows written in the same minute count as one meal) -> ('date time', foods)."""
+    bl = _body_log()
+    rows = [r for r in bl._rows(bl.FOOD) if r.get('Date')]
+    if not rows:
+        return '', []
+    stamp = lambda r: '%s %s' % (r['Date'], r.get('Time') or '')
+    when = stamp(rows[-1])
+    return when, [{'item': r.get('Item', ''), 'kcal': bl._num(r.get('Calories')), 'protein': bl._num(r.get('Protein (g)'))}
+                  for r in rows if stamp(r) == when]
+
+
+def save_meal(name, path=None):
+    """'save that as my usual X': keep what was logged last under X (same name again = update; aliases kept)."""
+    name = _meal_key(name)
+    when, foods = _last_logged()
+    if LAST_FOOD['foods'] and LAST_FOOD['when'] >= when:    # this process logged the newest one: exact numbers
+        foods = LAST_FOOD['foods']
+    foods = [f for f in foods if f.get('kcal') is not None]
+    if not foods:
+        return ("I don't have a logged meal with calories to save yet. Log it first, then say 'save that as %s'."
+                % _usual(name, 'my'))
+    prots = [f['protein'] for f in foods if f.get('protein') is not None]
+    meals = load_meals(path)
+    old = next((m for m in meals if _meal_key(m['name']) == name), None)
+    aliases = list(old['aliases']) if old else []
+    if len(foods) == 1:                  # the dish's own name works too: "I had a chipotle chicken quesadilla"
+        a = _meal_key(foods[0]['item'])
+        if a != name and a not in aliases and a not in {_meal_key(m['name']) for m in meals} and _fraction(a)[0] is None:
+            aliases.append(a)
+    meal = {'name': name, 'kcal': int(round(sum(f['kcal'] for f in foods))),
+            'protein': int(round(sum(prots))) if prots else None, 'aliases': aliases,
+            'items': [f['item'] for f in foods], 'saved': dt.date.today().isoformat()}
+    raw = _meals_raw(path)
+    top = raw if isinstance(raw, dict) else {}             # keep any notes Michael added at the top
+    top['meals'] = [m for m in meals if m is not old] + [meal]
+    p = path or MEALS_FILE
+    with open(p + '.tmp', 'w') as f:
+        json.dump(top, f, indent=2)
+    os.replace(p + '.tmp', p)                              # never a half-written file
+    g = '' if meal['protein'] is None else ', %d grams of protein' % meal['protein']
+    return "Saved %s: %d calories%s. Next time just say '%s'." % (
+        _usual(name), meal['kcal'], g, 'the usual' if name == 'usual' else _usual(name, 'my'))
+
+
 def find_colour(t):
     m = COLOUR_RE.search(t)
     return m.group(1) if m else None
@@ -145,7 +325,9 @@ def find_percent(t):
 
 # Word rules, most specific first. (pattern, action)
 RULES = [
+    (r"^(?:please\s+)?(?:save|remember|store|log)\s+(?:that|this|it|those|these|them)(?:\s+(?:meal|one|food))?\s+as\s+(?P<name>.+)$", 'save_meal'),
     ('__food__', 'food'),
+    (r"\b(?:what are|list|read me|tell me)\b.*\b(?:usuals|usual meals|saved meals)\b|\bwhat.?s my usual\b", 'meals'),
     (r"\bhow (am i|i.?m) doing\b|\btoday.?s? (calories|totals|food|numbers|macros)\b|\bcalories (so far|today)\b|\bwhat (have|did) i (eat|eaten|ate)\b", 'today'),
     (r'\b(schedule|bedtime|lights?) back to normal\b|\bnormal schedule\b|\breset (the )?schedule\b', 'schedule_normal'),
     (r"(no dimming|don.?t (start )?dim\w*|push (bed ?time|the schedule|wind ?down)|bed ?time (at|to)|stay up|keep (them|the lights|it) (on|up|bright))"
@@ -217,6 +399,8 @@ def by_rules(text):
     for pat, action in RULES:
         if pat == '__food__':
             f = parse_food(t)
+            if not f and USUAL_RE.match(t):              # "my usual Chipotle" / "the usual" -- no 'I ate' needed
+                f = parse_food('log ' + re.sub(r'\s+please$', '', t))
             if f:
                 return {'action': 'food', 'value': f}
             continue
@@ -229,6 +413,8 @@ def by_rules(text):
         if m:
             if action == 'level':
                 return {'action': 'level', 'value': find_percent(t) or 30}
+            if action == 'save_meal':
+                return {'action': 'save_meal', 'value': m.group('name').strip(' .!')}
             if action == 'later':
                 return {'action': 'later', 'value': m.group('when')}
             if action == 'weight':
@@ -307,7 +493,7 @@ def understand_all(text, s, post=None):
     found = []
     for p in pieces:
         i = by_rules(p)
-        if i and i not in found:
+        if i and i['action'] != 'nothing' and i not in found:     # 'Jarvis,' on its own is not a command
             found.append(i)
     if len(found) > 1:
         return sorted(found, key=lambda i: i['action'] in ('later', 'schedule_normal', 'weight', 'status'))
@@ -390,27 +576,123 @@ def log_weight(value, path=WEIGHT_LOG):
     return 'Logged %.1f pounds.' % value
 
 
+def _same_food(a, b):
+    """'chips and queso' ~ 'the chips and queso': same words once articles/fillers are dropped (either way round)."""
+    w = lambda x: set(re.findall(r'[a-z]{2,}', x)) - {'the', 'an', 'my', 'and', 'of', 'with', 'some'}
+    wa, wb = w(a), w(b)
+    return bool(wa and wb) and (wa <= wb or wb <= wa)
+
+
+def _earlier_part(base, days=2):
+    """For 'the rest of X': what share of X was logged today/yesterday, and the whole thing's calories + protein
+    worked back from that part. -> (eaten share, whole kcal or None, whole protein or None)."""
+    bl = _body_log()
+    want = {(dt.date.today() - dt.timedelta(d)).isoformat() for d in range(days)}
+    eaten, kc, pr = 0.0, None, None
+    for r in bl._rows(bl.FOOD):
+        if r.get('Date') not in want:
+            continue
+        fr, b = _fraction(_tidy(r.get('Item', '')))
+        if not isinstance(fr, float) or not _same_food(b, base):
+            continue
+        eaten += fr
+        k, p = bl._num(r.get('Calories')), bl._num(r.get('Protein (g)'))
+        if k is not None:
+            kc = k / fr
+        if p is not None:
+            pr = p / fr
+    return eaten, kc, pr
+
+
+def _log_food(f, s):
+    """Work out one food's numbers (estimate, fraction, 'rest of'), write the row, return it with a spoken note."""
+    f['note'], est, saved, frac = '', False, False, f.pop('fraction', None)
+    base = f.pop('base', f['item'])
+    if f.get('kcal') is None:
+        whole_k = whole_p = None
+        usual = bool(USUAL_RE.match(base))
+        meal = find_meal(base, loose=usual)
+        if usual and meal is None:                # "my usual X" that isn't saved: never guess, log nothing
+            f['missing'] = _meal_key(base)
+            return f
+        if frac == 'rest':
+            eaten, whole_k, whole_p = _earlier_part(base)
+            if 0 < eaten < 1:
+                frac = 1 - eaten
+                if whole_k is not None:
+                    f['note'] = ' (the rest of what you logged earlier)'
+            else:                        # nothing earlier (or he already logged it all): count half a portion
+                frac, whole_k, whole_p = 0.5, None, None
+                f['note'] = " (I didn't find the first part, so I counted half)"
+        if whole_k is None and meal is not None and meal['kcal'] is not None:
+            whole_k, whole_p, saved = meal['kcal'], meal['protein'], True
+            f['note'] = (' (your saved numbers; ' + f['note'][2:]) if f['note'] else ' (your saved numbers)'
+            if usual and frac is None:
+                f['item'] = 'usual' if _meal_key(meal['name']) == 'usual' else 'usual ' + _meal_key(meal['name'])
+        if whole_k is None:
+            ask = ('one extra side portion of ' + base[6:]) if base.startswith('extra ') else base
+            guess = estimate_food(ask, s)
+            if guess:
+                whole_k, whole_p, est = guess[0], guess[1], True
+                f['note'] = (' (my estimate; ' + f['note'][2:]) if f['note'] else ' (my estimate)'
+        if whole_k is not None:
+            m = frac if isinstance(frac, float) else 1.0
+            f['kcal'] = int(round(whole_k * m))
+            if f.get('protein') is None and whole_p is not None:
+                f['protein'] = int(round(whole_p * m))
+    _body_log().add_food(f['item'], f.get('kcal'), f.get('protein'), 'Jarvis' + (' estimate' if est else ' usual' if saved else ''))
+    return f
+
+
 def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
     a, v = intent['action'], intent.get('value')
     rig = rig or (lambda p: _rig(p, s))
     if a == 'food':
-        f = dict(v)
-        est = ''
-        if f.get('kcal') is None:
-            guess = estimate_food(f['item'], s)
-            if guess:
-                f['kcal'], f['protein'] = guess[0], (f['protein'] if f.get('protein') is not None else guess[1])
-                est = ' (my estimate)'
-        try:
-            _body_log().add_food(f['item'], f.get('kcal'), f.get('protein'), 'Jarvis' + (' estimate' if est else ''))
-        except Exception as e:
-            return "I couldn't write the food log (%s). That needs the Mac." % e.__class__.__name__
-        if f.get('kcal') is None:
-            return "Logged %s, but I couldn't estimate it. Tell me the calories and I'll add them." % f['item']
+        if isinstance(v, str):                                   # model gave just the words
+            v = parse_food('log ' + v)
+        if not isinstance(v, dict):
+            return "What did you eat? Say it like 'log a banana' or 'I ate half a burger, 600 calories'."
+        logged = []
+        for f in (v['items'] if 'items' in v else [v]):
+            try:
+                logged.append(_log_food(dict(f), s))
+            except Exception as e:
+                done = (' I did log %s.' % ' and '.join(x['item'] for x in logged)) if logged else ''
+                return "I couldn't write the food log (%s). That needs the Mac.%s" % (e.__class__.__name__, done)
+        got = [f for f in logged if not f.get('missing')]
+        LAST_FOOD.update(when=dt.datetime.now().strftime('%Y-%m-%d %H:%M'), foods=[dict(f) for f in got])
+        if not got:
+            n = logged[0]['missing']
+            return ("I don't have %s saved yet, so I didn't log it. Log it once with the numbers, then say "
+                    "'save that as %s'." % (_usual(n), _usual(n, 'my')))
         g = lambda n: '%d gram%s' % (n, '' if n == 1 else 's')
-        bits = '%d calories' % f['kcal'] + (', %s of protein' % g(f['protein']) if f.get('protein') is not None else '')
+        said = []
+        for f in logged:
+            if f.get('missing'):
+                said.append('%s: not saved yet, so I skipped it' % _usual(f['missing']))
+                continue
+            if f.get('kcal') is None:
+                said.append("%s, but I couldn't estimate it" % f['item'])
+            else:
+                said.append('%s: %d calories' % (f['item'], f['kcal']) +
+                            (', %s of protein' % g(f['protein']) if f.get('protein') is not None else '') + f['note'])
+        if len(logged) == 1 and logged[0].get('kcal') is None:
+            return "Logged %s, but I couldn't estimate it. Tell me the calories and I'll add them." % logged[0]['item']
         t = _body_log().today()
-        return 'Logged %s: %s%s. Today so far: %d calories, %d grams of protein.' % (f['item'], bits, est, t['calories'], t['protein'])
+        head = 'Logged %s.' % said[0] if len(said) == 1 else \
+               'Logged %d things: %s; and %s.' % (len(said), '; '.join(said[:-1]), said[-1])
+        return '%s Today so far: %d calories, %d grams of protein.' % (head, t['calories'], t['protein'])
+    if a == 'save_meal':
+        try:
+            return save_meal(v or 'usual')
+        except Exception as e:
+            return "I couldn't save that meal (%s). That needs the Mac." % e.__class__.__name__
+    if a == 'meals':
+        meals = load_meals()
+        if not meals:
+            return "No usual meals saved yet. Log one, then say 'save that as my usual' and a name."
+        return 'Your usuals: %s.' % '; '.join(_meal_key(m['name']) + ('' if m['kcal'] is None else ', %d calories' % m['kcal'])
+                                            for m in meals)
     if a == 'today':
         try:
             t = _body_log().today()
@@ -427,7 +709,7 @@ def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
     if a == 'help':
         return ("I can set any colour and brightness, like 'pink at 40 percent'. Looks: light show, show with the stars, "
                 "movie night, rainbow, cozy, chill, morning, night light, goodnight. Also heads on or off, lights off, "
-                "I'm producing, no dimming until midnight, log your weight, and status.")
+                "I'm producing, no dimming until midnight, log your weight or food, my usual meals, and status.")
     if a == 'color':
         name, bri = v['name'], v.get('bri') or 100
         c = COLOURS[name]

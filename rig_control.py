@@ -761,6 +761,8 @@ if __name__ == '__main__':
         if look in LOOKS:
             threading.Thread(target=apply, args=(look,), daemon=True).start()
     tap_switch.start(_tap)
+    import health_weekly                            # Sunday 8 pm: Health Report Weekly.csv on the Desktop (Nov 14)
+    health_weekly.start_sunday_writer()
 
     def _sched_stop():
         with LOCK:
