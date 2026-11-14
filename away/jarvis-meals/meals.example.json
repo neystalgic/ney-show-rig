@@ -1,0 +1,6 @@
+{
+  "_note": "Jarvis saved meals. Edit by hand any time: name, kcal, protein, aliases (other ways you say it). Jarvis rewrites this file when you say 'save that as my usual X'.",
+  "meals": [
+    {"name": "chipotle", "kcal": 1050, "protein": 60, "aliases": ["chipotle chicken quesadilla"]}
+  ]
+}

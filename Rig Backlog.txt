@@ -31,7 +31,7 @@ N4. [SAFE] ready for Michael (plan + tested prototype Nov 14, see away/calendar/
    brain + Jarvis read his Google Calendar (OAuth "installed app" vs service-account share, read-only scope, where the
    secret lives: ~/.ney_secrets, never git), what Jarvis answers ("what's my day", "when do I work"), and how the
    away loop could read his shift times instead of fixed WORK_HOURS. No installs, no network, plan + effort estimate.
-N5. [SAFE] todo -- Saved meals for Jarvis: "Jarvis, my usual Chipotle" -> a small meals.json (name, kcal, protein,
+N5. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-meals/DEPLOY.txt; includes N1) -- Saved meals for Jarvis: "Jarvis, my usual Chipotle" -> a small meals.json (name, kcal, protein,
    aliases) Michael can edit; "save that as my usual X" stores the last logged item(s). Build with N1's copy if it
    is ready, else its own copy in away/jarvis-meals/; tests with a temp meals.json.
 

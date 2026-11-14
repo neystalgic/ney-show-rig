@@ -1,6 +1,19 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 15:09 UTC | Saved meals for Jarvis (N5) | away/jarvis-meals/ (NEW): jarvis.py = N1's
+  food-polish copy + saved meals. "my usual Chipotle" (with or without "I had") logs the saved kcal/protein, never a
+  guess; unknown usual -> logs nothing and says how to save it. "save that/those as my usual X" saves the newest
+  Food Log entry (several foods added up; same name again = update, hand-added aliases + top notes kept; atomic
+  write). Single-dish saves also add the dish name as an alias ("I had a chipotle chicken quesadilla" -> saved
+  numbers). Fractions + "rest of my usual X" work; "what are my usuals" lists them; Source "Jarvis usual". List =
+  jarvis/meals.json (hand-editable; broken JSON = no meals, no crash). New actions are NOT in the model allowlist.
+  meals.example.json = your Nov 13 Chipotle (1050 / 60) as a starter | tests: test_jarvis.py all passed offline --
+  27 phrases + Nov 11-14 suites + new saved-meals suite (temp meals.json + temp Food Log, fake estimates, sockets
+  blocked; real jarvis/meals.json never created, no live file changed) | Michael: one Terminal paste in
+  away/jarvis-meals/DEPLOY.txt (replaces jarvis/jarvis.py, covers N1 too, adds jarvis/meals.json to .gitignore,
+  sends a reload), then say "Jarvis, my usual Chipotle" |
+  Layer updates for Michael: BRAIN Preferences + "Jarvis saved meals live in jarvis/meals.json (not in git)" once deployed.
 2026-11-14 14:07 UTC | Google Calendar PLAN (N4) | away/calendar/ (NEW): PLAN.txt -- recommends an OAuth "Desktop app"
   login (stdlib only, no installs), scope calendar.events.readonly, consent screen "In production" (Testing mode
   kills the token after 7 days); service account (needs an RSA install) and secret iCal URL compared as fallbacks.

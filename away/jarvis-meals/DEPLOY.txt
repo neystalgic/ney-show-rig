@@ -1,0 +1,55 @@
+JARVIS SAVED MEALS ("my usual Chipotle") -- built + tested by the Rig away loop, Nov 14 2026. Not live yet.
+==========================================================================================================
+
+WHAT IT DOES
+- "Jarvis, my usual Chipotle" logs your saved numbers (no Ollama guess). Works with or without "I had ...",
+  and inside longer sentences: "my usual taco night and a coke 140 calories" -> 2 rows.
+- "Jarvis, save that as my usual Chipotle" saves what you logged last (one food or several -- several are
+  added up into one meal). Saying the same name again updates the numbers.
+  Also: "remember that as ...", "save those as taco night", "save that as my usual" -> then just say "the usual".
+- The dish's own name works too once saved: after saving "a chipotle chicken quesadilla" as your usual chipotle,
+  "I had a chipotle chicken quesadilla" uses the saved 1050 / 60 instead of a guess.
+- Fractions still work: "half my usual chipotle" = 525, then "the rest of my usual chipotle" = the other 525.
+- "my usual pizza" when nothing is saved: Jarvis logs NOTHING (never guesses) and tells you how to save it.
+- "what are my usuals" reads the list.
+- Food Log rows from a saved meal have Source "Jarvis usual" (estimates stay "Jarvis estimate").
+- The list is jarvis/meals.json -- plain JSON you can edit by hand (name, kcal, protein, aliases). A typo in it
+  never crashes Jarvis; it just acts as if nothing is saved until fixed. Notes you add at the top are kept.
+- The local model can NOT pick save/list (allowlist unchanged) -- only your words do.
+
+BUILT ON TOP OF the Nov 14 food polish (away/jarvis-food). This copy contains BOTH, so deploying this one
+is enough -- you don't need to deploy jarvis-food first (if you already did, this is still the right file).
+
+FILES
+  away/jarvis-meals/jarvis.py           -> replaces  Hue Rig/jarvis/jarvis.py
+  away/jarvis-meals/meals.example.json  -> optional starter for jarvis/meals.json (your Nov 13 Chipotle,
+                                           1050 kcal / 60 g) -- only copied if you have no meals.json yet
+  away/jarvis-meals/test_jarvis.py      (all old tests + food polish + 40-odd saved-meal checks; stays in away/)
+  .gitignore gets 2 lines: jarvis/meals.json + its .tmp -- your food list stays off git/GitHub like the Food Log.
+
+DEPLOY (one Terminal paste, on the Mac)
+  cd ~/"Touchdesigner Designs/Hue Rig" && \
+  python3 away/jarvis-meals/test_jarvis.py && \
+  cp jarvis/jarvis.py jarvis/jarvis.py.bak-nov14-meals && \
+  cp away/jarvis-meals/jarvis.py jarvis/jarvis.py && \
+  python3 jarvis/test_jarvis.py && \
+  { [ -e jarvis/meals.json ] || cp away/jarvis-meals/meals.example.json jarvis/meals.json; } && \
+  { grep -qx 'jarvis/meals.json' .gitignore || printf 'jarvis/meals.json\njarvis/meals.json.tmp\n' >> .gitignore; } && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-jarvis-meals.json && echo "deployed -- reload sent"
+
+  rig_control imports jarvis, so it needs the reload (last line, via the Claude bridge). If listen.py is
+  running it picks up the new code next time it starts. The Pi's own jarvis copy is untouched (food logging
+  needs the Mac anyway).
+  Then try: "Jarvis, my usual Chipotle" -> 1050 calories, 60 grams, "(your saved numbers)".
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && cp jarvis/jarvis.py.bak-nov14-meals jarvis/jarvis.py && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-jarvis-undo.json
+  (meals.json can stay; the old Jarvis just ignores it.)
+
+WATCH FOR
+- "save that" saves the NEWEST Food Log entry (rows written in the same minute count as one meal). If you
+  logged two separate things within one minute, check the "items" line in meals.json.
+- Siri may hear "usual" as "usuals"/"you shall" -- if so, add the misheard name as an alias in meals.json.
+- A saved meal's alias wins over a guess: if "a bagel" gets saved as an alias, every "a bagel" uses those numbers.
+  Remove the alias in meals.json if you don't want that.
