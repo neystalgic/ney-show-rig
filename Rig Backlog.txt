@@ -21,7 +21,7 @@ N2. [SAFE] ready for Michael (built + tested Nov 14, see away/health-weekly/DEPL
    "Health Report Weekly.csv" (one row per week: avg weight, change, avg kcal eaten, avg protein, avg active +
    resting kcal, avg deficit, steps, resting HR, HRV, sleep) from the three Desktop logs via body_log. Build in
    away/health-weekly/ with a fake-CSV test; DEPLOY.txt says where it writes and how rig_control could run it Sundays.
-N3. [SAFE] todo -- "Health Sync Setup.txt": exact iPhone Shortcuts taps for the Health Sync shortcut with every
+N3. [SAFE] ready for Michael (built + tested Nov 14, see away/health-sync-setup/DEPLOY.txt) -- "Health Sync Setup.txt": exact iPhone Shortcuts taps for the Health Sync shortcut with every
    field the rig accepts (body_log.FIELDS: active_kcal, resting_kcal, steps, exercise_min, sleep_h, resting_hr,
    hrv, vo2max), which Health sample type + statistic each one uses (Sum vs Average vs Latest), the URL
    http://192.168.1.80:7041/body/activity, POST + JSON, day=yesterday, and the "When I stop my alarm" automation.

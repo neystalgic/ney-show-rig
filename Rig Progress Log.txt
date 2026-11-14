@@ -1,6 +1,16 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 13:15 UTC | Health Sync Setup sheet (N3) | away/health-sync-setup/Health Sync Setup.txt (NEW): iPhone
+  Shortcuts taps, 7 short sections (3 steps max each): duplicate "Rig Health" (keeps the X-Token header, POST+JSON,
+  harmless if run by mistake), URL http://192.168.1.80:7041/body/activity, all 8 body_log fields with Health type +
+  statistic (Sum: active/resting kcal, steps, exercise min; Latest: resting HR, VO2max; Average: HRV; sleep = sum
+  of asleep durations / 3600), day=yesterday, Show Notification, "Alarm Is Stopped -> Run Immediately"
+  automation, and what each error reply means (Mac asleep 503 = re-run later, nothing lost) | tests:
+  test_health_sync_setup.py 41/41 passed offline (sheet vs rig_control / front_door / shortcut_factory / body_log,
+  sample payload into a TEMP Activity Log, sockets blocked; no live file changed) | Michael: one-line copy in
+  away/health-sync-setup/DEPLOY.txt, then ~10 min on the iPhone; check the sleep number on the first run |
+  Layer updates for Michael: none needed.
 2026-11-14 12:20 UTC | Health Report weekly spreadsheet (N2) | away/health-weekly/health_weekly.py (NEW file): writes
   "Health Report Weekly.csv" on the Desktop, one row per week (Mon start, oldest first, current week "so far"): avg
   weight + change vs last week, kcal eaten, protein, active / resting (Watch) / total burn, deficit, est. resting

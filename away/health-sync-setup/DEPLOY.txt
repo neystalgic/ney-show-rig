@@ -1,0 +1,29 @@
+HEALTH SYNC SETUP -- deploy notes (away loop, Nov 14)
+=====================================================
+WHAT IT IS: "Health Sync Setup.txt" -- iPhone Shortcuts taps for the Health Sync shortcut: all 8 numbers the
+rig accepts (active_kcal, resting_kcal, steps, exercise_min, sleep_h, resting_hr, hrv, vo2max), which Health
+type + statistic each uses, the POST to http://192.168.1.80:7041/body/activity with day=yesterday, and the
+"When I stop my alarm" automation. No code changes: rig_control.py, the Pi front door and body_log.py stay as
+they are (checked against them by test_health_sync_setup.py, 41/41 passed offline).
+
+KEY CHOICE: you DUPLICATE the "Rig Health" shortcut, so the X-Token header carries over and you never type the
+key. Rig Health (not a lights shortcut) on purpose: it's already POST + JSON, and running the copy by mistake
+only opens a page -- no lights change.
+
+DEPLOY (copy the sheet next to SIRI SETUP.txt -- paste into Terminal on the Mac):
+  cd ~/"Touchdesigner Designs/Hue Rig" && cp -n "away/health-sync-setup/Health Sync Setup.txt" . && open "Health Sync Setup.txt"
+Then follow it on the iPhone (~10 min). Or just read it from away/health-sync-setup/ -- same file.
+
+UNDO: delete the Health Sync shortcut and its alarm automation in the Shortcuts app. Rows already written stay
+in ~/Desktop/Activity Log.csv (edit or delete them in Numbers if you want).
+
+WATCH FOR:
+- Sleep hours: Shortcuts may give the duration sum in seconds, minutes or hours depending on iOS. The sheet
+  divides by 3600 and tells you what to change if the reply shows ~0.1 instead of ~7.
+- The Mac must be awake: the Pi front door can't save Health data (it answers 503). Re-run by hand later --
+  a second sync for the same day just fills in / replaces numbers.
+- Home Wi-Fi only (192.168.1.80). Away from home the morning run fails quietly; run it when you're back.
+- Once resting_kcal flows in, the Body page stops showing "(est.)" for those days.
+
+TEST AGAIN ANY TIME (offline, no network, temp CSV only):
+  cd ~/"Touchdesigner Designs/Hue Rig/away/health-sync-setup" && python3 test_health_sync_setup.py

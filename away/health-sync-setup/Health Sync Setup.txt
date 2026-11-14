@@ -1,0 +1,70 @@
+HEALTH SYNC -- send yesterday's Watch numbers to the rig every morning (iPhone, about 10 minutes, once)
+=====================================================================================================
+What it does: when you stop your alarm, the iPhone reads yesterday's Health numbers and posts them to
+the rig. They land in Activity Log.csv on the Mac's Desktop and feed the Body page (deficit, resting HR,
+HRV, sleep) and the weekly report. A second run for the same day just fills in / replaces numbers.
+
+THE 8 NUMBERS THE RIG ACCEPTS (JSON key = Health type, statistic, date range)
+  key           Health sample type          statistic            Start Date
+  active_kcal   Active Energy               Sum                  is Yesterday
+  resting_kcal  Resting Energy              Sum                  is Yesterday
+  steps         Steps                       Sum                  is Yesterday
+  exercise_min  Exercise Minutes            Sum                  is Yesterday
+  sleep_h       Sleep Analysis (asleep)     Sum of durations     is in the last 1 days  (last night)
+  resting_hr    Resting Heart Rate          Latest (newest one)  is Yesterday
+  hrv           Heart Rate Variability      Average              is Yesterday
+  vo2max        Cardio Fitness (VO2 max)    Latest (newest one)  is in the last 30 days (it's rare)
+Plus:  day = yesterday   (also accepts "today" or a date like 2026-11-13)
+Any number you leave out is simply skipped, so you can start with a few and add the rest later.
+
+A. MAKE THE SHORTCUT (copy one that already carries the rig key -- you never type the key)
+ 1. Shortcuts app > long-press "Rig Health" > Duplicate. Long-press the copy > Rename > Health Sync.
+ 2. Open it. Delete the second action (Open URL). Keep "Get Contents of URL".
+ 3. In Get Contents of URL: URL = http://192.168.1.80:7041/body/activity   Method = POST
+    (Headers already hold X-Token -- leave them alone. Request Body = JSON.)
+ (Copying "Rig Health" is on purpose: if you run it by mistake it only opens a page -- no lights change.)
+
+B. ADD A "SUM" NUMBER (do this 4 times: Active Energy, Resting Energy, Steps, Exercise Minutes)
+ 1. Above Get Contents of URL, add "Find Health Samples": Type = <type>, filter Start Date is Yesterday.
+ 2. Add "Calculate Statistics": Sum, input = Health Samples.
+ 3. Add "Set Variable": name it active_kcal / resting_kcal / steps / exercise_min.
+
+C. ADD "LATEST" NUMBERS (Resting Heart Rate, VO2 max)
+ 1. Add "Find Health Samples": Type = Resting Heart Rate, Start Date is Yesterday,
+    Sort by Start Date, Order Latest First, Limit 1.   (VO2 max: Start Date is in the last 30 days.)
+ 2. Add "Get Details of Health Sample": Value.
+ 3. Add "Set Variable": resting_hr  (VO2 max: vo2max).
+
+D. ADD HRV (average) AND SLEEP (hours)
+ 1. HRV: Find Health Samples (Heart Rate Variability, Start Date is Yesterday) > Calculate Statistics:
+    Average > Set Variable: hrv.
+ 2. Sleep: Find Health Samples (Sleep Analysis, Start Date is in the last 1 days, Value is not In Bed,
+    Value is not Awake) > Get Details of Health Sample: Duration > Calculate Statistics: Sum.
+ 3. Add "Calculate": (result) / 3600 > Round Number: 1 decimal > Set Variable: sleep_h.
+    (If the reply later shows sleep like 0.1 instead of ~7, Shortcuts gave minutes or hours already:
+    change 3600 to 60, or delete the Calculate.)
+
+E. FILL THE JSON BODY (inside Get Contents of URL > Request Body: JSON > Add new field)
+ 1. Text field:  key day   value yesterday
+ 2. Number fields, one per key, value = the variable with the same name:
+    active_kcal, resting_kcal, steps, exercise_min, sleep_h, resting_hr, hrv, vo2max
+ 3. At the very end add "Show Notification" with Contents of URL (quiet -- no speaking at 7 am).
+
+F. TEST IT ONCE (on home Wi-Fi, Mac awake)
+ 1. Tap Run. Say Allow to every Health permission and to Local Network.
+ 2. The notification should read like: "Health synced for 2026-11-13: 612.0 Active kcal, 2050.0 Resting kcal,
+    9123.0 Steps, ... 7.2 Sleep h, 58.0 Resting HR, 41.5 HRV ms." A missing name = that block isn't wired.
+ 3. Open the Body page (Health Report shortcut): yesterday's deficit should no longer say "est.".
+
+G. RUN IT EVERY MORNING
+ 1. Shortcuts > Automation > + > Alarm > "Is Stopped" (Wake-Up alarm, or Any) > Next.
+ 2. Pick "Run Immediately" (turn off "Notify When Run") > New Blank Automation.
+ 3. Add action "Run Shortcut" > Health Sync > Done.
+
+IF IT SAYS...
+ - "The Mac is asleep, so that one isn't available": the Pi can't save Health data. Run Health Sync again
+   by hand once the Mac is up -- nothing is lost, the iPhone still has the numbers.
+ - "Not allowed.": the copy lost its header -- duplicate "Rig Health" again (never paste the key by hand).
+ - "Send JSON.": Request Body isn't set to JSON (step E).
+ - Nothing / timeout: you're not on home Wi-Fi (192.168.1.80 only works at home). Run it later from home.
+ - Sleep row lands on yesterday's date: on purpose -- it's the night that started yesterday.
