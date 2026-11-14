@@ -9,6 +9,32 @@ Status words: todo | in progress | ready for Michael | done | blocked (reason)
 Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never touch.
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
+--- TONIGHT (Nov 14, 1:30 am): Michael asleep -- NON-LIGHTING work only, these first ----------
+N1. [SAFE] todo -- Jarvis food logging polish. Bugs seen Nov 13: "I ate a Chipotle chicken quesadilla, about 1050
+   calories and 60 grams of protein" logged the item as "a chipotle chicken quesadilla about" (strip trailing
+   about/around/roughly/like and stray punctuation). Add: fractions ("half the chips and queso", "a third of",
+   "two thirds") scale the estimate; "the extra chicken"/"the rest of X" work; multiple items in one sentence
+   ("the extra chicken and half the chips and queso") log as separate rows. Copy jarvis/jarvis.py to
+   away/jarvis-food/, extend test_jarvis.py cases, all old tests must still pass. Ollama is NOT reachable from the
+   loop's shell -- fake estimate_food in tests.
+N2. [SAFE] todo -- Health Report weekly spreadsheet (Michael chose "Both" Nov 13): a script that writes
+   "Health Report Weekly.csv" (one row per week: avg weight, change, avg kcal eaten, avg protein, avg active +
+   resting kcal, avg deficit, steps, resting HR, HRV, sleep) from the three Desktop logs via body_log. Build in
+   away/health-weekly/ with a fake-CSV test; DEPLOY.txt says where it writes and how rig_control could run it Sundays.
+N3. [SAFE] todo -- "Health Sync Setup.txt": exact iPhone Shortcuts taps for the Health Sync shortcut with every
+   field the rig accepts (body_log.FIELDS: active_kcal, resting_kcal, steps, exercise_min, sleep_h, resting_hr,
+   hrv, vo2max), which Health sample type + statistic each one uses (Sum vs Average vs Latest), the URL
+   http://192.168.1.80:7041/body/activity, POST + JSON, day=yesterday, and the "When I stop my alarm" automation.
+   Duplicate an existing generated shortcut so the X-Token header carries over -- never write the token. Plain text,
+   short numbered steps (Michael likes 3 steps max per section).
+N4. [SAFE] todo -- Google Calendar PLAN only (Michael picked Google Nov 13): away/calendar/PLAN.txt -- how the Pi
+   brain + Jarvis read his Google Calendar (OAuth "installed app" vs service-account share, read-only scope, where the
+   secret lives: ~/.ney_secrets, never git), what Jarvis answers ("what's my day", "when do I work"), and how the
+   away loop could read his shift times instead of fixed WORK_HOURS. No installs, no network, plan + effort estimate.
+N5. [SAFE] todo -- Saved meals for Jarvis: "Jarvis, my usual Chipotle" -> a small meals.json (name, kcal, protein,
+   aliases) Michael can edit; "save that as my usual X" stores the last logged item(s). Build with N1's copy if it
+   is ready, else its own copy in away/jarvis-meals/; tests with a temp meals.json.
+
 --- QUEUE (top = next) --------------------------------------------------------------
 0. [SAFE] ready for Michael (built + tested Nov 14, see away/health-report-v2/DEPLOY.txt) -- Health Report v2 (Michael, Nov 13: "track heart rate and other factors").
    The new Health Sync posts steps, active kcal, resting HR, HRV, sleep and VO2max into
@@ -26,21 +52,21 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
    the 4 heads + 2 spots, nDisplay notes). Plain text, no installs.
    PRIORITY: Michael follows it tonight (Nov 11) -- start with plugins to enable and a
    Blueprint that pulses a light/material on /ney/beat from port 7700.
-2. [SAFE] todo -- Twin rebuild PLAN (Michael, Nov 11: "the twin still looks like a mess").
+2. [SAFE] on hold until Nov 14 noon -- Michael: nothing lighting-related tonight (was: todo) -- Twin rebuild PLAN (Michael, Nov 11: "the twin still looks like a mess").
    The raw LiDAR scan is noisy and blotchy in Unreal. Write away/twin-rebuild/PLAN.txt: rebuild
    the room as clean simple geometry from measured sizes (walls, ceiling, desk, couch, screen,
    clouds) using Studio Placement Plan.txt / Aim Map.txt / Light Placement v3, keep the scan only
    as a hidden reference, dark matte materials so the heads' beams and the projection read,
    and a Blender-or-Unreal-modeling step list Michael can follow in ~1 hour. Plain text only.
-3. [SAFE] in progress Nov 12 (Pi brain v1 LIVE: schedule failover + catch-up via pi_deploy; calm looks next) -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
+3. [SAFE] on hold until Nov 14 noon -- Michael: nothing lighting-related tonight (was: in progress) Nov 12 (Pi brain v1 LIVE: schedule failover + catch-up via pi_deploy; calm looks next) -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
    synced breathing, night red 12%, morning soft blue, cozy) using Hue v2 + DMX node
    HTTP. away/pi-brain/looks.py + tests with a mocked bridge and node. No real calls.
 4. [SAFE] mostly covered Nov 12 by the Pi front door + brain (Mac leads when up, Pi covers calm looks + schedule); remaining: heads power from the Pi -- Rig 2.0 Phase 1b: hand-off rule (Mac hub leads while alive and
    playing; Pi takes over within seconds when it goes quiet). away/pi-brain/handoff.py
    + tests that simulate the Mac dropping out.
-5. [SAFE] todo -- Tap Switch dry-run harness: simulate button 1-4 events against a
+5. [SAFE] on hold until Nov 14 noon -- Michael: nothing lighting-related tonight (was: todo) -- Tap Switch dry-run harness: simulate button 1-4 events against a
    fake bridge and check each maps to show / movieuv / cycle / night. away/tap-test/.
-6. [SAFE] todo -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
+6. [SAFE] on hold until Nov 14 noon -- Michael: nothing lighting-related tonight (was: todo) -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
    (input / decks / mixer / output, only the on-screen deck cooks, labels) as
    away/td-tidy/PLAN.txt. Do NOT edit the live TouchDesigner project.
 7. [SAFE] todo -- Housekeeping list: list the .bak-* files older than 7 days that are
