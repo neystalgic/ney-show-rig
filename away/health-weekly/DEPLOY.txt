@@ -1,0 +1,57 @@
+HEALTH WEEKLY SPREADSHEET (N2) -- built + tested by the Rig away loop, Nov 14 2026. Not live yet.
+=====================================================================================================
+
+WHAT IT DOES
+Writes "Health Report Weekly.csv" on your Desktop, next to Weight / Food / Activity Log.csv.
+One row per week (Monday start), oldest at the top, this week marked "so far". Open it in Numbers/Excel.
+Columns: Week of, Days logged, Avg weight (lb), Change (lb) vs the last week with a weigh-in, Avg kcal eaten,
+Avg protein (g), Avg active kcal, Avg resting kcal (Watch only), Avg burn kcal (active + resting), Avg deficit,
+Est. resting days (days that used the Mifflin-St Jeor estimate), Avg steps, Avg resting HR, Avg HRV ms,
+Avg sleep h, Note.
+Every number comes from body_log.summary(), so the sheet and the Body page always agree. The sheet is rebuilt
+from the logs each time (it can't drift), and it is swapped in in one step so Numbers never sees half a file.
+Optional: rig_control rewrites it every Sunday from 8 pm (and on start-up if last Sunday was missed).
+
+NEEDS FIRST: Health Report v2 deployed (away/health-report-v2/DEPLOY.txt). With the old body_log the script
+stops with "deploy Health Report v2 first" and writes nothing.
+
+FILES
+  away/health-weekly/health_weekly.py       -> NEW file  Hue Rig/health_weekly.py
+  away/health-weekly/test_health_weekly.py  (offline test, stays in away/; 37 checks)
+  rig_control.py gets 2 lines (optional Sunday step below), after a backup.
+
+DEPLOY -- step 1, the spreadsheet (one Terminal paste, on the Mac)
+  cd ~/"Touchdesigner Designs/Hue Rig" && \
+  python3 away/health-weekly/test_health_weekly.py | tail -1 && \
+  cp away/health-weekly/health_weekly.py . && \
+  python3 health_weekly.py && open ~/Desktop/"Health Report Weekly.csv"
+
+  (Any time: "python3 health_weekly.py --print" shows the rows without writing.)
+
+DEPLOY -- step 2, optional: Sundays automatically (one paste; backs up rig_control.py, adds 2 lines
+after "tap_switch.start(_tap)", reloads rig_control through the Claude bridge)
+  cd ~/"Touchdesigner Designs/Hue Rig" && cp rig_control.py rig_control.py.bak-2026-11-14-weekly && \
+  python3 - <<'PY' && echo '{"do": "reload"}' > bridge/inbox/reload-health-weekly.json && echo "Sunday writer added -- reload sent"
+p = 'rig_control.py'; s = open(p).read()
+anchor = '    tap_switch.start(_tap)\n'
+add = '    import health_weekly                            # Sunday 8 pm: Health Report Weekly.csv on the Desktop (Nov 14)\n    health_weekly.start_sunday_writer()\n'
+if 'health_weekly.start_sunday_writer' in s: print('already there')
+else:
+    assert s.count(anchor) == 1, 'anchor line not found -- add the 2 lines by hand'
+    open(p, 'w').write(s.replace(anchor, anchor + add))
+PY
+
+  The thread looks at the clock every 30 min, never blocks, never touches the lights, and a bad log line
+  only prints "health_weekly: skipped (...)" in the rig_control log -- it can't take rig_control down.
+
+UNDO
+  Step 2: cd ~/"Touchdesigner Designs/Hue Rig" && cp rig_control.py.bak-2026-11-14-weekly rig_control.py && \
+          echo '{"do": "reload"}' > bridge/inbox/reload-weekly-undo.json
+  Step 1: move Hue Rig/health_weekly.py and the Desktop CSV to _to_delete/ (nothing else uses them).
+
+WATCH FOR
+- "Est. resting days" above 0 means the Watch didn't send Resting Energy those days (same fix as v2:
+  add Resting Energy to the Health Sync shortcut -- task N3 writes those taps).
+- Avg deficit and burn leave out days with a meal logged without calories (same rule as the Body page).
+- Change (lb) compares weekly AVERAGES, so one heavy weigh-in doesn't swing it.
+- If you edit the CSV in Numbers, save your copy under another name: the Sunday run rewrites this one.

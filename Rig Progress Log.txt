@@ -1,6 +1,14 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 12:20 UTC | Health Report weekly spreadsheet (N2) | away/health-weekly/health_weekly.py (NEW file): writes
+  "Health Report Weekly.csv" on the Desktop, one row per week (Mon start, oldest first, current week "so far"): avg
+  weight + change vs last week, kcal eaten, protein, active / resting (Watch) / total burn, deficit, est. resting
+  days, steps, resting HR, HRV, sleep -- all from body_log v2 summary() so it matches the Body page; atomic rewrite;
+  start_sunday_writer() = daemon thread, Sunday 8 pm (+ catch-up if a Sunday was missed) | tests: test_health_weekly.py
+  37/37 passed offline (fake CSVs, sockets blocked, live body_log.py unchanged); v2 test still 100% | Michael: deploy
+  Health Report v2 first, then step 1 in away/health-weekly/DEPLOY.txt (copy + run once); step 2 optional (2 lines
+  in rig_control after a backup, reload via bridge) | Layer updates for Michael: none needed.
 2026-11-14 11:08 UTC | Jarvis food logging polish (N1) | away/jarvis-food/jarvis.py (copy): parse_food drops filler
   words + stray punctuation (fixes 'quesadilla about'), reads '1,050 calories', fractions (half / a third / two
   thirds / a quarter / 3/4) scale the Ollama estimate only, 'the extra chicken' = one extra side portion, 'the rest
