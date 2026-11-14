@@ -137,6 +137,11 @@ def check_all(extra):
     # tap switch
     ts = extra.get('tap_switch') or {}
     out.append(row('Tap Switch', 'ok' if ts.get('device') else 'idle', str(ts.get('last') or '')))
+    # self-test (Nov 14): last full check of every automation -- runs daily 11:35 + on demand
+    st = extra.get('selftest') or {}
+    c = st.get('counts') or {}
+    out.append(row('Self-test', 'idle' if not st else ('down' if c.get('fail') else ('warn' if c.get('warn') else 'ok')),
+                   st.get('summary') or 'not run yet' + (' -- ' + '; '.join(st.get('fails', [])[:3]) if st.get('fails') else '')))
     return out
 
 

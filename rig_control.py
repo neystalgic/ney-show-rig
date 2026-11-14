@@ -797,7 +797,8 @@ if __name__ == '__main__':
     threading.Thread(target=_brain_poll, name='pi-brain-poll', daemon=True).start()
     rig_health.start(lambda: dict(state=dict(STATE), head_power=head_power.status(), watchdog=hub_watchdog.status(),
                                   schedule=light_schedule.status(), bridge=claude_bridge.status(),
-                                  tap_switch=tap_switch.status(), pi_brain=__import__('pi_deploy').STATUS.get('brain')))
+                                  tap_switch=tap_switch.status(), pi_brain=__import__('pi_deploy').STATUS.get('brain'),
+                                  selftest=STATE.get('selftest')))
 
     def _factory():
         jd = os.path.join(HERE, 'jarvis')
@@ -985,6 +986,30 @@ if __name__ == '__main__':
             time.sleep(1500)
     threading.Thread(target=_jarvis_warm, name='jarvis-warm', daemon=True).start()
 
+    from shlex import quote as shlex_quote
+    def _selftest():                                # Nov 14: full check of every automation; never changes the room
+        out = sh('cd %s && %s selftest.py --quiet 2>&1 | tail -1' % (shlex_quote(HERE), PY), timeout=600)
+        try:
+            d = json.load(open(os.path.join(HERE, 'bridge', 'outbox', 'selftest.json')))
+            STATE['selftest'] = dict(summary=d['summary'], counts=d['counts'], at=d['at'],
+                                     fails=['%s: %s' % (r['name'], r['detail'][:80]) for r in d['results'] if r['level'] == 'fail'])
+        except Exception as e:
+            STATE['selftest'] = dict(summary='self-test did not finish: %s' % (out or e.__class__.__name__)[-120:],
+                                     counts={'fail': 1})
+        return STATE['selftest']['summary']
+
+    def _selftest_daily():                          # 11:35 every day (after the morning sync + schedule), once
+        last = None
+        time.sleep(120)
+        _selftest()                                 # also once at start-up, so Rig Health is never blank
+        while True:
+            now = time.localtime()
+            if (now.tm_hour, now.tm_min) >= (11, 35) and last != now.tm_yday:
+                last = now.tm_yday
+                _selftest()
+            time.sleep(60)
+    threading.Thread(target=_selftest_daily, name='selftest', daemon=True).start()
+
     claude_bridge.start(dict(looks=set(LOOKS), look=lambda n: threading.Thread(target=apply, args=(n,), daemon=True).start(),
                              ask=ask_jarvis, status=_bridge_status, reload=_reload, hub_restart=_hub_restart,
                              beat_start=_beat_start, tasks={'pi_hue_key': lambda: __import__('pi_hue_key').create(180),
@@ -994,5 +1019,6 @@ if __name__ == '__main__':
                                     'shortcut_test': _shortcut_test, 'rotate_token': _rotate_token,
                                     'make_missing_shortcuts': _make_missing, 'py_env': _py_env,
                                     'build_jarvis_app': _build_jarvis_app, 'voices': _voices, 'chime_demo': _chime_demo,
-                                    'jarvis_restart': lambda: sh('pkill -f "[j]arvis/listen.py" || true')}))
+                                    'jarvis_restart': lambda: sh('pkill -f "[j]arvis/listen.py" || true'),
+                                    'selftest': _selftest}))
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()

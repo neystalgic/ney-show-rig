@@ -6,6 +6,9 @@ inside the away/ folder (one subfolder per task). Nothing goes live until Michae
 says so: he deploys from away/<task>/DEPLOY.txt.
 
 Status words: todo | in progress | ready for Michael | done | blocked (reason)
+TESTING RULE (Michael, Nov 14: "I want everything tested... I don't want to waste time with broken loops"):
+every task ships an offline test_*.py, and every DEPLOY.txt ends with `python3 selftest.py --quiet` (0 FAIL =
+deployed). New live features also add a read-only check to selftest.py (in the task folder's copy).
 Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never touch.
 Michael can reorder, add or delete lines any time -- top of the list wins.
 

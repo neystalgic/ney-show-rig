@@ -19,7 +19,8 @@ socket.create_connection = _no_network
 
 
 def load(path, name):
-    spec = importlib.util.spec_from_file_location(name, path)
+    import importlib.machinery
+    spec = importlib.util.spec_from_file_location(name, path, loader=importlib.machinery.SourceFileLoader(name, path))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m
@@ -63,7 +64,10 @@ def check(name, ok, got=None):
 tmp = tempfile.mkdtemp(prefix='health-v2-test-')
 try:
     v2 = load(os.path.join(HERE, 'body_log.py'), 'body_log_v2')
-    v1 = load(os.path.join(ROOT, 'body_log.py'), 'body_log_v1')    # live file, read only, for the "nothing broke" check
+    v1_path = os.path.join(ROOT, 'body_log.py.bak-2026-11-14')      # the real v1 (saved at deploy, Nov 14)
+    if not os.path.exists(v1_path):
+        v1_path = os.path.join(ROOT, 'body_log.py')                   # before deploy: the live file IS v1
+    v1 = load(v1_path, 'body_log_v1')                                 # read only, for the "nothing broke" check
 
     # --- Mifflin-St Jeor estimate ---
     check('resting estimate 263.8 lb in 2026 = 2257', v2.resting_estimate(263.8, dt.date(2026, 11, 14)) == 2257,
