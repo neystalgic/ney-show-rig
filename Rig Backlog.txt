@@ -55,7 +55,7 @@ N5. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-meals/DEPLO
    the 4 heads + 2 spots, nDisplay notes). Plain text, no installs.
    PRIORITY: Michael follows it tonight (Nov 11) -- start with plugins to enable and a
    Blueprint that pulses a light/material on /ney/beat from port 7700.
-2. [SAFE] todo -- Twin rebuild PLAN (Michael, Nov 11: "the twin still looks like a mess").
+2. [SAFE] ready for Michael (plan + builder + tested Nov 14, see away/twin-rebuild/DEPLOY.txt) -- Twin rebuild PLAN (Michael, Nov 11: "the twin still looks like a mess").
    The raw LiDAR scan is noisy and blotchy in Unreal. Write away/twin-rebuild/PLAN.txt: rebuild
    the room as clean simple geometry from measured sizes (walls, ceiling, desk, couch, screen,
    clouds) using Studio Placement Plan.txt / Aim Map.txt / Light Placement v3, keep the scan only

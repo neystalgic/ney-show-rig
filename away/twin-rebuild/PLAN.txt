@@ -1,0 +1,88 @@
+TWIN REBUILD PLAN -- clean room for Unreal (backlog item 2)
+==========================================================
+Michael, Nov 11: "the twin still looks like a mess."
+Built by the Rig away loop, Nov 14. Plain text. Nothing installed, nothing live changed.
+
+WHY THE CURRENT TWIN LOOKS MESSY
+- ney_room_scan*.glb is raw iPhone LiDAR: lumpy walls, holes in the ceiling + floor, a cut-away
+  "phantom room" behind the mirror. Fine as a ruler, ugly as a set.
+- ney_room_clean.glb is flat walls BUT with the scan's photo texture baked on (room_clean.py):
+  the blotches, phone-camera exposure jumps and shadows come along with it.
+- The old grey-box ney_room.glb is tidy but bright grey + coloured "debug" boxes, so beams
+  and the projection wash out against it.
+
+THE IDEA
+Rebuild the room as clean, simple shapes from MEASURED sizes only, dark + matte, so the
+only bright things in the shot are what the rig does: beams, pools on the ceiling, the
+projection, the Hue lamps. The scan stays in the project as a HIDDEN reference only.
+
+WHAT'S ALREADY DONE FOR YOU (this folder)
+- build_clean_twin.py -> out/ney_room_v2.glb  (75 named objects, ~6k triangles, 570 KB)
+    Sources: dmx/safety/room_plot.json (the plot every safety map uses -- Studio Placement
+    Plan, Aim Map, Light Placement v3 all agree with it) + twin/ney_fixtures.json (heads).
+    Same frame as every other twin file: metres, X east, Y up, Z south, origin = mirror closet
+    face / north shelf wall / floor. So it drops in exactly on top of the scan and the old box.
+    Contents, grouped (each group = a Blender collection / Unreal folder):
+      Shell     floor + ceiling (93 in) + 15 walls; walls sit OUTSIDE the room line so the
+                inside faces are exactly where the measured walls are
+      Openings  bedroom door, front door, sliding glass door (curtain closed), mirror closet
+                (real mirror material -- it reflects beams, like the real one), water heater
+      Furniture both couches (seat + back), coffee table, desks, Poly D, Optoma, fireplace...
+      Wall art  projection screen (72 x 45 in, bottom 48 in -- measured), tapestry, flags, neon
+      Lamps     purple markers where each Hue lamp is
+      Hanging   4 clouds (3 puffs each), 5 balloons, ceiling fan
+      Heads     Heads 1-4 at their exact ney_fixtures.json positions + a "Head N beam origin"
+                empty each (for Blueprints / ney_unreal_live.py -- positions unchanged)
+    Materials: walls 9% grey, floor 5%, ceiling 16% (beam pools read on it), fabrics dark,
+    roughness 0.9-1.0 everywhere; screen 55% matte grey; clouds near-white (they catch beams).
+- out/ney_room_v2_parts.csv -> every part with its size and "height_from": measured or GUESS.
+  44 heights are guesses (doors 80 in, couch backs 32 in, clouds/balloons hang ~14-20 in below
+  the ceiling, lamp markers 1-4 ft). That CSV is your tape-measure list.
+- Left out: Cloud projector (its plot spot is outside the room outline -- add it by hand if
+  it's still in the room).
+
+THE ~1 HOUR SESSION (when you're up for it)
+A. Measure (15 min) -- open out/ney_room_v2_parts.csv, sort by height_from, measure the GUESS
+   rows that matter for beams: cloud + balloon hang heights, couch back heights, door tops,
+   fireplace/mantel top, tapestry top + bottom. Write the numbers in the CSV's top_ft column.
+   (Tell the live chat / backlog the numbers and the builder's tables get updated so a
+   re-build keeps them -- or just fix them in Blender in step B.)
+B. Blender (25 min, optional but nicer) -- File > Import > glTF 2.0 > out/ney_room_v2.glb.
+   1. Also import twin/ney_room_scan_clean.glb, set its viewport display to Wire, and lock it
+      (it's the ruler). Hide it from renders.
+   2. Click through Furniture + Hanging, compare to the scan, nudge anything that's off
+      (G then X/Y to move, S Z to stretch height). Couches: add a Bevel modifier (2 cm,
+      3 segments) so the edges catch light softly.
+   3. Clouds: select a cloud, Add Modifier > Subdivision Surface (level 2) + Displace with
+      a Clouds texture (strength 0.05) for a puffier look. Optional.
+   4. Don't move Heads or the "beam origin" empties -- the safety maps depend on them.
+   5. File > Export > glTF 2.0 (.glb), "+Y Up" ON, Include: Selected Objects OFF, Apply
+      Modifiers ON -> save as twin/ney_room_v2.glb (overwrite the copy from DEPLOY.txt).
+C. Unreal on the Zephyrus (20 min)
+   1. Content Browser > Import > ney_room_v2.glb into Content/NeyTwin/v2 (glTF/Interchange
+      importer; it converts metres to cm and Y-up to Z-up the same way it did for the scan).
+   2. Drag it into the level at location 0,0,0, rotation 0, scale 1. It should sit exactly on
+      the old twin. Check: the projection screen lines up with the scan's screen wall.
+   3. Old twin actors (ney_room_clean / ney_room_scan*): Details > Visible OFF and "Actor
+      Hidden In Game" ON. Keep them -- never delete -- they are the reference.
+   4. Materials: leave the imported dark ones, or make one master material (Base Colour
+      parameter, Roughness 1, Specular 0.2) and instance it per group.
+   5. Screen: put the projector's MediaTexture (or the Zephyrus visuals) on the "screen"
+      material's Emissive, and add a Rect Light in front of it (intensity low) so the room
+      gets the projection's spill.
+   6. Beams: Exponential Height Fog ON, Volumetric Fog ON (scattering 0.02-0.05); each head's
+      Spot Light at its "beam origin" with Volumetric Scattering Intensity ~2. No hazer needed --
+      this is the virtual one.
+   7. Post Process Volume (Infinite Extent): Exposure min = max (stops auto-exposure pumping
+      when beams flash), Bloom 0.6.
+   8. Save the level as NeyRoom_v2. Compare with a phone photo of the room in show lighting.
+
+WHAT STAYS THE SAME
+- ney_fixtures.json, the safety maps, ney_unreal_live.py and the beat deck: the frame and head
+  positions are identical, so nothing there needs changing.
+- room_plot.json stays the one source of measurements; re-run the builder after it changes.
+
+LATER (not in this task)
+- Spots 1 + 2 and the laser bar aren't in ney_fixtures.json yet -- add them to the plot / fixtures
+  file first, then re-run the builder and they come along automatically.
+- If you like the result, retire room_clean.py (list it for _to_delete/, don't delete).

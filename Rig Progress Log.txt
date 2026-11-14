@@ -1,6 +1,22 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 21:10 UTC | Twin rebuild PLAN (item 2) | away/twin-rebuild/ (NEW): PLAN.txt (why the twin looks messy: raw
+  LiDAR + scan photo baked onto room_clean.py's walls; the fix: clean shapes from MEASURED sizes, dark matte, scan
+  kept only as a hidden reference) + the ~1 hour measure / Blender / Unreal step list. Went one step further:
+  build_clean_twin.py (stdlib only, reads room_plot.json + ney_fixtures.json, never writes them) already builds
+  out/ney_room_v2.glb -- 75 named objects in 7 groups (shell, openings, furniture, wall art, lamps, hanging clouds +
+  balloons + fan, heads + "beam origin" empties), same frame as the old twin + scan so it overlaps at 0,0,0; walls
+  outside the room line so inside faces are exact; couches seat + back; screen 72x45 in at 48 in. 570 KB.
+  out/ney_room_v2_parts.csv flags the 44 GUESS heights (tape-measure list). Cloud projector left out (plot spot is
+  outside the outline) | tests: test_build_clean_twin.py 41/41 passed offline (glb structure, winding, normals,
+  floor area = outline, heads exactly at fixtures, everything inside the room, dark+matte materials, no textures,
+  byte-identical rebuilds, fake L-shaped room, ear clipping; sockets blocked; real plot/fixtures hash-checked
+  unchanged) | Michael: one Terminal paste in away/twin-rebuild/DEPLOY.txt (copies the model into twin/, live
+  files untouched), then PLAN.txt's 1 hour session: measure GUESS rows -> optional Blender polish -> Unreal import
+  at 0,0,0 + hide old twin |
+  Layer updates for Michael: BRAIN Decisions: "2026-11-11 Unreal twin ... rebuild as clean geometry" -> add
+  "(builder ready Nov 14: away/twin-rebuild, model twin/ney_room_v2.glb once deployed)".
 2026-11-14 16:10 UTC | Housekeeping list (item 7) | away/housekeeping/ (NEW): bak_candidates.py (read-only) finds
   every *.bak-* backup, dates it from its name (nov03b = Nov 3; file time if no date), and checks whether its exact
   content was ever committed to git (any branch/path). Result in candidates.txt: 30 candidates (~820 KB, older than

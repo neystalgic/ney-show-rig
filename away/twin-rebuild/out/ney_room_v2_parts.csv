@@ -1,0 +1,77 @@
+group,name,plot_id,x_ft,y_ft,width_ft,depth_ft,bottom_ft,top_ft,height_from,triangles
+Shell,Floor,,,,,,,,measured,13
+Shell,Ceiling,,,,,,,7.75,measured,13
+Shell,Wall 1,,,,,,,7.75,measured,12
+Shell,Wall 2,,,,,,,7.75,measured,12
+Shell,Wall 3,,,,,,,7.75,measured,12
+Shell,Wall 4,,,,,,,7.75,measured,12
+Shell,Wall 5,,,,,,,7.75,measured,12
+Shell,Wall 6,,,,,,,7.75,measured,12
+Shell,Wall 7,,,,,,,7.75,measured,12
+Shell,Wall 8,,,,,,,7.75,measured,12
+Shell,Wall 9,,,,,,,7.75,measured,12
+Shell,Wall 10,,,,,,,7.75,measured,12
+Shell,Wall 11,,,,,,,7.75,measured,12
+Shell,Wall 12,,,,,,,7.75,measured,12
+Shell,Wall 13,,,,,,,7.75,measured,12
+Shell,Wall 14,,,,,,,7.75,measured,12
+Shell,Wall 15,,,,,,,7.75,measured,12
+Furniture,Kitchen counter,o-kitchen,2.627,0.79,2.5,3.33,0,3.0,GUESS,12
+Openings,Water heater,o-closet,4.939,-0.44,2.125,0.88,0,7.75,measured,12
+Openings,Bedroom door,o-bed,10.672,0.15,3.0,0.3,0,6.667,GUESS (standard door),12
+Openings,Front door,o-entry,-2.18,4.354,0.3,3.0,0,6.667,GUESS (standard door),12
+Openings,Sliding glass door,o-glass,22.85,7.417,0.3,6.583,0,6.667,measured,12
+Openings,Mirrored closet,o-mirror,0.15,9.125,0.3,5.333,0,7.75,measured,12
+Wall art,Projection screen,a-screen,15.352,0.15,6.0,0.3,4.0,7.75,measured,12
+Wall art,Smiley neon + thermostat,a-smiley,7.872,0.15,2.0,0.3,5.0,6.5,GUESS,12
+Wall art,Happiness Project flag,a-coexist,20.613,2.052,3.2,0.3,4.0,7.0,GUESS,12
+Wall art,Good Vibes poster,a-goodvibes,9.6,11.6,1.4,0.3,3.5,6.5,GUESS,12
+Wall art,Mac Miller tapestry,a-tapestry,6.8,11.6,4.5,0.3,3.0,7.0,GUESS,12
+Wall art,Art wall,a-art,18.4,11.6,3.0,0.3,3.5,6.5,GUESS,12
+Furniture,White desk · Zephyrus,f-desk,16.352,1.1,3.833,2.0,0,2.5,GUESS,12
+Furniture,Side table,f-h1table,12.839,1.667,1.4,1.4,0,2.167,measured (plot),12
+Furniture,White shelf,f-shelf,9.005,0.6,2.08,1.0,0,2.667,measured (plot),12
+Furniture,Gray couch,f-gray,10.5,10.5,7.33,2.917,0,2.667,GUESS,24
+Furniture,Corner table,f-h3table,6.335,10.38,1.4,1.4,0,2.167,measured (plot),12
+Furniture,Rolly desk,f-rolly,16.082,10.083,1.3,2.6,0,2.083,measured (plot),12
+Furniture,Blue couch,f-blue,6.5,6.63,2.33,4.5,0,2.667,GUESS,24
+Furniture,Coffee table,f-coffee,10.5,7.0,3.25,1.58,0,1.5,GUESS,12
+Furniture,Pouf,f-pouf,3.0,10.0,1.5,1.5,0,1.417,GUESS,12
+Furniture,Studio desk,f-studio,20.74,9.53,4.2,2.2,0,2.5,GUESS,12
+Furniture,Poly D,f-polyd,17.9,10.25,2.4,1.0,0,2.833,GUESS,12
+Furniture,Optoma,f-optoma,19.3,8.6,1.2,0.9,0,2.5,GUESS,12
+Furniture,Fireplace,f-fire,20.652,2.25,3.4,1.0,0,3.5,GUESS,12
+Furniture,Paper lamp,f-paper,15.652,11.0,0.9,0.9,0,5.0,GUESS,12
+Lamps,Behind Desk,l-behind,18.172,0.6,1.0,1.0,0,1.0,GUESS (marker only),64
+Lamps,Hue light bar,l-shade,5.252,-0.7,1.0,1.0,0,4.0,GUESS (marker only),64
+Lamps,Elektron backlight,l-top,21.99,9.0,1.0,1.0,0,1.0,GUESS (marker only),64
+Lamps,Hue Play floor lamp,l-play,5.652,-0.55,1.0,1.0,0,4.0,GUESS (marker only),64
+Lamps,Hue color lamp 1,l-c1,6.08,10.92,1.0,1.0,0,1.0,GUESS (marker only),64
+Lamps,Studio desk lamp,l-c2,22.74,11.25,1.0,1.0,0,1.0,GUESS (marker only),64
+Hanging,Blue/white balloon,d-bb,6.3,0.55,1.0,1.0,5.15,6.6,GUESS,300
+Hanging,Red/white balloon,d-rw,7.6,10.4,1.0,1.0,5.15,6.6,GUESS,300
+Hanging,Orange-striped balloon,d-orange,15.75,9.75,1.0,1.0,5.15,6.6,GUESS,300
+Hanging,Green/white balloon,d-gw,21.902,9.5,1.0,1.0,5.15,6.6,GUESS,300
+Hanging,Cloud,d-c1,7.25,1.0,1.0,1.0,6.2,6.95,GUESS,864
+Hanging,Cloud 2,d-c2,21.902,9.0,1.0,1.0,6.2,6.95,GUESS,864
+Hanging,Cloud 3,d-c3,21.402,9.5,1.0,1.0,6.2,6.95,GUESS,864
+Hanging,Cloud 4,d-c4,6.75,10.0,1.0,1.0,6.2,6.95,GUESS,864
+Hanging,Ceiling fan,u-fan,3.4,6.63,4.3,4.3,6.67,7.75,GUESS,128
+Furniture,Elektrons + Evil Pet,f-elektron,21.62,8.79,1.8,0.8,0,2.75,GUESS,12
+Furniture,Floor lamp,f-h3lamp,5.25,11.0,0.8,0.8,0,5.0,GUESS,12
+Furniture,Laser bar (parked),f-laser,4.927,-0.35,2.0,0.6,0,0.5,GUESS,12
+Furniture,Fridge,k-fridge,-2.835,0.975,2.33,2.55,0,5.667,GUESS,12
+Furniture,Stove + microwave,k-stove,-0.42,0.16,2.3,2.08,0,3.0,GUESS,12
+Furniture,Roli,f-roli,17.9,9.5,2.2,0.8,0,3.333,GUESS,12
+Furniture,Push 2,f-push,19.99,10.41,1.3,0.9,0,2.833,GUESS,12
+Wall art,IMAGINE poster + collage,a-imagine,3.4,11.6,3.8,0.3,3.5,6.5,GUESS,12
+Wall art,Coexist flag,a-happy,20.302,11.6,3.6,0.3,3.5,6.5,GUESS,12
+Furniture,Papasan chair,f-papasan,3.7,10.2,2.9,2.9,0,2.7,measured (plot),12
+Furniture,Gray ottoman,f-ottoman,8.4,4.3,1.6,1.6,0,1.4,measured (plot),12
+Hanging,Yellow balloon,d-yellow,10.8,10.6,1.0,1.0,5.15,6.6,GUESS,300
+Wall art,GOOD VIBES neon,a-goodneon,15.9,11.6,1.4,0.3,3.5,6.5,GUESS,12
+Heads,Head 1,,12.839,1.667,,,,2.667,measured (fixtures),24
+Heads,Head 2,,8.755,0.5,,,,3.167,measured (fixtures),24
+Heads,Head 3,,6.335,10.38,,,,2.667,measured (fixtures),24
+Heads,Head 4,,16.082,10.083,,,,2.583,measured (fixtures),24
+LEFT OUT,Cloud projector,f-cloudproj,,,,,,,outside the room outline,0

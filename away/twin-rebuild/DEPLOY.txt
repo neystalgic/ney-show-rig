@@ -1,0 +1,34 @@
+TWIN REBUILD -- clean room v2 for Unreal (backlog item 2)
+=========================================================
+Built + tested by the Rig away loop, Nov 14. Nothing live was changed.
+
+WHAT IT DOES
+- build_clean_twin.py turns the measured room plot (dmx/safety/room_plot.json) and the head
+  positions (twin/ney_fixtures.json) into a clean, dark, matte room model: out/ney_room_v2.glb
+  (75 named objects in 7 groups, same frame as the old twin + scan, so it overlaps exactly).
+  No scan, no baked textures. Plain Python 3, nothing to install. It only READS those two files.
+- out/ney_room_v2_parts.csv lists every part and flags the 44 heights that are guesses.
+- PLAN.txt = why the old twin looks messy + the ~1 hour Blender/Unreal step list.
+
+LIVE FILES: none replaced. It ADDS two files to twin/ (the new model + its parts list).
+No service loads them; nothing in the hub, the Pi or TouchDesigner changes.
+
+DEPLOY (one Terminal paste -- rebuilds from today's plot, copies into twin/, runs the checks):
+
+cd ~/"Touchdesigner Designs/Hue Rig" && python3 away/twin-rebuild/test_build_clean_twin.py | tail -1 && python3 away/twin-rebuild/build_clean_twin.py && cp -n away/twin-rebuild/out/ney_room_v2.glb away/twin-rebuild/out/ney_room_v2_parts.csv twin/ && ls -l twin/ney_room_v2* && python3 selftest.py --quiet
+
+Then follow PLAN.txt "THE ~1 HOUR SESSION" (measure -> Blender optional -> Unreal import at 0,0,0).
+(cp -n never overwrites: if twin/ney_room_v2.glb already exists, move the old one aside first.)
+
+UNDO
+- Move the two files out: mkdir -p _to_delete/twin && mv twin/ney_room_v2.glb twin/ney_room_v2_parts.csv _to_delete/twin/
+- In Unreal: hide the v2 actor and turn the old twin actors' Visible back ON. Nothing else changed.
+
+WATCH FOR
+- The model lands somewhere odd in Unreal -> it was placed off 0,0,0, or imported with a
+  different scale; it must overlap the scan (that's the whole check).
+- Something looks the wrong height -> it's probably a GUESS row in the parts CSV; measure it.
+- The mirror reflects beams in the twin -- on purpose, like the real one. Hide the "Mirrored
+  closet" object if it's distracting while you aim.
+- 'selftest.py --quiet' should end with 0 FAIL (nothing it checks is touched by this).
+- No selftest check added: this isn't a live feature (no service loads the model).
