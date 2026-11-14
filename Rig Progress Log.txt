@@ -1,5 +1,12 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 06:21 UTC | Health Report v2 | away/health-report-v2/: body_log.py copy (summary() adds daily deficit =
+  Watch active+resting - food, 7-day avg, Mifflin-St Jeor resting estimate flagged 'est.', adaptive burn after 14
+  complete food days, resting HR vs 7-day avg, weekly RHR/HRV/sleep/deficit; v1 keys unchanged) + body.html copy
+  (deficit tiles green at 500+, deficit/HR+HRV/sleep charts, wider weekly table) | tests: 36/36 passed offline
+  (fake CSVs, sockets blocked, page JS run in node against a fake browser) | Michael: run the one-paste block in
+  away/health-report-v2/DEPLOY.txt (backs up, copies 2 files, reloads rig_control via the bridge) | Layer updates
+  for Michael: none (if Health Sync lacks Resting Energy, BRAIN could note 'deficit uses est. resting kcal').
 2026-11-11 | setup | Backlog + this log + away/ folder created; loop scheduled every
   3 h (11:48, 14:48, 17:48, 20:48, 23:48), build + test only, Michael deploys.

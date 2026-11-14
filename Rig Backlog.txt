@@ -10,7 +10,7 @@ Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never to
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
 --- QUEUE (top = next) --------------------------------------------------------------
-0. [SAFE] todo -- Health Report v2 (Michael, Nov 13: "track heart rate and other factors").
+0. [SAFE] ready for Michael (built + tested Nov 14, see away/health-report-v2/DEPLOY.txt) -- Health Report v2 (Michael, Nov 13: "track heart rate and other factors").
    The new Health Sync posts steps, active kcal, resting HR, HRV, sleep and VO2max into
    Activity Log.csv (see body_log.py FIELDS). Build away/health-report-v2/: a copy of body.html
    + body_log.py that adds a resting HR + HRV chart, a sleep-hours bar chart, those columns in

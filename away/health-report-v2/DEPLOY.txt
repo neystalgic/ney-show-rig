@@ -1,0 +1,49 @@
+HEALTH REPORT v2 -- built + tested by the Rig away loop, Nov 14 2026. Not live yet.
+=====================================================================================
+
+WHAT IT DOES
+The Body page (/body) now leads with your real daily DEFICIT:
+  deficit = (Active kcal + Resting kcal from the Watch) - calories eaten (Food Log)
+- New top row of tiles: latest deficit (green at 500+), 7-day average deficit, adaptive burn.
+- The latest deficit is the newest day that has BOTH a food log and a Health Sync (usually yesterday).
+- No Resting kcal from the Watch that day -> estimated with Mifflin-St Jeor (male, 190.5 cm,
+  born ~1999, your latest weigh-in on or before that day) and labelled "(est.)"; faded bar on the chart.
+- A day with a meal logged WITHOUT calories is marked * and left out of the averages.
+- Adaptive burn (the truest maintenance number) appears once you have 14+ days of complete food
+  logs and 14 days of weigh-ins: average eaten + (7-day-average weight drop per day x 3500),
+  over up to the last 28 days. Until then the tile says how many more days it needs.
+- New charts: daily deficit (bars + 7-day average line + dashed 500 goal), resting HR + HRV
+  (HR left axis, HRV right axis), sleep hours (dashed 7 h guide).
+- "Resting HR 57 bpm (11-13) vs 7-day average 60 (-3)" line under the heart chart.
+- Weekly table gains Deficit, RHR, HRV and Sleep columns (scrolls sideways on the phone).
+Same canvas style, purple accents, no libraries. Everything the old page used is unchanged
+(the test proves the v1 numbers are identical), and Jarvis's add_food()/today() are untouched.
+
+FILES
+  away/health-report-v2/body_log.py  -> replaces  Hue Rig/body_log.py
+  away/health-report-v2/body.html    -> replaces  Hue Rig/body.html
+  away/health-report-v2/test_health_report.py  (offline test, stays in away/)
+
+DEPLOY (one Terminal paste, on the Mac)
+  cd ~/"Touchdesigner Designs/Hue Rig" && \
+  python3 away/health-report-v2/test_health_report.py && \
+  cp body_log.py body_log.py.bak-2026-11-14 && cp body.html body.html.bak-2026-11-14 && \
+  cp away/health-report-v2/body_log.py away/health-report-v2/body.html . && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-health-v2.json && echo "deployed -- reload sent"
+
+  body.html is read fresh on every request; body_log.py needs the rig_control reload (the last
+  line asks the Claude bridge to do it; launchd brings rig_control back in a few seconds).
+  Then open the Body page on your phone and pull to refresh.
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && \
+  cp body_log.py.bak-2026-11-14 body_log.py && cp body.html.bak-2026-11-14 body.html && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-health-undo.json
+
+WATCH FOR
+- Deficit tile shows "–" until a day has both a food log and a Health Sync. Normal.
+- If most days say "(est.)", the Health Sync shortcut isn't sending resting_kcal -- add
+  "Resting Energy" to the shortcut. The estimate is decent but the Watch number is better.
+- Resting estimate uses age = this year - 1999 (approximate). Change BIRTH_YEAR / HEIGHT_CM /
+  DEFICIT_GOAL at the top of the v2 section in body_log.py if needed.
+- Adaptive burn is only as good as the food log: skipped meals make it read low.
