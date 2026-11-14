@@ -1,6 +1,15 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 09:07 UTC | Unreal Beat Deck parts 2-4 | away/unreal-beat-deck/: full deck = part 1 unchanged + E. Niagara
+  Flower of Life (252 points, 7 circles, swells on /ney/kick, spins on /ney/drop, rig colour, purple default; HLSL
+  scratch pad), F. DMX previs (Art-Net input, LM70S 14ch + Focus Spot 17ch fixture types, patch from heads_config.json
+  incl. Head 1 = 85, positions from Room Measurements, aim/avoid checks), G. nDisplay notes (not needed for one
+  projector) | tests: test_deck.py 29/29 passed offline (OSC names vs beat_sender.py, patch/footprints/overlaps vs
+  node config + dmx_node.py, flower maths, part 1 unchanged, no IPs/secrets) | Michael: one-paste copy in DEPLOY.txt
+  (or just follow the away copy on the Zephyrus). Previs needs the DMX node CLOSED (port 6454 can't be shared): heads
+  off first, hub must have seen the node before it closes | Layer updates for Michael: AGENTS/BRAIN none needed;
+  optional BRAIN Open line: '+ Unreal previs = node closed, heads off (port 6454 shared); node-forward idea not built'.
 2026-11-14 06:21 UTC | Health Report v2 | away/health-report-v2/: body_log.py copy (summary() adds daily deficit =
   Watch active+resting - food, 7-day avg, Mifflin-St Jeor resting estimate flagged 'est.', adaptive burn after 14
   complete food days, resting HR vs 7-day avg, weekly RHR/HRV/sleep/deficit; v1 keys unchanged) + body.html copy

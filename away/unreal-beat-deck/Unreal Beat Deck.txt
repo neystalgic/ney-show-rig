@@ -1,0 +1,230 @@
+UNREAL BEAT DECK -- make Unreal (Zephyrus) react to the rig: pulse, geometry, heads, screens
+================================================================================
+The Mac runs beat_sender.py, which sends the hub's beat to the Zephyrus as OSC on
+port 7700 (addresses listed at the top of beat_sender.py). Unreal listens and reacts.
+Node names below are Unreal 5's; type them into the Blueprint search box.
+
+A. ONE-TIME SETUP (Zephyrus)
+ 1. Edit > Plugins > search "OSC" > tick it > Restart Now.
+ 2. The first time you press Play after step B, Windows asks about the firewall:
+    tick PRIVATE networks and Allow. (If you missed it: Windows Security > Firewall >
+    Allow an app > Unreal Editor > Private.)
+
+B. THE LISTENER (Level Blueprint: toolbar Blueprints icon > Open Level Blueprint)
+ 1. Event BeginPlay -> "Create OSC Server"
+      Receive IP Address: 0.0.0.0   Port: 7700   Multicast Loopback: off
+      Start Listening: ticked        Server Name: Ney
+    Right-click its Return Value > Promote to Variable > name it OSCServer.
+ 2. Drag OSCServer out > "Bind Event to On OSC Message Received".
+    From its red Event pin drag out > "Create Event" > "Create a matching event"
+    > rename it OnNeyOSC.
+ 3. Inside OnNeyOSC: Message > "Get OSC Message Address" > "Convert OSC Address To
+    String" > "Switch on String". Add pins: /ney/kick   /ney/onbeat   /ney/colour
+ 4. /ney/kick pin -> "Get OSC Message Float At Index" (Message, Index 0)
+    -> set a new float variable Kick.
+ 5. /ney/colour pin -> three "Get OSC Message Float At Index" (Index 0, 1, 2)
+    -> "Make LinearColor" (R, G, B, A=1) -> set a new variable RigColour.
+
+C. THE PULSE (the first visible win)
+ 1. Drop a Point Light into the room twin (Place Actors > Lights), near the projector
+    wall. Intensity 0 to start.
+ 2. Select it in the level, then in the Level Blueprint right-click > "Create a
+    Reference to PointLight".
+ 3. Event Tick -> "Set Intensity" (Target: the light, New Intensity: Kick * 8000)
+             -> "Set Light Color" (Target: the light, New Light Color: RigColour).
+ 4. Compile, Play (Alt+P), and play music through the hub. The light should thump on
+    the kicks in the lamps' colour. That's Unreal in the show.
+
+D. IF NOTHING HAPPENS
+ - On the Mac, beat_sender.json must list the Zephyrus's address, port 7700.
+ - Firewall (A2). Both machines on the same network.
+ - The hub must be running for there to be a beat (quiet room = no kicks; /ney/onbeat
+   still ticks with the clock).
+
+================================================================================
+PART 2 -- E. SACRED-GEOMETRY NIAGARA (a Flower of Life that breathes on the kicks)
+================================================================================
+Goal: 7 circles of glowing points (the Flower of Life "seed"), purple by default,
+in the rig's colour when music plays. Kick = it swells; drop = it spins and opens up.
+Do part 1 first: this reuses the Kick and RigColour variables from B.
+
+E1. MAKE THE SYSTEM (Content Browser)
+ 1. Right-click > FX > Niagara System > "New system from selected emitter(s)"
+    > pick "Simple Sprite Burst" (any sprite emitter is fine) > name it NS_Flower.
+ 2. Open NS_Flower. Select the system (top item) > in "User Parameters" press + and add:
+      Float  Kick        (default 0)
+      Float  Drop        (default 0)
+      Linear Color  RigColour   (default R 0.55, G 0.1, B 1.0, A 1 = purple)
+      Float  Radius      (default 60)    <- size of one circle, in cm
+
+E2. SPAWN EXACTLY 252 POINTS ONCE (7 circles x 36 points)
+ 1. Emitter Properties: Local Space ON (the flower moves with its actor).
+ 2. Emitter Update > Spawn Burst Instantaneous: Spawn Count 252, Spawn Time 0.
+    Delete any "Spawn Rate" module.
+ 3. Particle Spawn > Initialize Particle: Lifetime Mode = Direct Set, Lifetime 9999
+    (they live for ever; the burst never repeats), Sprite Size 4.
+    Delete "Add Velocity" and any "Gravity Force" / "Drag" modules.
+
+E3. PLACE THEM ON THE FLOWER (Particle Update > + > New Scratch Pad Module)
+ 1. Name the module FlowerPosition. In its Map Get add: Engine > "Execution Index"
+    (the particle's number 0..251), User.Radius, User.Kick, User.Drop.
+ 2. Add a "Custom Hlsl" node. Inputs: Index (int), Radius, Kick, Drop, Time (float).
+    Output: Pos (Vector). Wire Engine > Time into Time. Paste:
+
+      int c = Index / 36;                 // which circle 0..6 (0 = the middle one)
+      int k = Index - c * 36;             // which point on that circle
+      float r = Radius * (1.0 + 0.35 * Kick + 0.6 * Drop);
+      float spin = Time * (0.05 + 0.8 * Drop);
+      float a = k * 6.2831853 / 36.0 + spin;
+      float2 centre = float2(0, 0);
+      if (c > 0) { float b = (c - 1) * 1.0471976 - spin; centre = r * float2(cos(b), sin(b)); }
+      float2 p = centre + r * float2(cos(a), sin(a));
+      Pos = float3(p.x, p.y, 0);
+
+ 3. Map Set: Particles.Position = Pos. Apply, then Save the scratch pad.
+    (The six outer circles sit one radius out, 60 degrees apart, and every one passes
+    through the centre: that's the Flower of Life seed.)
+
+E4. COLOUR AND GLOW
+ 1. Particle Update > Scale Color (or Color): Color = User.RigColour, and multiply its
+    brightness by (2 + 20 * User.Kick) so the points flash on the kicks.
+    (Link a parameter by clicking the field's dropdown > Link Inputs > User.)
+ 2. In the sprite renderer pick a default additive material such as
+    DefaultSpriteMaterial; on a dark matte twin the bloom does the rest.
+
+E5. DRIVE IT FROM THE BEAT (Level Blueprint, beside part 1)
+ 1. Drag NS_Flower into the level (centre of the ceiling, or face-on to the projection
+    wall). Select it, right-click in the Level Blueprint > "Create a Reference to NS_Flower".
+ 2. In OnNeyOSC add a /ney/drop pin to the Switch on String:
+    "Get OSC Message Float At Index" (Index 0) -> set a new float variable Drop.
+ 3. On Event Tick (after part 1's nodes), from the NS_Flower reference:
+      "Set Niagara Variable (Float)"       Variable Name: Kick        In Value: Kick
+      "Set Niagara Variable (Float)"       Variable Name: Drop        In Value: Drop
+      "Set Niagara Variable (LinearColor)" Variable Name: RigColour   In Value: RigColour
+    (Newer versions call these "Set Float Parameter" / "Set Color Parameter".
+    Names are typed WITHOUT "User." in front.)
+ 4. Optional smoothing so it breathes instead of jitters: put "FInterp To"
+    (Current: last value, Target: Kick, Delta Time: Get World Delta Seconds, Interp
+    Speed 12) before the Set node.
+
+E6. IF IT LOOKS WRONG
+ - One blob, no circles: the scratch pad isn't in Particle Update, or Execution
+   Index wasn't wired into Index.
+ - Particles fly off: an Add Velocity / Gravity module is still in the stack.
+ - Never changes colour: /ney/colour isn't wired (part 1, B5) or the Set node's name
+   has a typo. While the hub is blacked out (/ney/blackout = 1) colour goes dark: that's right.
+ - Variations to try later: 19 circles (c up to 18, second ring at 2 x radius) = the full
+   Flower of Life; /ney/snare to twist only the outer circles; /ney/section = "drop"
+   to switch to a Metatron's-cube line renderer.
+
+================================================================================
+PART 3 -- F. DMX PREVIS OF THE 4 HEADS + 2 SPOTS (watch a show with the heads off)
+================================================================================
+Goal: the hub's own Art-Net drives virtual heads in the twin, so you can design looks
+and check aim/avoid zones on the sofa with nothing powered.
+
+F0. READ FIRST -- ONE PORT, TWO LISTENERS
+ - The hub sends Art-Net (UDP 6454, universe 0) to the Zephyrus. dmx_node.py listens
+   on that same port there. Two programs on one PC can't both reliably get those
+   packets (Windows hands each one to just one of them).
+ - So previs = the DMX node CLOSED. Keep the power order: switch the HEADS OFF
+   first, then close the "Start DMX Node" window, then open Unreal. When you're done:
+   close Unreal's previs (or stop DMX input), start the node, THEN power the heads.
+ - ORDER MATTERS: the hub only learns where to send (and the patch) by asking the
+   node. So the hub must already be running and have seen the node BEFORE you close
+   the node; it keeps sending to the same PC afterwards. If the hub was started while
+   the node was closed, nothing arrives: start the node, wait 5 s, close it again.
+ - What you see is the hub's raw output, before the node's safety guards (avoid zones,
+   tilt window, colour/strobe locks). If a virtual beam crosses the mirror or the
+   screen, the real node would block it -- but it's still worth fixing in the hub.
+ - (Later idea, not built: the node could forward a copy of each frame to a second
+   port so previs and the real heads run together. Ask the away loop if you want it.)
+
+F1. PLUGINS (Edit > Plugins, then Restart Now)
+ - "DMX Engine", "DMX Protocol", "DMX Fixtures" (ready-made moving-head actors).
+ - Content Browser > Settings (cog) > tick "Show Plugin Content" and "Show Engine Content".
+
+F2. THE DMX LIBRARY (Right-click > DMX > DMX Library, name it DMX_NeyRig)
+ 1. Ports tab (or Project Settings > Plugins > DMX > Input Ports) > + Input port:
+      Protocol: Art-Net   Communication Type: Broadcast/Any
+      Network Interface: the Zephyrus's own home-network address (pick it from the list;
+      0.0.0.0 also works)   Local Universe Start 1, Amount 1, Extern Universe Start 0
+    (hub universe 0 = Unreal local universe 1).
+ 2. Fixture Types tab > + two types. Add the functions IN THIS ORDER; "16 bit" means
+    one function covers two channels (coarse + fine).
+
+    "LM70S 14ch" (Betopper LM70S, 14-channel mode) -- 14 channels:
+      Pan 16 bit (Attribute Pan) | Tilt 16 bit (Tilt) | Speed 8 | Dimmer 8 (Dimmer)
+      | Red 8 (Red) | Green 8 (Green) | Blue 8 (Blue) | White 8 (White)
+      | Preset 8 | Preset Speed 8 | Auto 8 | Reset 8
+    "Focus Spot 17ch" (ADJ Focus Spot One, 17-channel mode) -- 17 channels:
+      Pan 16 bit | Tilt 16 bit | Color Wheel 8 | Gobo 8 | Gobo Rotation 8 | Focus 8
+      | Shutter 8 | Dimmer 8 | UV Strobe 8 | UV 8 | Show 8 | Show Speed 8
+      | Dim Mode 8 | Speed 8 | Function 8
+    Check the channel count shown at the top of each mode: 14 and 17.
+ 3. Fixture Patch tab > universe 1 > add these (Start Address = the node's own config,
+    dmx/config/heads_config.json):
+      Head 1 (white desk side table)  LM70S 14ch       85   (moved from 1; config wins)
+      Head 2 (kitchen cube shelf)     LM70S 14ch       15
+      Head 3 (couch corner table)     LM70S 14ch       29
+      Head 4 (rolly desk)             LM70S 14ch       43
+      Focus Spot 1 (rolly desk)       Focus Spot 17ch  101
+      Focus Spot 2 (totem)            Focus Spot 17ch  121
+    No two should overlap (Unreal turns the patch red if they do).
+
+F3. PUT THEM IN THE TWIN
+ 1. Content Browser > DMXFixtures Content > LightFixtures: drag BP_MovingHead in six
+    times (on newer versions the Focus Spots can use BP_MovingHead too; it has a gobo).
+ 2. On each one: DMX > DMX Library = DMX_NeyRig, Fixture Patch = its name above.
+    Untick "Use Dynamic Occlusion" if the room gets slow.
+ 3. Ranges (in each actor's DMX components, Pan / Tilt): pan -270 to 270 (540 degrees,
+    all six). Tilt -90 to 90 for the heads (180 degrees), -120 to 120 for the spots
+    (240 degrees). Field names differ a little by version: look for Min/Max Angle.
+ 4. Where they go (Unreal works in cm: inches x 2.54; positions from dmx/Room
+    Measurements.txt, x = east of the mirror closet, y = south of the shelf wall):
+      Head 1: side table, 26 in high, 8 in from the bedroom doorway, 20 in out from the wall
+      Head 2: cube shelf, 32 in high, 24 in from the doorway, 6 in out from the wall
+      Head 3: corner table, 26 in high, ~6 in west of the gray couch end
+      Head 4 + Spot 1: rolly desk, top 25 in, back of the head 16 in from the back wall
+      Spot 2: on the totem
+    If the twin rebuild (backlog task 2) changes the room, move them with it.
+ 5. "Up" check: with the hub idle, a head's tilt rest should point at the ceiling.
+    If a virtual head points down or sideways, rotate the actor 90/180 degrees, not the
+    tilt range.
+
+F4. SEE THE SHOW
+ 1. Window > DMX > "DMX Channel Monitor": pick Art-Net, universe 1. Start the hub
+    (music playing, a show look on). The numbers should move ~40 times a second.
+ 2. Press Play (or just leave the editor open: the fixtures follow DMX in the editor
+    too, if "Receive DMX in Editor" is ticked in Project Settings > DMX).
+ 3. Things to check by eye: beams stay off the mirror, the projection screen and the
+    couch eyeline; Head 2 holds the art-wall cap; nothing whips (hub caps at 35 deg/s).
+ 4. Nothing moving? Monitor empty = hub not sending to this PC or firewall (allow
+    Unreal Editor on Private networks, same as A2). Monitor moving but heads still =
+    wrong patch/library on the actor, or Extern Universe Start isn't 0.
+ 5. Done: Stop. Then: node first, heads power second (F0).
+
+================================================================================
+PART 4 -- G. nDISPLAY NOTES (when to bother, and the one-projector shortcut)
+================================================================================
+ - nDisplay renders one Unreal world across several screens/projectors (or PCs) as one
+   seamless canvas, with warp + blend for curved or overlapping projection.
+ - With ONE projector on the Zephyrus you don't need it. Simplest path:
+     Editor: Play dropdown > "Standalone Game" (or "New Editor Window"), drag the window
+     to the projector, Alt+Enter for full screen. Or package the project and launch with
+     -ResX=1920 -ResY=1080 -FULLSCREEN on the projector's display.
+ - Use nDisplay when you add a second output (projector + TV, or two projectors on the
+   wall and the ceiling). Steps then:
+     1. Plugins: "nDisplay" (and "Switchboard" for launching). Restart.
+     2. Right-click > nDisplay > nDisplay Config > "Create Config with one node".
+     3. In the config: one Cluster Node (host 127.0.0.1 = this PC), one Viewport per output;
+        set each viewport's size/position to match Windows' display layout.
+     4. Drag the config into the level; the screens it shows are where each view looks.
+     5. Launch with Switchboard (Tools > Switchboard): add an nDisplay device, point it at
+        the config, Connect > Start. The editor window is not the show; the launched
+        one is.
+ - Projection mapping on the art wall/clouds: nDisplay "Mesh" projection policy with a
+   simple wall mesh from the twin rebuild. Leave this until the clean twin exists.
+ - Performance: the beat (part 1) and the flower (part 2) are light; the DMX fixtures'
+   volumetric beams are the heavy part. If the projector stutters, lower beam quality
+   on the BP_MovingHead actors first.

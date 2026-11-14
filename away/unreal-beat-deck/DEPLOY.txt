@@ -1,0 +1,38 @@
+UNREAL BEAT DECK parts 2-4 -- DEPLOY (built + tested by the away loop, Nov 14)
+==============================================================================
+WHAT IT IS
+  The full "Unreal Beat Deck.txt": part 1 (A-D, unchanged: OSC listener + pulsing light)
+  plus three new parts to follow on the Zephyrus:
+    E. Niagara Flower of Life (7 circles, 252 points) that swells on /ney/kick, spins
+       and opens on /ney/drop, in the rig's colour (purple by default).
+    F. DMX previs of the 4 heads + 2 Focus Spots with Unreal's DMX plugins: Art-Net
+       input, both fixture types (14ch / 17ch), the patch from the node's own config,
+       positions from Room Measurements, and checks for mirror / screen / eyeline.
+    G. nDisplay notes: skip it for one projector (Standalone + full screen); steps for
+       when a second output arrives.
+  Plain text only. No code, nothing running, no live file changed.
+
+WHAT IT REPLACES
+  Hue Rig/Unreal Beat Deck.txt   (the old part-1-only version)
+
+DEPLOY (one paste in Terminal on the Mac)
+  cd ~/"Touchdesigner Designs/Hue Rig" && cp "Unreal Beat Deck.txt" "Unreal Beat Deck.txt.bak-nov14" && cp "away/unreal-beat-deck/Unreal Beat Deck.txt" "Unreal Beat Deck.txt" && echo "deck updated"
+
+  (Or just open away/unreal-beat-deck/Unreal Beat Deck.txt on the Zephyrus and follow it.)
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && cp "Unreal Beat Deck.txt.bak-nov14" "Unreal Beat Deck.txt"
+
+WATCH FOR
+  * PREVIS NEEDS THE DMX NODE CLOSED (part F0): the node and Unreal can't share
+    Art-Net port 6454 on the Zephyrus. Heads OFF first, then close the node; when
+    done, node first, heads second. The hub must have seen the node before you close
+    it, or it won't know where to send.
+  * Previs shows the hub's raw output, before the node's safety guards. A beam that
+    crosses the mirror/screen in Unreal is blocked on the real rig, but fix the hub look.
+  * Head 1's address is 85 in the node's config (the old placement plan says 1); the
+    deck uses 85.
+  * Unreal menu/field names move a little between 5.x versions; each step names the
+    thing to type into the search box.
+  * Test again any time:  python3 "away/unreal-beat-deck/test_deck.py"
+    (offline: reads beat_sender.py, dmx_node.py and heads_config.json; no network)
