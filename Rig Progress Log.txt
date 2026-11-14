@@ -1,6 +1,20 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 22:08 UTC | Pi calm looks (item 3, Rig 2.0 Phase 1a) | away/pi-brain/ (NEW): looks.py = the Pi look engine,
+  matched number-for-number to rig_control.LOOKS: rainbow now really BREATHES (75<->22%, 10 s breath, all lamps one
+  colour, wheel every 90 s -- before the Pi stepped 8 fixed colours, no breathing); morning fade 8 s (was 3), night
+  red 2.5 s; new on the Pi: breathe, breathe_slow, rainbowroom, upbeat, redglow, movieglow (lamps only). Same colour
+  wheel as the Mac (make_wheel.py bakes hub_palette.vivid -> hue_stream xy into a 72-entry table). Plugs/heads/spots
+  never touched; one background thread, a new look stops it in ~0.1 s; bridge outage = one log line + back-off.
+  Patched copies: front_door.py (run_look -> looks.Engine), test_brain.py (+6 checks), pi_deploy.py ('looks.py' in
+  FILES), selftest.py (+ "Pi calm looks" suite) | tests: test_looks.py 54/54 passed (incl. every look checked against
+  rig_control.LOOKS via ast, wheel vs hub_palette, fake bridge, fake clock, rate under 10 PUT/s, real thread
+  hand-over) + test_brain.py old + new all passed; sockets blocked | Michael: one Terminal paste in
+  away/pi-brain/DEPLOY.txt (backs up, tests, reload, pi_deploy, selftest). Nothing changes while the Mac is awake.
+  New backlog line 3b [MICHAEL]: heads from the Pi -- your call |
+  Layer updates for Michael: BRAIN Decisions: add "2026-11-14 Pi calm looks = looks.py, same numbers as the Mac
+  (test_looks checks rig_control.LOOKS); heads still Mac-only (3b)".
 2026-11-14 21:10 UTC | Twin rebuild PLAN (item 2) | away/twin-rebuild/ (NEW): PLAN.txt (why the twin looks messy: raw
   LiDAR + scan photo baked onto room_clean.py's walls; the fix: clean shapes from MEASURED sizes, dark matte, scan
   kept only as a hidden reference) + the ~1 hour measure / Blender / Unreal step list. Went one step further:

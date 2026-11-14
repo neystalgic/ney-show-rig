@@ -61,9 +61,11 @@ N5. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-meals/DEPLO
    clouds) using Studio Placement Plan.txt / Aim Map.txt / Light Placement v3, keep the scan only
    as a hidden reference, dark matte materials so the heads' beams and the projection read,
    and a Blender-or-Unreal-modeling step list Michael can follow in ~1 hour. Plain text only.
-3. [SAFE] in progress Nov 12 (Pi brain v1 LIVE: schedule failover + catch-up via pi_deploy; calm looks next) -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
+3. [SAFE] ready for Michael (calm looks built + tested Nov 14, see away/pi-brain/DEPLOY.txt; Pi brain v1 LIVE since Nov 12) -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
    synced breathing, night red 12%, morning soft blue, cozy) using Hue v2 + DMX node
    HTTP. away/pi-brain/looks.py + tests with a mocked bridge and node. No real calls.
+3b. [MICHAEL] split from 3 (Nov 14) -- heads/spots from the Pi via the DMX node (e.g. movieglow's dim heads, parking
+   for night/off when the Mac is asleep). Needs your OK first (AGENTS: heads only when you direct it).
 4. [SAFE] mostly covered Nov 12 by the Pi front door + brain (Mac leads when up, Pi covers calm looks + schedule); remaining: heads power from the Pi -- Rig 2.0 Phase 1b: hand-off rule (Mac hub leads while alive and
    playing; Pi takes over within seconds when it goes quiet). away/pi-brain/handoff.py
    + tests that simulate the Mac dropping out.

@@ -1,0 +1,61 @@
+PI CALM LOOKS (Rig 2.0 Phase 1a) -- built + tested by the away loop, Nov 14 2026
+=================================================================================
+WHAT IT DOES
+When the Mac is asleep, the Pi's front door now runs the calm looks EXACTLY like the Mac does:
+- Rainbow really breathes now (75% <-> 22%, a 10 s breath, every lamp the same colour, full wheel every 90 s).
+  Before, the Pi just stepped through 8 fixed colours with no breathing.
+- Same colour wheel as the Mac (baked in from hub_palette + hue_stream by make_wheel.py).
+- Same fade times as the Mac: morning blue now fades over 8 s (was 3 s), red night light 2.5 s.
+- NEW on the Pi: breathe, breathe_slow, rainbowroom, upbeat, redglow, movieglow (lamps only).
+- Smart plugs, heads and spots are never touched from the Pi (heads stay the Mac's job).
+- Nothing blocks: the breathing runs in one background thread; any new look or a custom colour stops it
+  within ~0.1 s. If the bridge drops out it logs once and backs off instead of hammering it.
+When the Mac is awake nothing changes at all -- the front door still passes everything to the Mac.
+
+FILES
+  away/pi-brain/looks.py       NEW  -> pi/brain/looks.py       (the look engine)
+  away/pi-brain/front_door.py  REPLACES pi/brain/front_door.py (run_look now uses looks.py; rest unchanged)
+  away/pi-brain/test_brain.py  REPLACES pi/brain/test_brain.py (old tests + 6 new lines; runs ON the Pi at deploy)
+  away/pi-brain/test_looks.py  NEW  -> pi/brain/test_looks.py  (54 checks; on the Mac it also checks every number
+                                       against rig_control.LOOKS, so the two can't drift apart silently)
+  away/pi-brain/make_wheel.py  NEW  -> pi/brain/make_wheel.py  (rerun only if hub_palette's colours change)
+  away/pi-brain/pi_deploy.py   REPLACES pi_deploy.py           (one change: 'looks.py' added to FILES)
+  away/pi-brain/selftest.py    REPLACES selftest.py            (one new line: the "Pi calm looks" suite)
+  (ney_brain.py is NOT changed; the copy here is only used by the tests.)
+
+DEPLOY -- one paste in Terminal (backs up first, tests before anything goes to the Pi)
+-----------------------------------------------------------------------------------
+cd ~/"Touchdesigner Designs/Hue Rig" && S=$(date +%Y-%m-%d) && D=away/pi-brain && \
+cp pi/brain/front_door.py pi/brain/front_door.py.bak-$S-looks && \
+cp pi/brain/test_brain.py pi/brain/test_brain.py.bak-$S-looks && \
+cp pi_deploy.py pi_deploy.py.bak-$S-looks && cp selftest.py selftest.py.bak-$S-looks && \
+cp $D/looks.py $D/test_looks.py $D/make_wheel.py $D/front_door.py $D/test_brain.py pi/brain/ && \
+cp $D/pi_deploy.py $D/selftest.py . && \
+(cd pi/brain && python3 test_looks.py && python3 test_brain.py) && \
+echo '{"do": "reload"}' > bridge/inbox/reload-pi-looks.json && echo "reload sent, waiting 30 s" && sleep 30 && \
+echo '{"do": "pi_deploy"}' > bridge/inbox/pi-deploy-looks.json && echo "pi_deploy sent, waiting 60 s" && sleep 60 && \
+cat bridge/outbox/*pi-deploy-looks* 2>/dev/null | tail -5; python3 selftest.py --quiet
+-----------------------------------------------------------------------------------
+(The reload is needed because rig_control keeps pi_deploy in memory -- without it the Pi would not get looks.py.
+ pi_deploy runs the tests ON the Pi and leaves the old brain running if they fail.)
+DONE = selftest says 0 FAIL, and pi_deploy's reply says the brain restarted.
+
+TRY IT (only when you want to -- this changes the room)
+Close the Mac lid (or wait until it's asleep), then on your phone: "Jarvis, rainbow". The lamps should all be one
+colour and slowly breathe. "Jarvis, purple" stops it straight away.
+
+UNDO
+cd ~/"Touchdesigner Designs/Hue Rig" && S=<the date you deployed, e.g. 2026-11-15> && \
+cp pi/brain/front_door.py.bak-$S-looks pi/brain/front_door.py && cp pi/brain/test_brain.py.bak-$S-looks pi/brain/test_brain.py && \
+cp pi_deploy.py.bak-$S-looks pi_deploy.py && cp selftest.py.bak-$S-looks selftest.py && \
+echo '{"do": "reload"}' > bridge/inbox/reload-undo.json && sleep 30 && echo '{"do": "pi_deploy"}' > bridge/inbox/pi-deploy-undo.json
+(looks.py can stay on the Pi -- the old front door simply doesn't use it.)
+
+WATCH FOR
+- Breathing rainbow: lamps should move together. If one lamp lags behind the others, tell Claude -- the Pi sends
+  lamp by lamp 0.02 s apart (same as the Mac); it can be switched to one group command.
+- Pi CPU stays tiny (one thread, ~8 small requests every 1.25 s), only while an ambient look runs.
+- movieglow on the Pi is lamps only; the heads join in only when the Mac runs it.
+
+NOT DONE (needs your call): heads/spots from the Pi through the DMX node. The brain still leaves them alone, as
+agreed. See the new backlog line 3b.
