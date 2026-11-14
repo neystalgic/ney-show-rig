@@ -52,21 +52,21 @@ N5. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-meals/DEPLO
    the 4 heads + 2 spots, nDisplay notes). Plain text, no installs.
    PRIORITY: Michael follows it tonight (Nov 11) -- start with plugins to enable and a
    Blueprint that pulses a light/material on /ney/beat from port 7700.
-2. [SAFE] on hold until Nov 14 noon -- Michael: nothing lighting-related tonight (was: todo) -- Twin rebuild PLAN (Michael, Nov 11: "the twin still looks like a mess").
+2. [SAFE] todo -- Twin rebuild PLAN (Michael, Nov 11: "the twin still looks like a mess").
    The raw LiDAR scan is noisy and blotchy in Unreal. Write away/twin-rebuild/PLAN.txt: rebuild
    the room as clean simple geometry from measured sizes (walls, ceiling, desk, couch, screen,
    clouds) using Studio Placement Plan.txt / Aim Map.txt / Light Placement v3, keep the scan only
    as a hidden reference, dark matte materials so the heads' beams and the projection read,
    and a Blender-or-Unreal-modeling step list Michael can follow in ~1 hour. Plain text only.
-3. [SAFE] on hold until Nov 14 noon -- Michael: nothing lighting-related tonight (was: in progress) Nov 12 (Pi brain v1 LIVE: schedule failover + catch-up via pi_deploy; calm looks next) -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
+3. [SAFE] in progress Nov 12 (Pi brain v1 LIVE: schedule failover + catch-up via pi_deploy; calm looks next) -- Rig 2.0 Phase 1a: Pi look engine for the calm looks (rainbow
    synced breathing, night red 12%, morning soft blue, cozy) using Hue v2 + DMX node
    HTTP. away/pi-brain/looks.py + tests with a mocked bridge and node. No real calls.
 4. [SAFE] mostly covered Nov 12 by the Pi front door + brain (Mac leads when up, Pi covers calm looks + schedule); remaining: heads power from the Pi -- Rig 2.0 Phase 1b: hand-off rule (Mac hub leads while alive and
    playing; Pi takes over within seconds when it goes quiet). away/pi-brain/handoff.py
    + tests that simulate the Mac dropping out.
-5. [SAFE] on hold until Nov 14 noon -- Michael: nothing lighting-related tonight (was: todo) -- Tap Switch dry-run harness: simulate button 1-4 events against a
+5. [SAFE] todo -- Tap Switch dry-run harness: simulate button 1-4 events against a
    fake bridge and check each maps to show / movieuv / cycle / night. away/tap-test/.
-6. [SAFE] on hold until Nov 14 noon -- Michael: nothing lighting-related tonight (was: todo) -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
+6. [SAFE] todo -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
    (input / decks / mixer / output, only the on-screen deck cooks, labels) as
    away/td-tidy/PLAN.txt. Do NOT edit the live TouchDesigner project.
 7. [SAFE] ready for Michael (built + tested Nov 14, see away/housekeeping/DEPLOY.txt) -- Housekeeping list: list the .bak-* files older than 7 days that are
