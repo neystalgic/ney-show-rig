@@ -82,7 +82,15 @@ def start():
             return 'SKIP quiet hours %s' % b['QUIET_HOURS']
     except ValueError:
         pass
-    why = busy(int(b['IDLE_MINUTES']))
+    force = os.path.join(ROOT, 'bridge', 'away_force_once')   # Michael-approved test run: skip the idle gate once
+    forced = False
+    try:
+        forced = open(force).read().strip() == 'go'
+        if forced:
+            open(force, 'w').write('used %s' % t.isoformat(timespec='minutes'))
+    except OSError:
+        pass
+    why = '' if forced else busy(int(b['IDLE_MINUTES']))
     if why:
         return 'SKIP Michael is active: %s' % why
     starts = [dt.datetime.fromisoformat(r['start']) for r in rs if r.get('start')]
