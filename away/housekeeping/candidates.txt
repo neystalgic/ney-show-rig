@@ -1,0 +1,61 @@
+HOUSEKEEPING -- old .bak-* files already saved in git (LIST ONLY: nothing was moved)
+==================================================================================
+Made 2026-11-14 by away/housekeeping/bak_candidates.py. Older than 7 days =
+dated before 2026-11-07. 'In git' = the backup's exact
+content was committed at some point, so git can always give it back.
+
+CANDIDATES (30 files, 821 KB) -- safe to move to _to_delete/:
+  Aim Map.txt.bak-oct31  | 2026-10-31 (name) | in git: 29ddaf98 2026-10-30
+  Studio Shopping List.csv.bak-nov02  | 2026-11-02 (name) | in git: fa76bb22 2026-11-01
+  Week Plan Oct 30 - Nov 5.txt.bak-nov02  | 2026-11-02 (name) | in git: fa76bb22 2026-11-01
+  Week Plan Oct 30 - Nov 5.txt.bak-oct31  | 2026-10-31 (name) | in git: 09e76df5 2026-10-29
+  ambient_fade.py.bak-nov01  | 2026-11-01 (name) | in git: 2f75bdb6 2026-10-31
+  ambient_fade.py.bak-oct30  | 2026-10-30 (name) | in git: 5a2aca91 2026-10-28
+  ambient_fade.py.bak-oct31  | 2026-10-31 (name) | in git: e9a904ff 2026-10-30
+  head_power.py.bak-nov01  | 2026-11-01 (name) | in git: 31895840 2026-10-31
+  hub_dmx.py.bak-nov01  | 2026-11-01 (name) | in git: fb2a07a7 2026-10-31
+  hub_dmx.py.bak-nov01b  | 2026-11-01 (name) | in git: fa76bb22 2026-11-01
+  hub_dmx.py.bak-nov04  | 2026-11-04 (name) | in git: 4a966291 2026-11-01
+  hub_dmx.py.bak-oct30  | 2026-10-30 (name) | in git: 02c9c163 2026-10-30
+  hub_dmx.py.bak-oct30b  | 2026-10-30 (name) | in git: fa3b5b8f 2026-10-30
+  hub_dmx.py.bak-oct31c  | 2026-10-31 (name) | in git: 9c0c4208 2026-10-30
+  hub_dmx.py.bak-oct31d  | 2026-10-31 (name) | in git: 324dcb06 2026-10-31
+  hub_dmx.py.bak-oct31e  | 2026-10-31 (name) | in git: c6d61497 2026-10-31
+  hue_hub.py.bak-nov01  | 2026-11-01 (name) | in git: fb2a07a7 2026-10-31
+  hue_hub.py.bak-nov04  | 2026-11-04 (name) | in git: 4a966291 2026-11-01
+  hue_hub.py.bak-oct30  | 2026-10-30 (name) | in git: 1fb2f2f2 2026-10-30
+  hue_hub.py.bak-oct31  | 2026-10-31 (name) | in git: f52589d7 2026-10-30
+  rig_control.py.bak-nov01  | 2026-11-01 (name) | in git: eb96fe62 2026-11-01
+  rig_control.py.bak-nov02  | 2026-11-02 (name) | in git: a0d91f50 2026-11-01
+  rig_control.py.bak-oct31  | 2026-10-31 (name) | in git: 07175117 2026-10-30
+  dmx/Start DMX Node.bat.bak-oct30  | 2026-10-30 (name) | in git: ebe85c70 2026-10-28
+  dmx/aim_points.json.bak-oct31  | 2026-10-31 (name) | in git: 29ddaf98 2026-10-30
+  dmx/app/dmx_node.py.bak-nov03  | 2026-11-03 (name) | in git: fb2a07a7 2026-10-31
+  dmx/app/dmx_node.py.bak-oct30  | 2026-10-30 (name) | in git: 1fb2f2f2 2026-10-30
+  dmx/app/dmx_node.py.bak-oct31  | 2026-10-31 (name) | in git: fa3b5b8f 2026-10-30
+  dmx/app/dmx_node.py.bak-oct31b  | 2026-10-31 (name) | in git: 324dcb06 2026-10-31
+  pi/ney_health.py.bak-oct30  | 2026-10-30 (name) | in git: fcf8c883 2026-10-28
+
+KEEP -- old but NOT in git (20): these hold the only copy of that version:
+  Studio Shopping List.csv.bak-nov05  | 2026-11-05 (name)
+  Studio Shopping List.csv.bak-oct31  | 2026-10-31 (name)
+  Week Plan Oct 30 - Nov 5.txt.bak-nov02b  | 2026-11-02 (name)
+  Week Plan Oct 30 - Nov 5.txt.bak-nov04  | 2026-11-04 (name)
+  hub_dmx.py.bak-nov04b  | 2026-11-04 (name)
+  hub_dmx.py.bak-nov04c  | 2026-11-04 (name)
+  hub_dmx.py.bak-nov04d  | 2026-11-04 (name)
+  hub_dmx.py.bak-nov04e  | 2026-11-04 (name)
+  hub_state.json.bak-nov01  | 2026-11-01 (name)
+  hub_state.json.bak-nov05  | 2026-11-05 (name)
+  hub_state.json.bak-oct31  | 2026-10-31 (name)
+  hue_hub.py.bak-nov04b  | 2026-11-04 (name)
+  hue_hub.py.bak-nov04c  | 2026-11-04 (name)
+  rig_control.py.bak-nov02b  | 2026-11-02 (name)
+  dmx/app/dmx_node.py.bak-nov03b  | 2026-11-03 (name)
+  dmx/app/dmx_node.py.bak-nov05  | 2026-11-05 (name)
+  twin/ney_unreal_live.py.bak-nov02  | 2026-11-02 (name)
+  twin/ney_unreal_live.py.bak-nov02b  | 2026-11-02 (name)
+  twin/ney_unreal_live.py.bak-nov02c  | 2026-11-02 (name)
+  twin/ney_unreal_live.py.bak-nov02d  | 2026-11-02 (name)
+
+TOO NEW to judge yet (38, 7 days or younger): left alone.

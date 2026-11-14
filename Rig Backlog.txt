@@ -69,7 +69,7 @@ N5. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-meals/DEPLO
 6. [SAFE] on hold until Nov 14 noon -- Michael: nothing lighting-related tonight (was: todo) -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
    (input / decks / mixer / output, only the on-screen deck cooks, labels) as
    away/td-tidy/PLAN.txt. Do NOT edit the live TouchDesigner project.
-7. [SAFE] todo -- Housekeeping list: list the .bak-* files older than 7 days that are
+7. [SAFE] ready for Michael (built + tested Nov 14, see away/housekeeping/DEPLOY.txt) -- Housekeeping list: list the .bak-* files older than 7 days that are
    also in git history, as away/housekeeping/candidates.txt. List only; move nothing.
 
 --- DONE (kept for the record) --------------------------------------------------------

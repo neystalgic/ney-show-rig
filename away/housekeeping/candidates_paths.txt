@@ -1,0 +1,30 @@
+Aim Map.txt.bak-oct31
+Studio Shopping List.csv.bak-nov02
+Week Plan Oct 30 - Nov 5.txt.bak-nov02
+Week Plan Oct 30 - Nov 5.txt.bak-oct31
+ambient_fade.py.bak-nov01
+ambient_fade.py.bak-oct30
+ambient_fade.py.bak-oct31
+head_power.py.bak-nov01
+hub_dmx.py.bak-nov01
+hub_dmx.py.bak-nov01b
+hub_dmx.py.bak-nov04
+hub_dmx.py.bak-oct30
+hub_dmx.py.bak-oct30b
+hub_dmx.py.bak-oct31c
+hub_dmx.py.bak-oct31d
+hub_dmx.py.bak-oct31e
+hue_hub.py.bak-nov01
+hue_hub.py.bak-nov04
+hue_hub.py.bak-oct30
+hue_hub.py.bak-oct31
+rig_control.py.bak-nov01
+rig_control.py.bak-nov02
+rig_control.py.bak-oct31
+dmx/Start DMX Node.bat.bak-oct30
+dmx/aim_points.json.bak-oct31
+dmx/app/dmx_node.py.bak-nov03
+dmx/app/dmx_node.py.bak-oct30
+dmx/app/dmx_node.py.bak-oct31
+dmx/app/dmx_node.py.bak-oct31b
+pi/ney_health.py.bak-oct30

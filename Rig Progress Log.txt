@@ -1,6 +1,15 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-14 16:10 UTC | Housekeeping list (item 7) | away/housekeeping/ (NEW): bak_candidates.py (read-only) finds
+  every *.bak-* backup, dates it from its name (nov03b = Nov 3; file time if no date), and checks whether its exact
+  content was ever committed to git (any branch/path). Result in candidates.txt: 30 candidates (~820 KB, older than
+  7 days AND in git), 20 old backups to KEEP (only copy of that version -- e.g. hub_dmx.py.bak-nov04b..e, twin/*,
+  hub_state.json), 38 too new. Secret-looking names are skipped unopened. Nothing moved or deleted |
+  tests: test_bak_candidates.py 19/19 passed offline (throwaway temp git repo, sockets blocked; real repo only read) |
+  Michael: nothing to deploy. Optional: one Terminal paste in away/housekeeping/DEPLOY.txt moves the 30 into
+  _to_delete/ (already gitignored), with an undo paste |
+  Layer updates for Michael: none.
 2026-11-14 15:09 UTC | Saved meals for Jarvis (N5) | away/jarvis-meals/ (NEW): jarvis.py = N1's
   food-polish copy + saved meals. "my usual Chipotle" (with or without "I had") logs the saved kcal/protein, never a
   guess; unknown usual -> logs nothing and says how to save it. "save that/those as my usual X" saves the newest

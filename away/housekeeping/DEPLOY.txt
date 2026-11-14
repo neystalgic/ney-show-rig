@@ -1,0 +1,33 @@
+HOUSEKEEPING -- old .bak-* files that git already has (backlog item 7)
+=====================================================================
+Built + tested by the Rig away loop, Nov 14. LIST ONLY: nothing was moved, edited or deleted.
+
+WHAT IT DOES
+- bak_candidates.py scans the repo for "<file>.bak-<date>" backups (skips .git, away/, and
+  anything secret-looking like hue_config / token -- those are never opened).
+- A backup counts as a CANDIDATE when it is older than 7 days (date read from its name,
+  e.g. nov03b = Nov 3; file time if the name has no date) AND its exact content was committed
+  to git at some point. Then git can always give that version back, so the .bak adds nothing.
+- Writes candidates.txt (readable report) + candidates_paths.txt (one path per line).
+
+TODAY'S RESULT (Nov 14): 30 candidates (~820 KB), 20 old backups to KEEP (not in git --
+  e.g. hub_dmx.py.bak-nov04b..e, the twin/ney_unreal_live.py ones, hub_state.json ones),
+  38 too new to judge. See candidates.txt.
+
+LIVE FILES: none replaced or added. Nothing to deploy -- it is a tool + a list.
+
+OPTIONAL TIDY-UP (only if you want it -- moves, never deletes; re-checks the list first)
+Paste in Terminal:
+
+cd ~/"Touchdesigner Designs/Hue Rig" && python3 away/housekeeping/bak_candidates.py && while IFS= read -r f; do [ -f "$f" ] && mkdir -p "_to_delete/$(dirname "$f")" && mv -n "$f" "_to_delete/$f" && echo "moved $f"; done < away/housekeeping/candidates_paths.txt
+
+UNDO (puts every moved file back):
+
+cd ~/"Touchdesigner Designs/Hue Rig" && while IFS= read -r f; do [ -f "_to_delete/$f" ] && mv -n "_to_delete/$f" "$f" && echo "restored $f"; done < away/housekeeping/candidates_paths.txt
+
+WATCH FOR
+- _to_delete/ should be ignored by git (check: git status shows no _to_delete). If it shows up,
+  add "_to_delete/" to .gitignore.
+- Bin _to_delete/ yourself whenever you're happy. To get any version back from git instead:
+  git show <hash>:<file>  (hash is listed next to each file in candidates.txt).
+- Re-run any time: python3 away/housekeeping/bak_candidates.py  (or --days 14 to be stricter).
