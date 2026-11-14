@@ -13,7 +13,7 @@ WEIGHT = os.path.join(DESK, 'Weight Log.csv')
 FOOD = os.path.join(DESK, 'Food Log.csv')
 ACTIVITY = os.path.join(DESK, 'Activity Log.csv')
 HEADERS = {FOOD: ['Date', 'Time', 'Item', 'Calories', 'Protein (g)', 'Source'],
-           ACTIVITY: ['Date', 'Active kcal', 'Steps', 'Exercise min', 'Sleep h', 'Resting HR', 'HRV ms', 'VO2max']}
+           ACTIVITY: ['Date', 'Active kcal', 'Resting kcal', 'Steps', 'Exercise min', 'Sleep h', 'Resting HR', 'HRV ms', 'VO2max']}
 
 
 def _append(path, row):
@@ -31,7 +31,7 @@ def add_food(item, kcal=None, protein=None, source='Jarvis', when=None):
                    '' if kcal is None else int(round(kcal)), '' if protein is None else int(round(protein)), source])
 
 
-FIELDS = {'active_kcal': 'Active kcal', 'steps': 'Steps', 'exercise_min': 'Exercise min', 'sleep_h': 'Sleep h',
+FIELDS = {'active_kcal': 'Active kcal', 'resting_kcal': 'Resting kcal', 'steps': 'Steps', 'exercise_min': 'Exercise min', 'sleep_h': 'Sleep h',
           'resting_hr': 'Resting HR', 'hrv': 'HRV ms', 'vo2max': 'VO2max'}
 
 

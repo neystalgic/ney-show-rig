@@ -16,6 +16,11 @@ Michael can reorder, add or delete lines any time -- top of the list wins.
    + body_log.py that adds a resting HR + HRV chart, a sleep-hours bar chart, those columns in
    the weekly table, and a "today vs 7-day average" line for resting HR. Same canvas style,
    purple accents, no libraries. Offline test with a fake CSV. DEPLOY.txt = copy two files + reload.
+   ALSO (Nov 13): the headline number is the real daily DEFICIT = (Active kcal + Resting kcal from
+   the Watch) - calories eaten (Food Log). Show it per day + 7-day average, green when >= 500.
+   If Resting kcal is missing, estimate it with Mifflin-St Jeor (male, 6'3" = 190.5 cm, born ~1999,
+   latest weight) and label it "est.". Add an "adaptive burn" line once 14+ days exist: average
+   eaten + (7-day-avg weight drop in lb/day x 3500) -- the truest maintenance number.
 1. [SAFE] in progress (part 1 written Nov 11: OSC listener + pulsing light; next: Niagara, DMX previs, nDisplay) -- Unreal on the Zephyrus: step-by-step "Unreal Beat Deck.txt" (OSC
    receiver from the beat stream, Niagara sacred-geometry system, DMX plugin previs of
    the 4 heads + 2 spots, nDisplay notes). Plain text, no installs.
