@@ -178,6 +178,18 @@ def wake_zephyrus():
     s.close()
 
 
+def heads_glow():
+    """Nov 13: "heads on" used to switch the plugs only, so the heads sat dark with fans running (nothing sends them
+    colour unless the hub or ambient engine is running). Now: power up, wait out the reset sweep, then the ambient
+    engine drives them -- dim purple, slow drift on their ceiling aims, lamps in the same purples. No strobe."""
+    msg = head_power.request_on(quiet=True)
+    if 'powering up' not in (msg or ''):
+        return msg
+    time.sleep(head_power.settings()['warmup_s'] + 3)
+    stop_all()
+    start_ambient(50, 240, 0, 0, 0, 302, 325, 'heads')
+
+
 def stop_all():
     stop_ambient()
     stop_hub()
@@ -428,7 +440,7 @@ LOOKS = {
     'desk': ('Back at the desk: normal schedule again', lambda: desk_mode()),
     'nostrobe': ('Light show -- non strobe', lambda: (wake_zephyrus(), stop_ambient(), head_power.request_on(quiet=True), start_hub('music'),
                                                       hub_setting('dmx_strobe', 'off'), hub_setting('dmx_on', True))),
-    'heads_on': ('Moving heads powering up', lambda: head_power.request_on()),
+    'heads_on': ('Heads powering up, then a slow purple glow', lambda: heads_glow()),   # Nov 13: power alone = fans only
     'heads_off': ('Moving heads parking, then power off', lambda: head_power.request_off(why='heads_off')),
     'rainbow': ('Rainbow breathing, every lamp in sync', lambda: (stop_all(), start_ambient(75, 90, 0, 10, 22))),   # Nov 10: all bulbs one colour, breathing
     'rainbowroom': ('Rainbow across the room', lambda: (stop_all(), start_ambient(70, 120, 240))),
