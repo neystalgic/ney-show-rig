@@ -208,14 +208,30 @@ def automations():
         res('Automations', 'Idle watcher (for the away loop)', 'ok' if age < 300 else 'fail', 'updated %.0f s ago' % age)
     except Exception as e:
         res('Automations', 'Idle watcher (for the away loop)', 'fail', e.__class__.__name__)
-    # hourly backup to GitHub
+    # hourly backup (Pi + GitHub): read the backup's own log -- main only changes when something is committed
     try:
-        ct = int(subprocess.run(['git', '-C', HERE, 'log', '-1', '--format=%ct', 'origin/main'],
-                                capture_output=True, text=True, timeout=15).stdout.strip())
-        age = (now - ct) / 3600.0
-        res('Automations', 'Hourly backup (GitHub)', 'ok' if age < 3 else 'fail', 'last push %.1f h ago' % age)
+        logl = open(os.path.join(HERE, '.git', 'backup.log')).read().splitlines()
+        for remote, label in (('origin', 'Hourly backup (GitHub)'), ('pi', 'Hourly backup (Pi)')):
+            hits = [l for l in logl if l.endswith('backed up to ' + remote)]
+            if not hits:
+                res('Automations', label, 'fail', 'never succeeded in the log')
+                continue
+            when = dt.datetime.strptime(hits[-1][:19], '%Y-%m-%d %H:%M:%S').timestamp()
+            age = (now - when) / 3600.0
+            res('Automations', label, 'ok' if age < 2.2 else 'fail', 'last good push %.1f h ago' % age)
     except Exception as e:
-        res('Automations', 'Hourly backup (GitHub)', 'warn', 'could not read (%s)' % e.__class__.__name__)
+        res('Automations', 'Hourly backup', 'warn', 'could not read .git/backup.log (%s)' % e.__class__.__name__)
+    # stale git locks (Nov 15: a leftover refs/heads/autosave.lock silently froze the unsaved-work snapshot)
+    stale = []
+    for root, dirs, files in os.walk(os.path.join(HERE, '.git')):
+        dirs[:] = [d for d in dirs if d != 'objects']
+        for f in files:
+            if f.endswith('.lock') and f != 'backup.lock':
+                fp = os.path.join(root, f)
+                if now - os.path.getmtime(fp) > 600:
+                    stale.append(os.path.relpath(fp, HERE))
+    res('Automations', 'Git locks', 'fail' if stale else 'ok',
+        ('stale: ' + ', '.join(stale) + ' -- move each to .git/stale-<name>') if stale else 'none stuck')
     # light schedule actually fires every day
     a = _age_h(os.path.join(HERE, 'light_schedule_done.json'))
     res('Automations', 'Light schedule (wind-down / night / sunrise)',
