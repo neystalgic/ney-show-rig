@@ -1,0 +1,12 @@
+HEAD RELAY PREVIS -- 8 bars at 120 BPM, energy 0.6 (hand-off every 2 bars), purple room
+
+bars 1-2  Head 1 fades in, sweeps 50 deg left -> right with a small dip, fades out on the bar line.
+           Glowing: Hue color lamp 1. Every other lamp dims to 20%. Other heads dark (the next one pre-aims).
+bars 3-4  Head 2 fades in, sweeps 50 deg right -> left with a small dip, fades out on the bar line.
+           Glowing: Hue Play floor lamp large 1. Every other lamp dims to 20%. Other heads dark (the next one pre-aims).
+bars 5-6  Head 3 fades in, sweeps 50 deg left -> right with a small dip, fades out on the bar line.
+           Glowing: Floor Shade, Hue color lamp 2. Every other lamp dims to 20%. Other heads dark (the next one pre-aims).
+bars 7-8  Head 4 fades in, sweeps 50 deg right -> left with a small dip, fades out on the bar line.
+           Glowing: Behind Desk. Every other lamp dims to 20%. Other heads dark (the next one pre-aims).
+
+Spots: dark during the relay. Drops: the normal show (all heads, strobe allowed) takes over.

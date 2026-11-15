@@ -13,7 +13,7 @@ Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never to
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
 --- PRIORITY for Nov 15 (Michael tests it live with Claude tomorrow) ----------------------------------------
-H1. [SAFE] todo -- Head RELAY / chase for the light show (Michael, Nov 14: "head 1 would be the only one active and
+H1. [SAFE] ready for Michael (built + tested Nov 15, see away/head-relay/DEPLOY.txt) -- Head RELAY / chase for the light show (Michael, Nov 14: "head 1 would be the only one active and
    sweep, then head 2 does the same thing and so on -- fun and professional looking"). Build away/head-relay/:
    a new show pattern in a COPY of hub_dmx.py (+ hub_vibes/hub_fx copies only if needed): exactly ONE head lit at a
    time, doing a smooth sweep (pan arc, small tilt dip) in the current palette colour; on the hand-off (every bar at

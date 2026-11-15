@@ -1,6 +1,21 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-15 08:12 UTC | Head relay / chase (H1) | away/head-relay/ (NEW): hub_chase.py = one head lit at a time, a smooth
+  ~50 deg pan sweep + 8 deg tilt dip in the room colour (picked at each hand-off, held all turn, never white), fade out on
+  the bar line, next head takes over sweeping the other way: 1-2-3-4, back 3-2, skip 1-3-2-4. Hand-off every 2 bars, every
+  bar at energy 0.75+. Lamps beside the lit head glow, the rest dim to 20% (before the flicker protection). Setting
+  dmx_pattern normal (default, unchanged) / show (grooves + breakdowns; drops dance + strobe) / relay. Never strobes, off in
+  movie/blackout/rest/lava and when you pick a scene; all lean caps, pan windows, avoid zones still applied; spots dark.
+  apply_patches.py = anchored all-or-nothing patches to hub_dmx, hue_hub, rig_control (looks relay/relayoff), jarvis
+  ("head relay" / "head relay off"), selftest (read-only Head relay check). previs_8bars.txt/.csv = 8 bars on paper |
+  tests: test_head_relay.py 58/58 passed (fake hub + DMX socket + clock, network blocked; one lit head every frame, hand-offs
+  on bar lines, caps + avoid zones + 35 deg/s, lamps follow, drops/movie/blackout/cue/lava off, 'normal' byte-identical to
+  live hub_dmx, old test_jarvis passes on patched copy, installer idempotent + writes nothing if a file changed) |
+  Michael: one Terminal paste + the 2-minute live test in away/head-relay/DEPLOY.txt (not mid-show: the hub restarts itself
+  once). Check each glowing lamp is really beside its head -- head positions are estimates (chase_lamps setting fixes) |
+  Layer updates for Michael: BRAIN Preferences could add "+ Light show: head relay in grooves/breakdowns ('Jarvis, head
+  relay'), all heads in drops" once you like it live.
 2026-11-15 02:10 UTC | Jarvis reminders + timers (J2) | away/jarvis-reminders/ (NEW): reminders.py = "remind me at 9 to take my
   meds" / "in 20 minutes" / "tomorrow at 7" / "tonight at 11", "10 minute timer", "set a timer for 10 minutes for the
   pasta", "what are my reminders" / "how long left on my timer", "cancel the 9 o'clock / my timer / the meds reminder /

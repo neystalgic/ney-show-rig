@@ -1,0 +1,66 @@
+beat,bar,head_lit,level_pct,pan_offset_deg,lean_deg,lamps_glowing
+0.0,1,1,0,-25.0,29.8,Hue color lamp 1
+0.5,1,1,100,-24.5,28.2,Hue color lamp 1
+1.0,1,1,100,-23.1,26.7,Hue color lamp 1
+1.5,1,1,100,-20.8,25.3,Hue color lamp 1
+2.0,1,1,100,-17.7,24.1,Hue color lamp 1
+2.5,1,1,100,-13.9,23.1,Hue color lamp 1
+3.0,1,1,100,-9.6,22.4,Hue color lamp 1
+3.5,1,1,100,-4.9,21.9,Hue color lamp 1
+4.0,2,1,100,-0.0,21.8,Hue color lamp 1
+4.5,2,1,100,4.9,21.9,Hue color lamp 1
+5.0,2,1,100,9.6,22.4,Hue color lamp 1
+5.5,2,1,100,13.9,23.1,Hue color lamp 1
+6.0,2,1,100,17.7,24.1,Hue color lamp 1
+6.5,2,1,100,20.8,25.3,Hue color lamp 1
+7.0,2,1,100,23.1,26.7,Hue color lamp 1
+7.5,2,1,100,24.5,28.2,Hue color lamp 1
+8.0,3,2,0,25.0,29.8,Hue Play floor lamp large 1
+8.5,3,2,100,24.5,28.2,Hue Play floor lamp large 1
+9.0,3,2,100,23.1,26.7,Hue Play floor lamp large 1
+9.5,3,2,100,20.8,25.3,Hue Play floor lamp large 1
+10.0,3,2,100,17.7,24.1,Hue Play floor lamp large 1
+10.5,3,2,100,13.9,23.1,Hue Play floor lamp large 1
+11.0,3,2,100,9.6,22.4,Hue Play floor lamp large 1
+11.5,3,2,100,4.9,21.9,Hue Play floor lamp large 1
+12.0,4,2,100,0.0,21.8,Hue Play floor lamp large 1
+12.5,4,2,100,-4.9,21.9,Hue Play floor lamp large 1
+13.0,4,2,100,-9.6,22.4,Hue Play floor lamp large 1
+13.5,4,2,100,-13.9,23.1,Hue Play floor lamp large 1
+14.0,4,2,100,-17.7,24.1,Hue Play floor lamp large 1
+14.5,4,2,100,-20.8,25.3,Hue Play floor lamp large 1
+15.0,4,2,100,-23.1,26.7,Hue Play floor lamp large 1
+15.5,4,2,100,-24.5,28.2,Hue Play floor lamp large 1
+16.0,5,3,0,-25.0,29.8,"Floor Shade, Hue color lamp 2"
+16.5,5,3,100,-24.5,28.2,"Floor Shade, Hue color lamp 2"
+17.0,5,3,100,-23.1,26.7,"Floor Shade, Hue color lamp 2"
+17.5,5,3,100,-20.8,25.3,"Floor Shade, Hue color lamp 2"
+18.0,5,3,100,-17.7,24.1,"Floor Shade, Hue color lamp 2"
+18.5,5,3,100,-13.9,23.1,"Floor Shade, Hue color lamp 2"
+19.0,5,3,100,-9.6,22.4,"Floor Shade, Hue color lamp 2"
+19.5,5,3,100,-4.9,21.9,"Floor Shade, Hue color lamp 2"
+20.0,6,3,100,-0.0,21.8,"Floor Shade, Hue color lamp 2"
+20.5,6,3,100,4.9,21.9,"Floor Shade, Hue color lamp 2"
+21.0,6,3,100,9.6,22.4,"Floor Shade, Hue color lamp 2"
+21.5,6,3,100,13.9,23.1,"Floor Shade, Hue color lamp 2"
+22.0,6,3,100,17.7,24.1,"Floor Shade, Hue color lamp 2"
+22.5,6,3,100,20.8,25.3,"Floor Shade, Hue color lamp 2"
+23.0,6,3,100,23.1,26.7,"Floor Shade, Hue color lamp 2"
+23.5,6,3,100,24.5,28.2,"Floor Shade, Hue color lamp 2"
+24.0,7,4,0,25.0,29.8,Behind Desk
+24.5,7,4,100,24.5,28.2,Behind Desk
+25.0,7,4,100,23.1,26.7,Behind Desk
+25.5,7,4,100,20.8,25.3,Behind Desk
+26.0,7,4,100,17.7,24.1,Behind Desk
+26.5,7,4,100,13.9,23.1,Behind Desk
+27.0,7,4,100,9.6,22.4,Behind Desk
+27.5,7,4,100,4.9,21.9,Behind Desk
+28.0,8,4,100,0.0,21.8,Behind Desk
+28.5,8,4,100,-4.9,21.9,Behind Desk
+29.0,8,4,100,-9.6,22.4,Behind Desk
+29.5,8,4,100,-13.9,23.1,Behind Desk
+30.0,8,4,100,-17.7,24.1,Behind Desk
+30.5,8,4,100,-20.8,25.3,Behind Desk
+31.0,8,4,100,-23.1,26.7,Behind Desk
+31.5,8,4,100,-24.5,28.2,Behind Desk
+32.0,9,3,0,-25.0,29.8,"Floor Shade, Hue color lamp 2"

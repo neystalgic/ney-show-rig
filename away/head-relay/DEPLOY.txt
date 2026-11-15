@@ -1,0 +1,67 @@
+HEAD RELAY (light-show chase) -- built + tested by the Rig away loop, Nov 15 2026 (backlog H1). Not live yet.
+===========================================================================================================
+
+WHAT IT DOES
+- ONE head lit at a time. It fades in, makes one smooth sweep (a ~50 deg pan arc with a small 8 deg tilt dip) in the
+  room's colour, fades out exactly on the bar line -- then the next head takes over and sweeps the other way.
+  Order: 1 -> 2 -> 3 -> 4, back 3 -> 2, then a skip pattern 1 -> 3 -> 2 -> 4, and round again (never the same head twice).
+- Hand-off every 2 bars; every bar when the energy is high (vibe energy 0.75+). The colour is picked at each hand-off
+  and held for the whole turn (no mid-sweep colour changes). Never white (saturation kept at 55%+).
+- The Hue lamp(s) beside the lit head glow in that colour, the rest dim to 20% -- the light travels round the room.
+- Setting dmx_pattern: 'normal' (default = today's show, byte-for-byte), 'show' (relay in grooves + breakdowns,
+  DROPS dance + strobe as usual), 'relay' (relay whenever music plays, except drops).
+- Safety: the relay never strobes (even with dmx_strobe 'always'/'flash'), stays off in movie mode, blackout, rest,
+  lava/ambient, and when you pick a scene yourself (dmx_cue). Every lean cap, pan window and avoid zone still applies
+  in hub_dmx, the node still has the last word, guest mode is untouched. Pan speed stays under 35 deg/s.
+  The two spots go dark while the relay runs (setting chase_spots true = they keep their normal show).
+- See previs_8bars.txt (8 bars on paper) and previs_8bars.csv (every half beat: head, level, pan, lean, lamps).
+
+FILES
+  away/head-relay/hub_chase.py      -> NEW  Hue Rig/hub_chase.py (the relay: clock, order, sweep, lamps)
+  away/head-relay/apply_patches.py  -> small anchored patches (checks ALL files first; changes NOTHING if any file
+                                       moved on; safe to run twice; backups *.bak-nov15-relay):
+       hub_dmx.py        loads hub_chase; 5 hooks in frame(): relay owns the heads (no strobe/turns/sweeps/scene
+                         rotation), relay lean + pan (avoid caps re-applied), only the lit head shines, relay colour
+       hue_hub.py        lamps follow (BEFORE the flicker protection), dmx_pattern + chase_* settings accepted,
+                         hub_chase.py added to the code files the hub reloads on
+       rig_control.py    looks 'relay' (dmx_pattern = show) and 'relayoff' (dmx_pattern = normal)
+       jarvis/jarvis.py  "head relay" / "start the relay" / "heads take turns" / "relay mode"; "head relay off" /
+                         "stop the relay"; help line for the model
+       selftest.py       read-only "Head relay" check: pattern valid, every head has a lamp beside it
+  away/head-relay/test_head_relay.py  58 checks (fake hub, fake DMX socket, fake clock, network blocked); stays in away/
+  away/head-relay/previs.py           re-draws the previs files
+  Works on top of J1/J2. If you later deploy something that copies WHOLE files (J1 copies jarvis.py + selftest.py),
+  just run apply_patches.py again afterwards -- it only adds what's missing.
+
+DEPLOY (one Terminal paste, on the Mac -- not mid-show: the hub restarts itself once when hub_dmx.py changes)
+  cd ~/"Touchdesigner Designs/Hue Rig" && \
+  git diff --quiet -- hub_dmx.py hue_hub.py rig_control.py jarvis/jarvis.py selftest.py || { echo "STOP: uncommitted edits in a file the relay patches -- ask Claude first"; false; } && \
+  python3 away/head-relay/test_head_relay.py > /tmp/relay-test.txt && tail -1 /tmp/relay-test.txt && \
+  python3 away/head-relay/apply_patches.py && \
+  python3 jarvis/jarvis.py --dry -c "head relay" && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-head-relay.json && echo "deployed -- reload sent" && \
+  sleep 25 && python3 selftest.py --quiet
+
+  If the tests fail the paste stops before changing anything (see /tmp/relay-test.txt).
+  Done = selftest ends with 0 FAIL (the "Head relay" line says ok).
+
+2-MINUTE LIVE TEST (you in the room, everyone seated, fan off if Spot 2 is on)
+  1. "Jarvis, light show" (say yes) -- play a track with a clear groove, wait for the normal show.
+  2. "Jarvis, head relay". Within a bar or two: only Head 1 lit, sweeping in one colour; the lamp near it glows,
+     the rest of the room dims. On the 2nd bar line it fades out and Head 2 takes over, sweeping the other way.
+  3. Watch 8 bars: 1, 2, 3, 4, then 3, 2. Colour changes only at hand-offs. When the drop hits, all heads + strobe
+     come back; after the drop the relay picks up again.
+  4. Check each glowing lamp really is the one beside its head (the head positions are ESTIMATES). If one is wrong,
+     set chase_lamps, e.g. desk > Setup or:  {"op":"setting","key":"chase_lamps","value":{"2":["Floor Shade"]}}
+  5. "Jarvis, head relay off" -- heads dance together again. Too slow/fast? chase_arc (deg), chase_fast_energy.
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && for f in hub_dmx.py hue_hub.py rig_control.py jarvis/jarvis.py selftest.py; do \
+  cp "$f.bak-nov15-relay" "$f"; done && echo '{"do": "reload"}' > bridge/inbox/reload-head-relay-undo.json
+  (hub_chase.py can stay; nothing loads it after the undo. Quick off without undo: "Jarvis, head relay off".)
+
+WATCH FOR
+- Head 1 dims itself near upright (the image-flood rule) -- the relay leans it ~30 deg so it should stay bright.
+- A head whose avoid zone sits mid-sweep leans less there (by design). If one head's turn looks dull, say which.
+- Lamp positions for the heads are estimates (Head 1 -> Hue color lamp 1, Head 2 -> Play floor lamp, Head 3 -> Floor
+  Shade + Hue color lamp 2, Head 4 -> Behind Desk). Top Lamp is never "near" a head, so it stays dim in the relay.
