@@ -16,6 +16,13 @@
 # Saved meals ("my usual Chipotle"): jarvis/meals.json -- plain JSON, edit it by hand any time (Nov 14).
 # =============================================================================
 import argparse, datetime as dt, json, os, re, subprocess, sys, urllib.error, urllib.request
+_JD = os.path.dirname(os.path.abspath(__file__))   # Nov 15: reminders + timers live next to this file
+if _JD not in sys.path:
+    sys.path.insert(0, _JD)
+try:
+    import reminders as _reminders
+except Exception:
+    _reminders = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RIG = os.path.dirname(HERE)
@@ -63,11 +70,13 @@ ACTIONS = {
     'schedule_normal': None,                  # back to the normal 22:30 / 23:00 schedule
     'food':        None,                      # Nov 13: "log burger, 900 calories, 55 protein" (or estimate)
     'today':       None,                      # today's calories + protein so far
+    'brief':       None,                      # Nov 15: "brief me" -- sleep, resting HR, weight trend, yesterday's deficit
     'color':       None,                      # any colour, optional brightness ("blue at 40 percent")
     'level':       None,                      # brightness only ("dim the lights", "50 percent")
     'help':        None,                      # "what can you do"
     'status':      None,                      # says how the rig is doing
     'weight':      None,                      # logs a weight, needs a number
+    'reminder':    None,                      # reminders + timers (jarvis/reminders.py)
 }
 CONFIRM = {'show', 'showuv', 'flash', 'hype', 'strobe'}   # strobe / fast movement: ask first
 
@@ -193,6 +202,13 @@ def _body_log():
         sys.path.insert(0, RIG)
     import body_log
     return body_log
+
+
+def _brief():                                      # Nov 15: jarvis/brief.py (the morning briefing)
+    if HERE not in sys.path:
+        sys.path.insert(0, HERE)
+    import brief
+    return brief
 
 
 # --- Nov 14 (away loop): saved meals ----------------------------------------------------------------------------
@@ -328,6 +344,7 @@ RULES = [
     (r"^(?:please\s+)?(?:save|remember|store|log)\s+(?:that|this|it|those|these|them)(?:\s+(?:meal|one|food))?\s+as\s+(?P<name>.+)$", 'save_meal'),
     ('__food__', 'food'),
     (r"\b(?:what are|list|read me|tell me)\b.*\b(?:usuals|usual meals|saved meals)\b|\bwhat.?s my usual\b", 'meals'),
+    (r"\bbrief me\b|\bbriefing\b|\b(?:morning|daily|health) (?:brief|report|update)\b|\bcatch me up\b|\bhow did i sleep\b", 'brief'),
     (r"\bhow (am i|i.?m) doing\b|\btoday.?s? (calories|totals|food|numbers|macros)\b|\bcalories (so far|today)\b|\bwhat (have|did) i (eat|eaten|ate)\b", 'today'),
     (r'\b(schedule|bedtime|lights?) back to normal\b|\bnormal schedule\b|\breset (the )?schedule\b', 'schedule_normal'),
     (r"(no dimming|don.?t (start )?dim\w*|push (bed ?time|the schedule|wind ?down)|bed ?time (at|to)|stay up|keep (them|the lights|it) (on|up|bright))"
@@ -396,6 +413,9 @@ def by_rules(text):
     t = re.sub(r'^(hey |ok |okay )?(jarvis|siri)[,.!]?\s*', '', t)        # "Jarvis, ..." -> the command
     if not re.sub(r'[^a-z0-9]', '', t):
         return {'action': 'nothing', 'value': None}
+    r = _reminders.parse(t) if _reminders else None   # reminders/timers first: "remind me to log my weight"
+    if r:
+        return {'action': 'reminder', 'value': r}
     for pat, action in RULES:
         if pat == '__food__':
             f = parse_food(t)
@@ -436,7 +456,7 @@ Actions:
 - movienight: movie lights. movieuv: movie with UV stars. movieglow: dim movie glow.
 - morning: soft blue. nightlight: red night light. purplenight: dim purple night light, heads off. night: bedtime, heads off, red.
 - heads_on / heads_off: moving heads power. off: all lights off. producing: fill speaker off for music production. fillon: fill back on.
-- status: how the rig is doing. help: what Jarvis can do. later: no dimming until a time (put the time in "value" as text).
+- brief: his morning health briefing (sleep, heart rate, weight, yesterday's calories). status: how the rig is doing. help: what Jarvis can do. later: no dimming until a time (put the time in "value" as text).
 Mood words map to looks: chill/relax -> breathe; party/turn up -> hype; romantic -> redglow; focus/work -> color (soft blue, 70);
 gaming/moody -> color (purple or blue, 40); sleep -> night. If the sentence is not about the lights, rig or schedule, action is "unknown"."""
 def by_model(text, s, post=None):
@@ -489,6 +509,10 @@ def understand(text, s, post=None):
 def understand_all(text, s, post=None):
     """One sentence can ask for a look AND a schedule change. Split on 'and' / 'then' / commas;
     if the word rules understand the pieces, do each (looks first). Otherwise ask the model once."""
+    if _reminders and _reminders.parse(text):         # "remind me to X and Y" stays ONE reminder
+        i = understand(text, s, post)
+        i['heard'] = text
+        return [i]
     pieces = [p for p in re.split(r'\s*(?:,|\band then\b|\bthen\b|\band\b|\balso\b)\s*', text) if p.strip()]
     found = []
     for p in pieces:
@@ -647,6 +671,10 @@ def _log_food(f, s):
 def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
     a, v = intent['action'], intent.get('value')
     rig = rig or (lambda p: _rig(p, s))
+    if a == 'reminder':                              # never touches the lights
+        if not _reminders:
+            return "Reminders aren't installed on this Mac yet."
+        return _reminders.handle(v if isinstance(v, dict) else _reminders.parse(str(v or '')))
     if a == 'food':
         if isinstance(v, str):                                   # model gave just the words
             v = parse_food('log ' + v)
@@ -702,6 +730,11 @@ def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
             return "Nothing logged today yet. Tell me what you ate, like 'log a banana with peanut butter'."
         extra = (' %d of them without numbers.' % t['unknown']) if t['unknown'] else ''
         return 'Today so far: %d calories and %d grams of protein across %d meals.%s' % (t['calories'], t['protein'], t['meals'], extra)
+    if a == 'brief':                                             # Nov 15: the morning briefing, any time
+        try:
+            return _brief().brief()
+        except Exception as e:
+            return "I can't read the health logs right now (%s)." % e.__class__.__name__
     if a == 'nothing':
         return "I'm listening. Say what you want after the beep, like 'blue at 50 percent' or 'movie night'."
     if a == 'unknown':
@@ -709,7 +742,7 @@ def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
     if a == 'help':
         return ("I can set any colour and brightness, like 'pink at 40 percent'. Looks: light show, show with the stars, "
                 "movie night, rainbow, cozy, chill, morning, night light, goodnight. Also heads on or off, lights off, "
-                "I'm producing, no dimming until midnight, log your weight or food, my usual meals, and status.")
+                "I'm producing, no dimming until midnight, log your weight or food, my usual meals, brief me, reminders and timers, and status.")
     if a == 'color':
         name, bri = v['name'], v.get('bri') or 100
         c = COLOURS[name]

@@ -177,17 +177,23 @@ for suite in ('jarvis/test_jarvis.py', 'away/jarvis-meals/test_jarvis.py'):
 
 # --- 6. rig_control patch ---------------------------------------------------------------------------------------
 live = open(os.path.join(RIG, 'rig_control.py')).read()
-new, what = arp.patch(live)
-check('patch applies to the live rig_control.py text', what == 'patched' and new.count(arp.MARK) == 1)
-compile(new, 'rig_control.py', 'exec')
-check('patched rig_control compiles', True)
-check('patch is idempotent', arp.patch(new) == (new, 'already patched'))
-try:
-    arp.patch(live.replace(arp.ANCHOR, ''))
-    check('changed rig_control -> patch refuses', False)
-except SystemExit as ex:
-    check('changed rig_control -> patch refuses', 'STOP' in str(ex))
-check('shipped rig_control.py copy == patch(live)', open(os.path.join(HERE, 'rig_control.py')).read() == new)
+if arp.MARK in live:                     # already deployed (Nov 14): check the LIVE file instead of re-patching it
+    check('deployed: live rig_control has the brief patch exactly once', live.count(arp.MARK) == 1)
+    compile(live, 'rig_control.py', 'exec')
+    check('deployed: live rig_control compiles', True)
+    check('deployed: patch is idempotent on live', arp.patch(live) == (live, 'already patched'))
+else:
+    new, what = arp.patch(live)
+    check('patch applies to the live rig_control.py text', what == 'patched' and new.count(arp.MARK) == 1)
+    compile(new, 'rig_control.py', 'exec')
+    check('patched rig_control compiles', True)
+    check('patch is idempotent', arp.patch(new) == (new, 'already patched'))
+    try:
+        arp.patch(live.replace(arp.ANCHOR, ''))
+        check('changed rig_control -> patch refuses', False)
+    except SystemExit as ex:
+        check('changed rig_control -> patch refuses', 'STOP' in str(ex))
+    check('shipped rig_control.py copy == patch(live)', open(os.path.join(HERE, 'rig_control.py')).read() == new)
 
 
 def run_handler(brief_mod):

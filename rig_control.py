@@ -630,7 +630,15 @@ class Handler(BaseHTTPRequestHandler):
                 day = (_dt.date.today() - _dt.timedelta(days=1 if day == 'yesterday' else 0)).isoformat()
             row = body_log.add_activity(day, **{k: data.get(k) for k in body_log.FIELDS})
             got = ', '.join('%s %s' % (v, k) for k, v in row.items() if k != 'Date')
-            return self.reply(200, 'Health synced for %s: %s.' % (day, got or 'no numbers yet'))
+            extra = ''                                  # Nov 15: Jarvis morning briefing (jarvis/brief.py)
+            try:
+                if os.path.join(HERE, 'jarvis') not in sys.path:
+                    sys.path.insert(0, os.path.join(HERE, 'jarvis'))
+                import brief
+                extra = brief.after_sync(row)
+            except Exception:
+                extra = ''
+            return self.reply(200, 'Health synced for %s: %s.%s' % (day, got or 'no numbers yet', extra))
         if path == 'body.json':
             import body_log
             return self.reply_json(200, body_log.summary())
@@ -985,6 +993,18 @@ if __name__ == '__main__':
                 pass
             time.sleep(1500)
     threading.Thread(target=_jarvis_warm, name='jarvis-warm', daemon=True).start()
+
+    def _reminders():                               # Nov 15: reminders + timers -- the Mac says them (jarvis/reminders.py)
+        jd = os.path.join(HERE, 'jarvis')
+        if jd not in sys.path:
+            sys.path.insert(0, jd)
+        time.sleep(20)
+        try:
+            import reminders
+            reminders.loop()                        # every 15 s; never raises; missed ones said once on wake
+        except Exception as e:
+            print('reminders thread stopped:', e, flush=True)
+    threading.Thread(target=_reminders, name='jarvis-reminders', daemon=True).start()
 
     from shlex import quote as shlex_quote
     def _selftest():                                # Nov 14: full check of every automation; never changes the room

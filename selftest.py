@@ -57,8 +57,11 @@ SUITES = [  # (name, test file, [(live file, the copy that test exercises)])
     ('Weekly health sheet', 'away/health-weekly/test_health_weekly.py',
      [('health_weekly.py', 'away/health-weekly/health_weekly.py')]),
     ('Health Sync endpoint + setup sheet', 'away/health-sync-setup/test_health_sync_setup.py', []),
-    ('Saved meals (deployed copy)', 'away/jarvis-meals/test_jarvis.py',
-     [('jarvis/jarvis.py', 'away/jarvis-meals/jarvis.py')]),
+    ('Saved meals (deployed copy)', 'away/jarvis-meals/test_jarvis.py', []),   # jarvis.py moved on: see the briefing line
+    ('Jarvis morning briefing', 'away/jarvis-brief/test_brief.py',
+     [('jarvis/brief.py', 'away/jarvis-brief/brief.py')]),   # jarvis.py moved on (reminders patch): test_jarvis covers it
+    ('Jarvis reminders + timers', 'away/jarvis-reminders/test_reminders.py',   # Nov 15: reminders + timers
+     [('jarvis/reminders.py', 'away/jarvis-reminders/reminders.py')]),
 ]
 
 
@@ -244,11 +247,28 @@ def automations():
 
 
 # ---------------------------------------------------------------- report
+def reminders_check():                              # Nov 15: reminders + timers -- read-only
+    path = os.path.join(HERE, 'jarvis', 'reminders.json')
+    if not os.path.exists(path):
+        return res('Automations', 'Jarvis reminders', 'ok', 'none set')
+    try:
+        with open(path) as f:
+            items = json.load(f).get('items', [])
+        late = [i for i in items if time.time() - time.mktime(time.strptime(i['due'][:19], '%Y-%m-%dT%H:%M:%S')) > 600]
+    except Exception as e:
+        return res('Automations', 'Jarvis reminders', 'fail', 'reminders.json unreadable (%s)' % e.__class__.__name__)
+    if late:
+        return res('Automations', 'Jarvis reminders', 'warn',
+                   '%d overdue by 10+ min -- is the jarvis-reminders thread in rig_control running?' % len(late))
+    return res('Automations', 'Jarvis reminders', 'ok', '%d set, none overdue' % len(items))
+
+
 def main():
     t0 = time.time()
     suites()
     services()
     automations()
+    reminders_check()
     n = {k: sum(1 for r in RESULTS if r['level'] == k) for k in ('ok', 'warn', 'fail')}
     summary = 'SELFTEST %s: %d ok, %d warn, %d FAIL (%.0f s)' % (time.strftime('%Y-%m-%d %H:%M'), n['ok'], n['warn'],
                                                                n['fail'], time.time() - t0)
