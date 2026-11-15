@@ -12,6 +12,21 @@ deployed). New live features also add a read-only check to selftest.py (in the t
 Tags: [SAFE] = OK to do unattended.  [MICHAEL] = needs him in the room; never touch.
 Michael can reorder, add or delete lines any time -- top of the list wins.
 
+--- PRIORITY for Nov 15 (Michael tests it live with Claude tomorrow) ----------------------------------------
+H1. [SAFE] todo -- Head RELAY / chase for the light show (Michael, Nov 14: "head 1 would be the only one active and
+   sweep, then head 2 does the same thing and so on -- fun and professional looking"). Build away/head-relay/:
+   a new show pattern in a COPY of hub_dmx.py (+ hub_vibes/hub_fx copies only if needed): exactly ONE head lit at a
+   time, doing a smooth sweep (pan arc, small tilt dip) in the current palette colour; on the hand-off (every bar at
+   high energy, every 2 bars otherwise -- Michael finds faster colour changes distracting) it fades out and the next
+   head (1 -> 2 -> 3 -> 4, then reverse or skip-pattern for variety) fades in and sweeps. The Hue lamp(s) nearest the
+   active head (use the existing lamp/head positions in the code) glow in the same colour, others dim -- the light
+   "travels" round the room. Hook it into the music hub as a selectable pattern + have the show use it in verses /
+   builds (not drops). Respect every node safety limit (pan/tilt caps, no strobe outside drops, guest mode). Offline
+   test with a fake node + fake clock: one head lit at a time, hand-off timing, sweep stays inside each head's caps,
+   lamp follows. Also write a short previs CSV/text timeline of 8 bars. DEPLOY.txt: backup + one paste + reload,
+   and a 2-minute LIVE TEST script for Michael (Jarvis phrase to start it, what he should see). Add a read-only
+   selftest line.
+
 --- TONIGHT (Nov 14, 1:30 am): Michael asleep -- NON-LIGHTING work only, these first ----------
 N1. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-food/DEPLOY.txt) -- Jarvis food logging polish. Bugs seen Nov 13: "I ate a Chipotle chicken quesadilla, about 1050
    calories and 60 grams of protein" logged the item as "a chipotle chicken quesadilla about" (strip trailing
