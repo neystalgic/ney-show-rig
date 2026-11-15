@@ -1,0 +1,56 @@
+JARVIS REMINDERS + TIMERS -- built + tested by the Rig away loop, Nov 15 2026 (backlog J2). Not live yet.
+=========================================================================================================
+
+WHAT IT DOES
+- Say it to Jarvis (Siri "Jarvis", typed, or the listener) -- the reply comes back right away:
+    "remind me at 9 to take my meds"           -> "Okay, I'll remind you at 9 pm to take your meds."
+    "remind me in 20 minutes to check the oven" -> "Okay, I'll remind you in 20 minutes (8:35 pm) to check the oven."
+    "remind me tomorrow at 7 to call my mum"   -> "...tomorrow at 7 am to call your mum."
+    "10 minute timer" / "set a timer for 10 minutes for the pasta" / "start a 25 minute pasta timer"
+    "what are my reminders" / "how long left on my timer"
+    "cancel the 9 o'clock" / "cancel my timer" / "cancel the pasta timer" / "cancel the meds reminder" /
+    "cancel all reminders" (if two match, Jarvis lists them and asks which)
+- When one is due the MAC says it out loud (voice Moira): "Reminder: take your meds." / "Your pasta timer is done."
+- Mac asleep when it was due? It is said ONCE when the Mac wakes: "While the Mac was asleep: Earlier, at 9 pm: ..."
+- Stored in jarvis/reminders.json (plain JSON, gitignored, survives restarts -- edit or empty it by hand any time).
+- Times without am/pm pick the NEXT one ("at 9" at 8 pm = 9 pm; at 10 pm = 9 am). 1-5 said in the daytime = pm.
+  "tomorrow at 7" = 7 am, "tomorrow at 3" = 3 pm, "tonight at 11" = 11 pm. Say "am"/"pm" to be exact.
+- Limits: timers 5 s - 24 h, reminders up to 2 weeks ahead, 50 at once.
+- Lights are never touched. "remind me to log my weight" is a reminder, not a weight; every old phrase works as before.
+- Optional in jarvis/jarvis.json: "reminder_voice": "Daniel" (default Moira).
+
+FILES
+  away/jarvis-reminders/reminders.py     -> NEW  Hue Rig/jarvis/reminders.py
+  away/jarvis-reminders/apply_patches.py -> small anchored patches (checks ALL files first; changes nothing if any
+                                            file moved on; safe to run twice; backups *.bak-nov15-reminders):
+       jarvis/jarvis.py  'reminder' action (word rules, checked first) + help line
+       rig_control.py    one 'jarvis-reminders' thread after jarvis-warm (checks every 15 s, never blocks)
+       selftest.py       the reminders suite + a read-only "nothing stuck unsaid" check (warn if 10+ min overdue)
+       .gitignore        jarvis/reminders.json (+ .tmp)
+  away/jarvis-reminders/test_reminders.py  (112 checks; stays in away/)
+  Works on the live files AND on top of the morning briefing (J1). If you deploy both, do J1 FIRST: J1's paste copies
+  whole files (jarvis.py, selftest.py) and would wipe these patches; this one patches whatever is there.
+
+DEPLOY (one Terminal paste, on the Mac)
+  cd ~/"Touchdesigner Designs/Hue Rig" && \
+  python3 away/jarvis-reminders/test_reminders.py > /tmp/rem-test.txt && tail -1 /tmp/rem-test.txt && \
+  python3 away/jarvis-reminders/apply_patches.py && \
+  python3 jarvis/jarvis.py --dry -c "remind me at 9 to take my meds" && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-jarvis-reminders.json && echo "deployed -- reload sent" && \
+  sleep 25 && python3 selftest.py --quiet
+
+  If the tests fail the paste stops before changing anything (see /tmp/rem-test.txt).
+  Done = selftest ends with 0 FAIL. Then try: "Jarvis, 1 minute timer" -- the Mac should speak about a minute later.
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && cp jarvis/jarvis.py.bak-nov15-reminders jarvis/jarvis.py && \
+  cp rig_control.py.bak-nov15-reminders rig_control.py && cp selftest.py.bak-nov15-reminders selftest.py && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-jarvis-reminders-undo.json
+  (jarvis/reminders.py and the .gitignore lines can stay; nothing uses them after the undo.)
+
+WATCH FOR
+- Reminders are spoken by the MAC only. Out of the house you won't hear them (phone reminders = a later task).
+- Mac volume / muted output = silent reminder. "what are my reminders" still lists them.
+- Rig Health: "Jarvis reminders ... overdue" warning = the thread isn't running -> send reload.
+- Siri dictation oddities ("9:00 PM", "nine") -- numbers as words work for durations ("ten minutes");
+  for clock times Siri usually writes digits. Tell the loop any phrase it missed and it'll add it.

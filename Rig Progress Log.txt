@@ -1,6 +1,20 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-15 02:10 UTC | Jarvis reminders + timers (J2) | away/jarvis-reminders/ (NEW): reminders.py = "remind me at 9 to take my
+  meds" / "in 20 minutes" / "tomorrow at 7" / "tonight at 11", "10 minute timer", "set a timer for 10 minutes for the
+  pasta", "what are my reminders" / "how long left on my timer", "cancel the 9 o'clock / my timer / the meds reminder /
+  all reminders" (asks which if two match). Stored in jarvis/reminders.json (gitignored, survives restarts); a
+  rig_control thread says due ones on the Mac (Moira, Popen, never blocks) every 15 s, each taken off the list BEFORE it
+  is spoken (said once); missed while asleep -> said once on wake ("While the Mac was asleep: Earlier, at 9 pm: ...").
+  "at 9" = the next 9 o'clock; 1-5 in daytime = pm. apply_patches.py = anchored, all-or-nothing, idempotent patches to
+  jarvis.py (reminder rule checked first; "X and Y" stays one reminder; help line), rig_control.py (thread),
+  selftest.py (suite + read-only "nothing overdue" check), .gitignore. Works on live files AND on top of J1 | tests:
+  test_reminders.py 112/112 passed (fake clock, temp files, sockets blocked; installer run on live + J1 copies, old
+  test_jarvis passes on both patched copies, old phrases unchanged, rig never called, patcher stops + writes nothing
+  if a file changed) | Michael: one Terminal paste in away/jarvis-reminders/DEPLOY.txt (deploy J1 first if you want
+  both -- its paste copies whole files). Then "Jarvis, 1 minute timer" to hear it. Mac-only speech for now |
+  Layer updates for Michael: none (BRAIN Open could add "Jarvis reminders = Mac voice only; phone later" if you like).
 2026-11-15 01:07 UTC | Jarvis morning briefing (J1) | away/jarvis-brief/ (NEW): brief.py = ~20 s spoken brief from
   body_log.summary(): sleep (h + min), resting HR vs the 7-day average, 7-day weight trend, yesterday's eaten vs burned
   + deficit (+ "estimated resting burn" / partial-day notes), protein, one kind closing line (short night / on target /

@@ -78,7 +78,7 @@ J1. [SAFE] ready for Michael (built + tested Nov 15, see away/jarvis-brief/DEPLO
    Jarvis speaks ~20 s: sleep hours, resting HR vs 7-day avg, weight trend, yesterday's eaten vs burned + deficit,
    protein, and a one-line nudge. Text built from body_log.summary(); also "Jarvis, brief me" any time. away/jarvis-brief/
    with fake summaries in tests; no lights involved. Plain, encouraging, never preachy.
-J2. [SAFE] todo -- Jarvis reminders + timers (Report #6): "remind me at 9 to take my meds", "10 minute timer",
+J2. [SAFE] ready for Michael (built + tested Nov 15, see away/jarvis-reminders/DEPLOY.txt) -- Jarvis reminders + timers (Report #6): "remind me at 9 to take my meds", "10 minute timer",
    "what are my reminders", "cancel the 9 o'clock". Stored in jarvis/reminders.json (gitignored), spoken by the Mac
    (say, Moira) via a rig_control thread; survives restarts; missed ones (Mac asleep) spoken once on wake.
    away/jarvis-reminders/ + tests with a fake clock. Lights untouched.
