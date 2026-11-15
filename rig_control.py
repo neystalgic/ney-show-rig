@@ -625,6 +625,23 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             return self.wfile.write(body)
+        if path == 'show/set':                          # Nov 15: show director settings (control page + calibration)
+            n = min(int(self.headers.get('Content-Length') or 0), 20000)
+            try:
+                data = json.loads(self.rfile.read(n) or b'{}')
+            except ValueError:
+                return self.reply(400, 'Send JSON.')
+            ok_keys = {'dmx_pattern': ('normal', 'show', 'relay', 'modes'), 'show_lock': None, 'show_speed': None,
+                       'show_bars': None, 'show_pool': None, 'chase_lamps': None, 'chase_head_xy': None,
+                       'chase_arc': None, 'energy': None}
+            done = []
+            for k, v in (data or {}).items():
+                if k not in ok_keys or (ok_keys[k] and v not in ok_keys[k]):
+                    return self.reply(400, 'Not allowed: %s' % k)
+            for k, v in data.items():
+                hub_setting(k, v)                       # the hub validates types; strobe/safety keys aren't reachable here
+                done.append(k)
+            return self.reply(200, 'Set: ' + ', '.join(done))
         if path == 'body/activity':                     # Nov 13: the iPhone "Health Sync" shortcut posts the Watch's numbers
             import body_log, datetime as _dt
             n = min(int(self.headers.get('Content-Length') or 0), 5000)
