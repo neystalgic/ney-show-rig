@@ -1,0 +1,54 @@
+SHORTCUT TRIM PLAN  (away loop, Sun Nov 15 -- backlog J5, Jarvis Status Report #11)
+====================================================================================
+Today the factory (jarvis/shortcut_factory.py) builds 19 Siri Shortcuts. Jarvis now understands almost
+every look by voice, and the Movie Hub / Rig Health pages hold the buttons, so most of them are doubles.
+Proposal: keep 6, retire 12, and decide on 1 (Movie Mode).
+
+HOW "MOST USED" WAS PICKED
+  There is no usage log to count from (rig_control silences its request log; hub_log.txt has none), and
+  the Shortcuts app doesn't show counts. So the picks come from what your setup already leans on
+  (Morning Checklist Nov 13): Back Tap = Jarvis, Apple Watch = Jarvis / Purple / Movie Night / Goodnight,
+  Sleep Focus automation = Goodnight, alarm-stopped automation = Morning, Home Screen = Rig Health.
+  If you use one I retired a lot, just move it to KEEP -- it's one line in trim_check.py.
+
+KEEP (6)
+  1. Jarvis       the front door for everything else: Back Tap, Apple Watch, "Hey Siri, Jarvis"
+  2. Goodnight    the Sleep Focus automation runs it -- deleting it breaks bedtime
+  3. Morning      the "alarm stopped" automation runs it -- deleting it breaks morning blue
+  4. Purple       favourite colour, one tap on the Watch, no talking needed
+  5. Movie Hub    one page with play/pause, intermission, resume, lights up (replaces 4 shortcuts)
+  6. Rig Health   Home Screen page; its "Health Report ->" link opens the Body page
+
+RETIRE (12) -- and what replaces each
+  Light Show         "Jarvis, light show"   (Jarvis asks you to confirm first -- strobe look)
+  Safe Show          "Jarvis, safe show"
+  Movie Night        "Jarvis, movie night"  (also Tap Switch button 2 = movie UV, from ~Nov 17)
+  Movie Stars        "Jarvis, movie stars"
+  Rainbow Fade       "Jarvis, rainbow"
+  Lights Off         "Jarvis, lights off"
+  Guest Mode         "Jarvis, guest mode"   ("Jarvis, guests are gone" turns it off)
+  Play Pause         Movie Hub page button
+  Intermission       Movie Hub page button
+  Back to the Movie  Movie Hub page button
+  Lights Up          Movie Hub page button
+  Health Report      Rig Health page -> "Health Report ->" link
+
+DECIDE (1)
+  Movie Mode (/movie = the music-reactive movie look). Jarvis has no phrase for it: "Jarvis, movie mode"
+  lands on Movie night instead (checked by the test). Pick one:
+    a) you never use it -> retire it with the rest, or
+    b) keep it as shortcut #7, or
+    c) later backlog task: add a Jarvis word rule "movie mode|reactive movie" -> 'movie' (tiny patch).
+  Note: Movie Night is on your Watch today. If you'd miss the tap, keep it as #7 until the Tap Switch is paired.
+
+WHY BOTHER
+  Fewer things for Siri to mix up (Siri sometimes runs a shortcut whose name sounds like your sentence
+  instead of passing it to Jarvis), a shorter Watch list, and the next token rotation re-adds 6, not 19.
+
+REGENERATE (only at the next token rotation -- the kept six keep working today, nothing to rebuild now)
+  cd "$HOME/Touchdesigner Designs/Hue Rig" && python3 -c "import sys; sys.path.insert(0, 'jarvis'); import shortcut_factory as f; print(f.build_all(only={'Jarvis', 'Goodnight', 'Morning', 'Purple', 'Movie Hub', 'Rig Health'}))"
+  It uses the factory's existing only= option, so retired ones are not rebuilt. They stay in the factory's
+  SET list (harmless); trimming SET itself is optional and would be a one-line live edit (back up first).
+
+CHECK IT YOURSELF
+  python3 away/shortcut-trim/trim_check.py   -> prints KEEP / RETIRE / DECIDE and "Plan OK" (reads files only)

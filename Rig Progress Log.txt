@@ -1,6 +1,18 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-15 11:06 UTC | Shortcut trim PLAN (J5) | away/shortcut-trim/ (NEW): PLAN.txt = keep 6 of the factory's 19 shortcuts
+  (Jarvis, Goodnight, Morning, Purple, Movie Hub, Rig Health -- Goodnight/Morning because the Sleep Focus + alarm automations
+  run them), retire 12 (each has a replacement: a Jarvis phrase that lands on the same look, or a Movie Hub / Rig Health page
+  button), DECIDE 1: Movie Mode (/movie, the music-reactive movie look) -- no Jarvis phrase reaches it ("movie mode" ->
+  Movie night). No usage log exists, so "most used" = what the Nov 13 setup leans on (Back Tap, Watch, automations, Home
+  Screen). trim_check.py checks the plan against the live factory SET + Jarvis RULES by parsing only (no token read, no
+  signing). Regenerate command uses the factory's existing build_all(only=...). cleanup_candidates.txt lists stale files in
+  bridge/shortcuts (old Body.*, *.old) -- nothing moved | tests: test_trim_check.py 29/29 passed (sockets + subprocess
+  blocked, booby-trapped file proves no execution, live files unchanged) | Michael: read PLAN.txt, decide Movie Mode, delete
+  the 12 in the iPhone Shortcuts app (DEPLOY.txt); nothing to rebuild now | Layer updates for Michael: BRAIN Decisions could
+  add "2026-11-xx Shortcuts trimmed to 6 (Jarvis, Goodnight, Morning, Purple, Movie Hub, Rig Health); everything else via
+  Jarvis or the pages" once you've done it.
 2026-11-15 10:08 UTC | Jarvis workout mode (J4) | away/jarvis-workout/ (NEW): workout.py = "starting a walk" (run, jog, hike,
   bike ride, swim, yoga, workout) writes the start time to ~/Desktop/Workout Log.csv and asks nothing; "done with my walk" /
   "back from my run" / "I'm back" (only mid-walk) fills end + minutes and asks "How did it feel, 1 to 10?"; a number within

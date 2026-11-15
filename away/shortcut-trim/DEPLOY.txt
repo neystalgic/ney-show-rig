@@ -1,0 +1,23 @@
+SHORTCUT TRIM -- DEPLOY  (away loop, Nov 15, backlog J5)   ~5 minutes, all by hand in the Shortcuts app
+================================================================================================
+WHAT IT IS: a plan, not code that runs. Nothing live changes. Read PLAN.txt (keep 6, retire 12, decide 1).
+FILES: away/shortcut-trim/PLAN.txt, trim_check.py (checks the plan against the live factory + Jarvis word
+rules by reading them only), test_trim_check.py (29 offline tests), cleanup_candidates.txt.
+No live file is replaced or added.
+
+STEPS
+  1. Read PLAN.txt. Decide Movie Mode (a/b/c). If you want to keep something else, edit KEEP/RETIRE at the
+     top of trim_check.py and run:   cd "$HOME/Touchdesigner Designs/Hue Rig" && python3 away/shortcut-trim/trim_check.py
+  2. Try the replacements once before deleting: "Jarvis, safe show", "Jarvis, movie stars", "Jarvis, lights off".
+     (Tests change the room -- do this when you're home and want them.)
+  3. Shortcuts app on the iPhone (syncs to Mac + Watch): long-press -> Delete on these 12:
+     Light Show, Safe Show, Movie Night, Movie Stars, Rainbow Fade, Lights Off, Guest Mode,
+     Play Pause, Intermission, Back to the Movie, Lights Up, Health Report   (+ Movie Mode if you chose a)
+  4. Keep the Watch list to Jarvis, Purple, Goodnight (Shortcuts -> (i) -> Show on Apple Watch).
+  5. Check Shortcuts > Automation still shows Sleep Focus -> Goodnight and Alarm stopped -> Morning.
+
+UNDO: any deleted shortcut comes back with one command (it re-signs and opens it, click "Add Shortcut"):
+  cd "$HOME/Touchdesigner Designs/Hue Rig" && python3 -c "import sys; sys.path.insert(0, 'jarvis'); import shortcut_factory as f; print(f.build_all(only={'Light Show'}))"
+
+WATCH FOR: Siri running a deleted name ("Hey Siri, movie night") now says it can't find it -- say "Hey Siri,
+Jarvis" first, then the sentence. If that feels clunky for one of them, bring that one back with UNDO.

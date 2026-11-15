@@ -1,0 +1,6 @@
+SHORTCUT FILES THAT COULD GO (list only -- nothing was moved or deleted). Folder: Hue Rig/bridge/shortcuts/
+(never committed; holds signed shortcuts with the token inside, so tidy is good)
+- Body.shortcut, Body-unsigned.shortcut   -> old name; the factory now builds "Health Report" instead
+- *.shortcut.old (e.g. Purple, Rig Health) -> previous builds kept by the factory when it re-signs
+- After the trim: the 12 retired shortcuts' .shortcut / -unsigned.shortcut files (once you've deleted them
+  in the Shortcuts app). Move them to _to_delete/ and empty it yourself.

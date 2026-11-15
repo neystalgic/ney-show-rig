@@ -104,7 +104,7 @@ J3. [SAFE] ready for Michael (built + tested Nov 15, see away/jarvis-craving/DEP
 J4. [SAFE] ready for Michael (built + tested Nov 15, see away/jarvis-workout/DEPLOY.txt) -- Jarvis workout mode (Report #7): "starting a walk/run/hike" logs start time to Activity notes,
    asks nothing; "done with my walk" asks "how did it feel, 1 to 10?" and logs it; next Health Sync fills the numbers.
    Optional energetic look only if he asks. away/jarvis-workout/ + tests.
-J5. [SAFE] todo -- Shortcut trim PLAN (Report #11): propose the ~6 shortcuts to keep (Jarvis + the most used), which
+J5. [SAFE] ready for Michael (plan + checker + tested Nov 15, see away/shortcut-trim/DEPLOY.txt) -- Shortcut trim PLAN (Report #11): propose the ~6 shortcuts to keep (Jarvis + the most used), which
    to retire, and the regenerate command via shortcut_factory. away/shortcut-trim/PLAN.txt only.
 7. [SAFE] ready for Michael (built + tested Nov 14, see away/housekeeping/DEPLOY.txt) -- Housekeeping list: list the .bak-* files older than 7 days that are
    also in git history, as away/housekeeping/candidates.txt. List only; move nothing.
