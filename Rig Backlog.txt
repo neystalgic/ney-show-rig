@@ -71,7 +71,7 @@ N5. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-meals/DEPLO
    + tests that simulate the Mac dropping out.
 5. [SAFE] ready for Michael (built + tested Nov 14, see away/tap-test/DEPLOY.txt; found + fixed a hold double-fire) -- Tap Switch dry-run harness: simulate button 1-4 events against a
    fake bridge and check each maps to show / movieuv / cycle / night. away/tap-test/.
-6. [SAFE] todo -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
+6. [SAFE] ready for Michael (plan + read-only cook check + tested Nov 15, see away/td-tidy/DEPLOY.txt) -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
    (input / decks / mixer / output, only the on-screen deck cooks, labels) as
    away/td-tidy/PLAN.txt. Do NOT edit the live TouchDesigner project.
 J1. [SAFE] todo -- Jarvis morning briefing (Jarvis Status Report #2, Nov 14): when the Health Sync posts (alarm off),

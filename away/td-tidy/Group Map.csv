@@ -1,0 +1,46 @@
+operator,group,sleepable_when_off_screen,never_touch,mentioned_in
+feeling_palette,INPUT,no,no,build_hue_rig.py + build_show_tools.py
+hue_feed,INPUT,no,yes,build_hue_hub_td.py + build_osmo_fx.py + build_vj.py
+movie_in,INPUT,no,no,build_hue_hub_td.py
+osmo_fx,INPUT,no,no,build_osmo_fx.py
+show_clock,INPUT,no,yes,build_hue_hub_td.py + build_show_clock.py
+breath_3d,DECKS,yes,no,build_vj.py
+breath_geo,DECKS,yes,no,build_vj.py
+chladni,DECKS,yes,no,build_vj.py
+flower_of_life,DECKS,yes,no,build_show_tools.py + build_vj.py
+geo_show,DECKS,no,no,build_hue_hub_td.py + build_osmo_fx.py + build_vj.py
+geo_visual,DECKS,no,no,build_hue_hub_td.py
+golden_angle,DECKS,yes,no,build_vj.py
+kaleidoscope,DECKS,yes,no,build_show_tools.py + build_vj.py
+metatrons_cube,DECKS,yes,no,build_vj.py
+mp_plasma,DECKS,yes,no,build_vj.py
+mp_radar,DECKS,yes,no,build_vj.py
+mp_strobe,DECKS,no,no,build_hue_hub_td.py
+mp_tunnel,DECKS,yes,no,build_vj.py
+proc_attractor,DECKS,yes,no,build_vj.py
+proc_contours,DECKS,yes,no,build_vj.py
+proc_harmonograph,DECKS,yes,no,build_vj.py
+proc_life,DECKS,yes,no,build_vj.py
+proc_mandala,DECKS,yes,no,build_vj.py
+proc_quasicrystal,DECKS,yes,no,build_vj.py
+proc_truchet,DECKS,yes,no,build_vj.py
+proc_voronoi,DECKS,yes,no,build_vj.py
+proc_warp,DECKS,yes,no,build_vj.py
+reaction_diffusion,DECKS,yes,no,build_sacred_geometry.py + build_vj.py
+sacred_line,DECKS,yes,no,build_vj.py
+sacred_particles,DECKS,yes,no,build_vj.py
+sri_yantra,DECKS,yes,no,build_vj.py
+tesseract,DECKS,yes,no,build_vj.py
+comp2,MIXER,no,no,build_vj.py
+osmo_amount,MIXER,no,no,build_osmo_fx.py
+osmo_mix,MIXER,no,no,build_vj.py
+vj,MIXER,no,no,build_vj.py
+vj_pick,MIXER,no,no,build_vj.py
+vj_xfade,MIXER,no,no,build_vj.py
+null4,OUTPUT,no,no,build_osmo_fx.py
+out1,OUTPUT,no,no,build_sacred_geometry.py
+projector_window,OUTPUT,no,yes,build_hue_hub_td.py
+show_out,OUTPUT,no,no,build_hue_hub_td.py
+hue_rig,SYSTEM,no,yes,build_hue_hub_td.py + build_hue_rig.py
+light_desk,SYSTEM,no,yes,build_hue_hub_td.py
+mcp_webserver_base,SYSTEM,no,yes,build_hue_hub_td.py

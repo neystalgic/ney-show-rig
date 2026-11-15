@@ -1,6 +1,18 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-15 00:07 UTC | TouchDesigner tidy-up PLAN (item 6, task #59) | away/td-tidy/ (NEW): PLAN.txt = five labelled boxes
+  (INPUT / DECKS / MIXER / OUTPUT + a grey SYSTEM box), drawn with Annotate COMPs -- never move or rename operators,
+  because 45 of them are found by '/project1/<name>' in 8 builders + live expressions. Phase A layout (~30-40 min by
+  hand), phase B read-only cook check, phase C "only the on-screen deck cooks" (allowCooking from the VJ pad tap) as a
+  later loop task, only if B shows leaks. Group Map.csv = every builder operator -> its box, sleepable yes/no,
+  never-touch yes/no (no UNSORTED). cook_audit.py = Textport snap()/report(): reads cook counters only, prints
+  which decks cooked. tidy_map.py = the map as code (reads builders as text). Live TD project not opened |
+  tests: test_td_tidy.py 62/62 passed (builder coverage, groups, never-touch/strobe/geo_show safety, CSV, cook_audit
+  proven read-only by AST + fake /project1 tree, no secrets/addresses in the text); sockets blocked |
+  Michael: read PLAN.txt; optionally paste the 3 Textport lines in DEPLOY.txt with the show running and send the
+  DECKS line -- a list of more than one deck = queue phase C | Layer updates for Michael: BRAIN Decisions: add
+  "2026-11-15 TD tidy = labelled boxes only, no reparenting/renaming (builders use /project1 paths)" -- if you agree.
 2026-11-14 23:06 UTC | Tap Switch dry-run harness (item 5) | away/tap-test/ (NEW): tap_dryrun.py = fake bridge + fake clock
   that "presses" buttons 1-4 (tap, quick tap, hold with repeats) against any copy of tap_switch.py and writes down the
   looks it asks for -- no switch, no bridge, no lights. Layout confirmed: 1 show, 2 movieuv, 3 cycle (rainbow, flash,

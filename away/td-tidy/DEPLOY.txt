@@ -1,0 +1,23 @@
+TD TIDY-UP (task #59) -- DEPLOY
+================================
+What it is: a PLAN (PLAN.txt) + a box-by-box list of every operator (Group Map.csv) + a read-only
+cook check you can paste into TouchDesigner (cook_audit.py). Nothing replaces any live file.
+Live files changed: none. Files added: only this folder (away/td-tidy/).
+
+STEP 1 -- read PLAN.txt (3 minutes). The rule: labelled boxes, never move/rename operators.
+
+STEP 2 -- optional, in TouchDesigner with the show running: Dialogs > Textport, paste one line at a time:
+exec(open('/Users/michaelney/Touchdesigner Designs/Hue Rig/away/td-tidy/cook_audit.py').read())
+a = snap()
+   (wait ~3 seconds)
+report(a)
+   It only reads cook counters and prints them. It changes no parameter, wire or position, and saves nothing.
+
+STEP 3 -- check the plan's tests still pass (Terminal, one paste):
+cd "$HOME/Touchdesigner Designs/Hue Rig/away/td-tidy" && python3 test_td_tidy.py && cd "$HOME/Touchdesigner Designs/Hue Rig" && python3 selftest.py --quiet
+
+UNDO: nothing to undo -- nothing went live. For phase A (your layout), Ctrl+Z or reopen the copy you saved.
+
+WATCH FOR: in report(a), the DECKS line. "OK" = only one deck cooks. A list = send it to Claude and
+phase C (sleep hidden decks) gets built. If anything shows as UNSORTED, say which box it belongs in.
+(No selftest line added: this task adds no live feature.)

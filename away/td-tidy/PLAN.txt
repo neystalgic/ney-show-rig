@@ -1,0 +1,71 @@
+TOUCHDESIGNER TIDY-UP PLAN  (task #59)  --  away loop, Nov 15
+=============================================================
+For: the show project (the one with hue_feed, vj, show_out and the projector window in /project1).
+This is a plan. Nothing in the live project was opened or changed.
+Files here: PLAN.txt (this), Group Map.csv (every operator -> its box), cook_audit.py (read-only
+"who is cooking?" check), tidy_map.py + test_td_tidy.py (the map as code, tested).
+
+
+THE ONE RULE: BOXES, NOT CONTAINERS
+-----------------------------------
+Group the network with labelled boxes on the canvas. Do NOT move operators into new containers
+and do NOT rename them.
+Why: 45 operators are found by their full path '/project1/<name>' in 8 builder scripts and in live
+expressions (the VJ deck list, hue_feed's kick/level feeding every shader, projector_window -> show_out,
+the Claude connection). Move one into a container and those break quietly -- often only on the next rebuild.
+Boxes give the same tidy look with zero risk.
+
+
+THE FIVE BOXES  (left to right; colours are purple-family, no white, no amber)
+--------------
+1 INPUT  -- what comes in: hue_feed, show_clock, movie_in, osmo_fx, feeling_palette
+2 DECKS  -- the visuals: geo_show, flower_of_life, metatrons_cube, sri_yantra, golden_angle, tesseract,
+            chladni, kaleidoscope, reaction_diffusion, breath_geo, breath_3d, sacred_particles,
+            sacred_line, all proc_* and mp_* pieces (mp_strobe included, but it is never auto-slept)
+3 MIXER  -- comp1/comp2 (your own mix), vj (the Push VJ board), vj_xfade, vj_pick, osmo_amount, osmo_mix
+4 OUTPUT -- show_out, null4, out1, projector_window
+SYSTEM   -- hue_rig (sends to the real lamps), light_desk, mcp_webserver_base (Claude's connection).
+            A grey box along the bottom. Never move, rename or switch these off.
+Anything not in Group Map.csv (your own experiments) -> leave where it is; cook_audit lists it as UNSORTED.
+
+
+PHASE A -- LABELS + LAYOUT   (you, ~30-40 min, undo = Ctrl+Z or reopen the saved copy)
+-------------------------
+1. File > Save As a copy first (td_backup also snapshots every 10 min).
+2. Tab > COMP > Annotate, five times. Title each with the box name above; give them the colours.
+3. Drag the tiles into their box (Group Map.csv is the checklist). Wires stay exactly as they are.
+Tip: inside DECKS, put them in pad order (bank 1 first) so the canvas reads like the Push.
+
+
+PHASE B -- WHO IS COOKING?   (you, 5 min, read-only)
+--------------------------
+TouchDesigner only cooks what something is looking at. The VJ board's 'main' switch already pulls only
+the deck that's on, and vj_pick already stops comp2 or vj cooking when it isn't shown. So most decks
+should already be idle. Leaks that make a hidden deck cook anyway:
+  - a live tile viewer open on it in the network editor (the big one)
+  - a CHOP export, Execute DAT or "cook always" inside the deck
+  - the layer/overlay switches when their amount is above 0 (correct: they're on screen)
+  - flower_of_life also seeds the reaction diffusion while that's showing (correct)
+Run cook_audit (DEPLOY.txt has the three Textport lines) twice: once with the editor open, once in
+Perform mode. If the DECKS list shows more than the deck on screen, send me the list.
+
+
+PHASE C -- ONLY THE ON-SCREEN DECK COOKS   (a later away-loop task, then you deploy)
+----------------------------------------
+Only if phase B shows leaks in Perform mode. Patch a COPY of build_vj.py so a pad tap switches
+'allow cooking' ON for: the deck on screen, the deck it is morphing from (for the morph time + 1 s),
+the layer deck and the overlay deck -- and OFF for every other deck marked sleepable in Group Map.csv.
+Never touched: SYSTEM, INPUT, MIXER, OUTPUT, geo_show, mp_strobe. A sleeping deck just pauses and
+picks up where it left off; the morph from the old picture covers its first frame.
+Test offline with a fake deck tree; deploy = rebuild vj from the Textport (your usual line).
+
+
+NOT RECOMMENDED NOW -- REAL CONTAINERS
+-------------------------------------
+Moving decks into /project1/decks would need every path in the 8 builders and the live expressions
+updated together. Only worth it if the project gets much bigger; the boxes do the job today.
+
+
+EFFORT
+------
+A: 30-40 min by hand.  B: 5 min.  C: one away-loop run + a 5-minute deploy.
