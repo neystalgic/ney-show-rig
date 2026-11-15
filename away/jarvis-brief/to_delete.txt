@@ -1,0 +1,1 @@
+rig_control.py.bak-nov15-brief (made by testing apply_rig_patch.py here; identical to the live rig_control.py of Nov 15) -- safe to delete

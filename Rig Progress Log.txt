@@ -1,6 +1,20 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-15 01:07 UTC | Jarvis morning briefing (J1) | away/jarvis-brief/ (NEW): brief.py = ~20 s spoken brief from
+  body_log.summary(): sleep (h + min), resting HR vs the 7-day average, 7-day weight trend, yesterday's eaten vs burned
+  + deficit (+ "estimated resting burn" / partial-day notes), protein, one kind closing line (short night / on target /
+  every bit counts / fresh start). Missing numbers are left out; no data -> a friendly setup line. jarvis.py copy (on the
+  live saved-meals version): 'brief' action + "brief me / morning briefing / catch me up / how did I sleep / health
+  report", allowlisted for the model too, help line. apply_rig_patch.py adds 8 lines to rig_control /body/activity:
+  the Health Sync reply carries the brief and the Mac says it once a day 5:00-12:00 (Moira, non-blocking); a crash in
+  the brief leaves the sync reply unchanged. selftest.py copy adds the suite | tests: test_brief.py 66/66 passed (fake
+  summaries + real body_log on temp CSVs, speak-once/morning-window/brief_mac off, old Jarvis suites pass on the copy,
+  patch applies to live rig_control + compiles + idempotent + refuses if changed); sockets blocked | Michael: one
+  Terminal paste in away/jarvis-brief/DEPLOY.txt (guards against uncommitted edits, backs up, tests, patches, reload,
+  selftest). Optional: add Speak Text to the Health Sync shortcut; optional "protein_goal" in jarvis.json. Leftover
+  away/jarvis-brief/rig_control.py.bak-nov15-brief listed in to_delete.txt (not committed) | Layer updates for
+  Michael: BRAIN Preferences (if you like it): "Morning: Jarvis brief spoken once after the alarm-off Health Sync (Mac, 5-12)".
 2026-11-15 00:07 UTC | TouchDesigner tidy-up PLAN (item 6, task #59) | away/td-tidy/ (NEW): PLAN.txt = five labelled boxes
   (INPUT / DECKS / MIXER / OUTPUT + a grey SYSTEM box), drawn with Annotate COMPs -- never move or rename operators,
   because 45 of them are found by '/project1/<name>' in 8 builders + live expressions. Phase A layout (~30-40 min by

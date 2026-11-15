@@ -74,7 +74,7 @@ N5. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-meals/DEPLO
 6. [SAFE] ready for Michael (plan + read-only cook check + tested Nov 15, see away/td-tidy/DEPLOY.txt) -- TouchDesigner tidy-up PLAN only (task #59): write the grouping plan
    (input / decks / mixer / output, only the on-screen deck cooks, labels) as
    away/td-tidy/PLAN.txt. Do NOT edit the live TouchDesigner project.
-J1. [SAFE] todo -- Jarvis morning briefing (Jarvis Status Report #2, Nov 14): when the Health Sync posts (alarm off),
+J1. [SAFE] ready for Michael (built + tested Nov 15, see away/jarvis-brief/DEPLOY.txt) -- Jarvis morning briefing (Jarvis Status Report #2, Nov 14): when the Health Sync posts (alarm off),
    Jarvis speaks ~20 s: sleep hours, resting HR vs 7-day avg, weight trend, yesterday's eaten vs burned + deficit,
    protein, and a one-line nudge. Text built from body_log.summary(); also "Jarvis, brief me" any time. away/jarvis-brief/
    with fake summaries in tests; no lights involved. Plain, encouraging, never preachy.

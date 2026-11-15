@@ -1,0 +1,67 @@
+JARVIS MORNING BRIEFING ("Jarvis, brief me") -- built + tested by the Rig away loop, Nov 15 2026. Not live yet.
+=============================================================================================================
+
+WHAT IT DOES
+- About 20 seconds, spoken, e.g.:
+  "Good morning, Michael. You slept 7 hours 30 minutes. Resting heart rate 58, 2.4 under your weekly average.
+   Weight trend is down 1.4 pounds this week, now 268.6. Yesterday you ate 2150 and burned 2800, a 650 calorie
+   deficit and 165 grams of protein. Right on target. Keep it rolling."
+- Any time: "Jarvis, brief me" / "morning briefing" / "catch me up" / "how did I sleep" / "health report".
+- Automatically: when the iPhone Health Sync posts (your alarm-off automation), rig_control adds the brief to the
+  Shortcut's reply, and the Mac says it out loud ONCE a day, only between 5:00 and 12:00 (Moira voice).
+  A second sync the same morning stays quiet. Afternoon syncs: text only, no Mac voice.
+- One friendly closing line, picked from the numbers: short night (< 6 h) -> "go easy today"; deficit >= 500 ->
+  "Right on target"; a smaller deficit -> "Every bit counts"; an over day -> "Fresh start today". Never preachy,
+  no medical claims. Missing numbers are simply left out (or said plainly: "No food logged yesterday").
+- Reads the logs only (body_log.summary()). No lights, no network. If the brief ever fails, the Health Sync reply
+  is exactly what it was before -- it can't break the sync.
+- Optional, in jarvis/jarvis.json:  "brief_mac": false  (never speak on the Mac; phone text only)
+                                    "protein_goal": 180 (lets the closing line mention protein when well under it;
+                                                         with no goal set it never comments on protein)
+
+FILES
+  away/jarvis-brief/brief.py            -> NEW      Hue Rig/jarvis/brief.py
+  away/jarvis-brief/jarvis.py           -> replaces Hue Rig/jarvis/jarvis.py   ('brief' action + phrases + help line;
+                                                    built on the live Nov 14 saved-meals version, nothing else changed)
+  away/jarvis-brief/apply_rig_patch.py  -> adds 8 lines to rig_control.py's /body/activity (backs it up first as
+                                           rig_control.py.bak-nov15-brief; refuses if that code changed)
+  away/jarvis-brief/rig_control.py      (the patched result, for reading only -- the paste uses the patcher)
+  away/jarvis-brief/selftest.py         -> replaces Hue Rig/selftest.py (adds the briefing suite; the saved-meals
+                                           suite stops comparing jarvis.py, since jarvis.py moves on)
+  away/jarvis-brief/test_brief.py       (66 checks; stays in away/)
+
+DEPLOY (one Terminal paste, on the Mac)
+  cd ~/"Touchdesigner Designs/Hue Rig" && \
+  git diff --quiet -- jarvis/jarvis.py rig_control.py selftest.py && \
+  python3 away/jarvis-brief/test_brief.py | tail -1 && \
+  cp jarvis/jarvis.py jarvis/jarvis.py.bak-nov15-brief && cp selftest.py selftest.py.bak-nov15-brief && \
+  cp away/jarvis-brief/brief.py jarvis/brief.py && \
+  cp away/jarvis-brief/jarvis.py jarvis/jarvis.py && \
+  python3 away/jarvis-brief/apply_rig_patch.py rig_control.py && \
+  cp away/jarvis-brief/selftest.py selftest.py && \
+  python3 jarvis/brief.py && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-jarvis-brief.json && echo "deployed -- reload sent" && \
+  sleep 15 && python3 selftest.py --quiet
+
+  The first line stops everything if jarvis.py, rig_control.py or selftest.py have edits since the last commit
+  (the copies were built on the committed versions) -- tell the loop and it will rebuild on top of yours.
+  "python3 jarvis/brief.py" prints today's brief from your real logs (reads only) so you see it before Siri does.
+  Done = selftest ends with 0 FAIL.
+
+  OPTIONAL (iPhone, 1 step): in the Health Sync shortcut, after "Get Contents of URL" add "Speak Text"
+  (Contents of URL) -- then the phone reads the brief too, wherever you are.
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && cp jarvis/jarvis.py.bak-nov15-brief jarvis/jarvis.py && \
+  cp rig_control.py.bak-nov15-brief rig_control.py && cp selftest.py.bak-nov15-brief selftest.py && \
+  echo '{"do": "reload"}' > bridge/inbox/reload-jarvis-brief-undo.json
+  (jarvis/brief.py can stay; nothing uses it after the undo.)
+
+WATCH FOR
+- First real morning: the Mac speaks right after the alarm-off sync. If that's too much at that moment, set
+  "brief_mac": false in jarvis/jarvis.json and use the phone's Speak Text instead.
+- Sleep is read from the newest row (yesterday or today). If the Shortcut sends sleep on a different day than you
+  expect, the brief just leaves sleep out -- tell the loop and it will adjust.
+- Weight trend needs a week of weigh-ins; before that it says your last weigh-in.
+- The "already spoken today" note lives in /tmp/jarvis_brief_spoken.txt (cleared on restart -- worst case the Mac
+  speaks once more that morning).
