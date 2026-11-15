@@ -437,6 +437,10 @@ LOOKS = {
     'relay': ('Head relay: one head at a time sweeps, then hands off round the room (grooves + breakdowns; drops as usual)',
               lambda: hub_setting('dmx_pattern', 'show')),
     'relayoff': ('Heads back to dancing together (relay off)', lambda: hub_setting('dmx_pattern', 'normal')),
+    'modes': ('Show modes: a new sound-reactive pattern every 8 bars, each zone doing its own thing (drops as usual)',
+              lambda: (head_power.request_on(quiet=True), None if hub_up() else start_hub('music'),
+                       hub_setting('show_lock', ''), hub_setting('dmx_pattern', 'modes'))),   # Nov 15
+    'modesoff': ('Show modes off: heads dance together again', lambda: hub_setting('dmx_pattern', 'normal')),
     'guest_on': ('Guest mode ON: strobes blocked at the Pi, any strobe look becomes the safe show', lambda: guest_mode(True)),
     'guest_off': ('Guest mode OFF: strobes allowed again (sparingly)', lambda: guest_mode(False)),
     'couch': ('Couch mode: hub off, heads off, dim purple, bedtime held until you say goodnight', lambda: couch_mode()),
@@ -786,7 +790,7 @@ if __name__ == '__main__':
     def _hub_summary():
         try:
             d = json.loads(urllib.request.urlopen('http://127.0.0.1:7020/api/live', timeout=2).read())
-            out = {k: d.get(k) for k in ('palette', 'vibe', 'bridge', 'blackout', 'heads', 'level')}
+            out = {k: d.get(k) for k in ('palette', 'vibe', 'bridge', 'blackout', 'heads', 'level', 'show')}
             out.update(audio=(d.get('audio') or {}).get('status'), section=(d.get('audio') or {}).get('section'))
             return out
         except Exception as e:

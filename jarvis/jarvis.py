@@ -41,6 +41,8 @@ ACTIONS = {
     'uvoff':       'UV off the stars.',
     'relay':       'Head relay on. One head at a time, the light travels round the room.',
     'relayoff':    'Heads back to dancing together.',
+    'modes':       'Show modes on. A new pattern every 8 bars.',
+    'modesoff':    'Show modes off. Heads dancing together.',
     'guest_on':    'Guest mode on. Strobes are blocked at the Pi.',
     'guest_off':   'Guest mode off. Strobes allowed again, sparingly.',
     'flash':       'Multicolour flash.',
@@ -343,6 +345,8 @@ def find_percent(t):
 
 # Word rules, most specific first. (pattern, action)
 RULES = [
+    (r'\bshow ?modes\b.*\b(off|stop)\b|\b(stop|end)\b.*\bshow ?modes\b', 'modesoff'),
+    (r'\bshow ?modes\b|\bswitch it up\b|\bnew pattern every\b|\bdirector mode\b', 'modes'),
     (r'\b(head ?|heads? )?(relay|chase)\b.*\b(off|stop|normal)\b|\b(stop|end|no more)\b.*\b(relay|chase)\b', 'relayoff'),
     (r'\bhead ?relay\b|\b(start|turn on|do|run)\b.*\b(relay|chase)\b|\brelay (on|mode)\b|\bheads? (take turns|chase)\b', 'relay'),
     (r"^(?:please\s+)?(?:save|remember|store|log)\s+(?:that|this|it|those|these|them)(?:\s+(?:meal|one|food))?\s+as\s+(?P<name>.+)$", 'save_meal'),
@@ -456,6 +460,7 @@ Actions:
 - level: change brightness only (put it in "brightness")
 - show: full light show to the music. showuv: light show plus UV stars. flash: multicolour strobe. hype: fast bright party.
 - relay: heads take turns, one lit at a time, sweeping round the room. relayoff: heads back to dancing together.
+- modes: show modes, a new sound-reactive pattern every 8 bars with zones. modesoff: show modes off.
 - music: lights react to music calmly. lava: slow lava-lamp show. rainbow: all lamps one colour, breathing through the rainbow.
 - upbeat: bright rainbow drifting. breathe: calm breathing colours. redglow: dim reds/pinks/purples drifting. cozy: warm dim.
 - movienight: movie lights. movieuv: movie with UV stars. movieglow: dim movie glow.

@@ -1244,6 +1244,7 @@ class Hub:
                         ableton=self.ableton.describe() if self.ableton else 'off',
                         relay=self.relay.describe() if self.relay else 'off',
                         heads=self.dmx.describe() if getattr(self, 'dmx', None) else 'off',
+                        show=(self.dmx.chase.status() if hasattr(getattr(getattr(self, 'dmx', None), 'chase', None), 'status') else None),   # Nov 15 show director
                         vibe=self.state['settings'].get('vibe'), energy=self.state['settings'].get('energy', 0.6),
                         palette=self.state['settings'].get('palette'),
                         intermission=bool(self.state['settings'].get('intermission')), pic_driving=bool(getattr(self, 'pic_on', False)),
@@ -1450,7 +1451,7 @@ class Hub:
                              intermission=bool, intermission_level=float, heads_pending=dict,
                              dmx_gain=list, dmx_gamma=float, dmx_proof=bool,
                              movie_spots=dict, movie_sweep=float, movie_volume_bri=float,
-                             dmx_unison=float, dmx_pattern=str, chase_arc=float, chase_dip=float, chase_dim=float, chase_spots=bool, chase_fast_energy=float, chase_fade_beats=float, chase_head_xy=dict, chase_lamps=dict, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float, strobe_max_hz=float, strobe_test=bool,
+                             dmx_unison=float, dmx_pattern=str, show_lock=str, show_bars=float, show_speed=float, show_pool=str, chase_arc=float, chase_dip=float, chase_dim=float, chase_spots=bool, chase_fast_energy=float, chase_fade_beats=float, chase_head_xy=dict, chase_lamps=dict, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float, strobe_max_hz=float, strobe_test=bool,
                              head_targets=dict, dmx_cue=dict, show_scenes_on=bool, show_scenes=list, show_scene_every=int,
                              dmx_turns=bool, dmx_turn_deg=float, dmx_turn_bars=int, dmx_pan_amp=float, dmx_walls=bool,
                              dmx_lean_cap=float, spot_fx=dict, movie_floor=float, dmx_floor_db=float, dmx_top_db=float)
@@ -1800,7 +1801,8 @@ def lan_ip():
 # the hub restarts itself when its code is updated (no more running yesterday's version by mistake)
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
               'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py',
-              'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py', 'hub_dmx.py', 'hub_vibes.py', 'hub_chase.py']
+              'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py', 'hub_dmx.py', 'hub_vibes.py', 'hub_chase.py',
+              'hub_modes.py']
 
 
 class Reload(Exception):

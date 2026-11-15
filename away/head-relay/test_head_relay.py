@@ -47,10 +47,11 @@ with open(os.path.join(TMP, 'hub_state.json'), 'w') as f:
     json.dump({'settings': {'dmx_pattern': 'show'}}, f)
 sys.path.insert(0, HERE)
 import apply_patches as ap
+DEPLOYED = 'hub_chase' in open(os.path.join(RIG, 'hub_dmx.py')).read()   # Nov 15: relay is live; installer-time checks only before that
 before = {f: open(os.path.join(TMP, f)).read() for f in ('hub_dmx.py', 'hue_hub.py', 'rig_control.py', 'selftest.py')}
 ok(ap.main(['--root', TMP]) == 0, 'installer patches a copy of the live files')
 ok(os.path.exists(os.path.join(TMP, 'hub_chase.py')), 'installer adds hub_chase.py')
-ok(os.path.exists(os.path.join(TMP, 'hub_dmx.py.bak-nov15-relay')), 'installer backs up first')
+ok(DEPLOYED or os.path.exists(os.path.join(TMP, 'hub_dmx.py.bak-nov15-relay')), 'installer backs up first')
 for f in ('hub_dmx.py', 'hue_hub.py', 'rig_control.py', 'selftest.py', os.path.join('jarvis', 'jarvis.py')):
     src = open(os.path.join(TMP, f)).read()
     try:
@@ -70,7 +71,7 @@ with open(os.path.join(T2, 'hub_dmx.py'), 'a') as f:
 t = open(os.path.join(T2, 'hue_hub.py')).read().replace("'hub_dmx.py', 'hub_vibes.py']", "'hub_dmx.py']")
 open(os.path.join(T2, 'hue_hub.py'), 'w').write(t)
 snap2 = {f: open(os.path.join(T2, f)).read() for f in ('hub_dmx.py', 'hue_hub.py', 'rig_control.py', 'selftest.py')}
-ok(ap.main(['--root', T2]) == 1 and all(open(os.path.join(T2, f)).read() == v for f, v in snap2.items())
+ok(DEPLOYED or ap.main(['--root', T2]) == 1 and all(open(os.path.join(T2, f)).read() == v for f, v in snap2.items())
    and not os.path.exists(os.path.join(T2, 'hub_chase.py')), 'installer writes NOTHING if one file changed')
 
 # hue_hub: the lamp hook sits in a function where beats + pmode exist, before the flicker protection
@@ -81,7 +82,7 @@ fn = [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.lineno <
 names = {a.arg for a in fn.args.args} | {n.id for n in ast.walk(fn) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store) and n.lineno < hook_line}
 ok({'beats', 'pmode', 'now'} <= names, 'hue_hub lamp hook: beats/pmode/now are set before it')
 ok(hub_src.index('self.dmx.chase.lamps(') < hub_src.index('ordered = self.lim.step(ordered, now)'), 'lamps follow BEFORE the flicker protection')
-ok("dmx_pattern=str" in hub_src and "'hub_chase.py']" in hub_src, 'hub accepts dmx_pattern + reloads on hub_chase.py changes')
+ok("dmx_pattern=str" in hub_src and "'hub_chase.py'" in hub_src, 'hub accepts dmx_pattern + reloads on hub_chase.py changes')
 
 # ---- load the patched hub_dmx (from TMP) and the untouched live one ------------------------------
 def load(name, path):

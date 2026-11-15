@@ -115,11 +115,15 @@ class Heads:
         self.phrase_prev = None
         self.last_flash = -10.0
         self.flashes = 0
-        try:                                       # HEAD RELAY (hub_chase.py, Nov 15): one head at a time
-            import hub_chase
-            self.chase = hub_chase.Chase(hub)
+        try:                                       # SHOW DIRECTOR (hub_modes.py, Nov 15): modes + zones + 8-bar switch;
+            import hub_modes                       # it also runs the HEAD RELAY (hub_chase.py) as one of its modes
+            self.chase = hub_modes.Director(hub)
         except Exception:
-            self.chase = None
+            try:
+                import hub_chase
+                self.chase = hub_chase.Chase(hub)
+            except Exception:
+                self.chase = None
         self.run = True
         threading.Thread(target=self._poll, name='hub-dmx', daemon=True).start()
 
@@ -544,8 +548,9 @@ class Heads:
                     lv = lv if s.get('chase_spots') else 0.0
                 else:
                     lv = level * max(0.3, clamp(cz['v'])) * cv['level']
-                    if cz.get('rgb'):
-                        hh, ss, _ = colorsys.rgb_to_hsv(*[clamp(x) for x in cz['rgb']])
+                    rgb_ = cv.get('rgb') or cz.get('rgb')        # SHOW MODES: each zone its own colour
+                    if rgb_:
+                        hh, ss, _ = colorsys.rgb_to_hsv(*[clamp(x) for x in rgb_])
                         ss = max(ss, 0.55)          # never white
                         r, g, b = self.match(colorsys.hsv_to_rgb(hh, ss, 1.0), s)
                         w = (1.0 - ss) * 0.35
