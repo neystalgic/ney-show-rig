@@ -101,7 +101,7 @@ J3. [SAFE] ready for Michael (built + tested Nov 15, see away/jarvis-craving/DEP
    a calm 4-7-8 breathing count spoken over ~1 min, days-clean streak (from jarvis/quit.json, start date Michael sets),
    one line from his own reasons list (quit.json, he writes them), and offers a calm look (purple breathe) only if he
    says yes. Supportive, short, never preachy; no medical claims. away/jarvis-craving/ + tests.
-J4. [SAFE] todo -- Jarvis workout mode (Report #7): "starting a walk/run/hike" logs start time to Activity notes,
+J4. [SAFE] ready for Michael (built + tested Nov 15, see away/jarvis-workout/DEPLOY.txt) -- Jarvis workout mode (Report #7): "starting a walk/run/hike" logs start time to Activity notes,
    asks nothing; "done with my walk" asks "how did it feel, 1 to 10?" and logs it; next Health Sync fills the numbers.
    Optional energetic look only if he asks. away/jarvis-workout/ + tests.
 J5. [SAFE] todo -- Shortcut trim PLAN (Report #11): propose the ~6 shortcuts to keep (Jarvis + the most used), which

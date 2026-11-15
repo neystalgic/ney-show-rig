@@ -1,0 +1,59 @@
+JARVIS WORKOUT MODE (backlog J4) -- built + tested by the away loop, Nov 15. NOT live until you run the paste below.
+
+WHAT IT DOES
+  "Jarvis, starting a walk"  (also: going for a run / a quick run, heading out for a hike, starting my workout,
+                              going on a bike ride, going running, I'm off for a swim, starting yoga)
+     -> "Walk started at 6:10. Enjoy it."  It writes the start time and asks nothing else.
+  "done with my walk" / "back from my run" / "finished my hike" / "walk done" / "I'm back" (only mid-walk)
+     -> "Nice work. 32 minutes walk. How did it feel, 1 to 10?"
+  "8" / "about an 8" / "seven out of ten" / "it was a 7.5"  (within 10 minutes)  -> score saved.
+  "skip" / "no"  -> no score, that's fine.
+  "done with my run, felt like a 7"  -> closes it AND saves the score in one go (no question).
+  "how long have I been walking"  -> minutes so far.      "cancel my walk"  -> row kept, marked cancelled.
+  The next Health Sync fills steps / active kcal in Activity Log.csv as usual.
+  LIGHTS: never touched. An energetic look only if YOU say it: "starting a run and hype" -> the run is logged
+  AND hype runs (hype still asks its normal confirm). Word rules only; the model can never pick this.
+
+WHERE IT LOGS
+  ~/Desktop/Workout Log.csv  (new, made on your first workout; opens in Numbers)
+     Date, Start, End, Minutes, Kind, Feel (1-10), Notes
+  Why not Activity Log.csv? The Health Sync REWRITES that file with fixed columns every morning, so a notes
+  column there would get wiped. Same folder, one file over.
+  A start you forget to close stops counting after 6 hours; the next start marks it "no end said".
+
+FILES
+  adds     jarvis/workout.py               (copy of away/jarvis-workout/workout.py)
+  patches  jarvis/jarvis.py                (import, rule right after reminders, 'workout' in do(), help line)
+  patches  selftest.py                     (runs these tests + a read-only "Workout log" line)
+  backups  <file>.bak-nov15-workout next to each patched file
+  Works before or after the craving installer (J3) -- tested both orders.
+
+DEPLOY (one Terminal paste)
+  cd ~/"Touchdesigner Designs/Hue Rig" && python3 away/jarvis-workout/test_workout.py > /tmp/workout_test.txt; tail -1 /tmp/workout_test.txt; grep -q "^ALL" /tmp/workout_test.txt && python3 away/jarvis-workout/apply_patches.py
+
+  Then restart the hub the usual way (stop, wait 10-30 s, start) so rig_control loads the new jarvis.py.
+  Last, check nothing broke:
+  python3 selftest.py --quiet          -> 0 FAIL = deployed (new lines: "Jarvis workout mode", "Workout log")
+
+TEST IT (2 min, lights never change)
+  1. "Hey Siri, Jarvis" -> "starting a walk"           -> "Walk started at ...".
+  2. Wait a minute. "Hey Siri, Jarvis" -> "done with my walk"   -> asks 1 to 10.
+  3. "Hey Siri, Jarvis" -> "8"                         -> "Got it, 8 out of 10".
+  4. Open Workout Log.csv on the Desktop: one row with start, end, minutes, walk, 8.
+     (Delete that test row in Numbers if you like -- it's your file.)
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && for f in jarvis/jarvis.py selftest.py; do cp "$f.bak-nov15-workout" "$f"; done
+  (jarvis/workout.py + Workout Log.csv can stay -- nothing loads them after the undo; restart the hub.)
+  If you've ALSO deployed craving AFTER this, undo craving first (its backups hold this patch), then this.
+
+WATCH FOR
+  * A bare number meaning something else: it only means "how it felt" for 10 minutes after the question.
+  * "I'm back" / "I'm done" only count while a workout is going; otherwise Jarvis treats them as before.
+  * Times are read off the Mac clock when Jarvis hears you (Siri -> /ask), so a phone with no signal on the
+    trail logs the start when the request gets through.
+  * Follow-up idea (not built): the morning briefing could add "yesterday: 32 min walk, felt 8".
+  * Tests: test_workout.py 132/132 passed (fake clock, temp CSVs, sockets + Popen blocked, real Desktop log
+    untouched; installer on a copy of the live files, idempotent, STOP + writes nothing if a file changed,
+    applies with the craving installer in either order; old test_jarvis passes on the patched copy; selftest
+    line checked with a fake home; live files untouched).
