@@ -97,7 +97,7 @@ J2. [SAFE] ready for Michael (built + tested Nov 15, see away/jarvis-reminders/D
    "what are my reminders", "cancel the 9 o'clock". Stored in jarvis/reminders.json (gitignored), spoken by the Mac
    (say, Moira) via a rig_control thread; survives restarts; missed ones (Mac asleep) spoken once on wake.
    away/jarvis-reminders/ + tests with a fake clock. Lights untouched.
-J3. [SAFE] todo -- Jarvis craving support (Report #5; Michael is quitting cannabis -- CHS): "Jarvis, I'm craving" ->
+J3. [SAFE] ready for Michael (built + tested Nov 15, see away/jarvis-craving/DEPLOY.txt) -- Jarvis craving support (Report #5; Michael is quitting cannabis -- CHS): "Jarvis, I'm craving" ->
    a calm 4-7-8 breathing count spoken over ~1 min, days-clean streak (from jarvis/quit.json, start date Michael sets),
    one line from his own reasons list (quit.json, he writes them), and offers a calm look (purple breathe) only if he
    says yes. Supportive, short, never preachy; no medical claims. away/jarvis-craving/ + tests.

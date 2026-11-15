@@ -1,0 +1,52 @@
+JARVIS CRAVING SUPPORT (backlog J3) -- built + tested by the away loop, Nov 15. NOT live until you run the paste below.
+
+WHAT IT DOES
+  "Jarvis, I'm craving"  (also: "having a craving", "craving bad", "I really want to smoke", "I need a joint")
+     -> Jarvis says, short:  "5 days clean. Your reason: <one of yours>. Breathe with me on the Mac:
+        in for 4, hold for 7, out for 8. Want the calm look? Say yes."
+     -> then the Mac (Moira) counts a calm 4-7-8 breath, 3 rounds, about a minute. It waits ~12 s first so
+        Siri can finish talking. Saying it again restarts the count (never two voices).
+  "yes" (within 5 min)   -> the calm 'breathe' look. That is the ONLY time this touches the lights.
+  "no" / "no thanks"     -> lights stay as they are.
+  "how many days clean" / "what's my streak"  -> the count.     "stop counting" -> Mac goes quiet.
+  "I'm craving pizza" / "craving tacos" are left alone (food, not this). Reminders still win
+  ("remind me at 9 if I'm craving" is a reminder). The model can never pick this; word rules only.
+  Your reasons rotate, never the same one twice in a row. No medical claims, no lectures.
+
+FILES
+  adds     jarvis/craving.py               (copy of away/jarvis-craving/craving.py)
+  adds     jarvis/quit.json                (only if missing; starts EMPTY -- you fill it in; gitignored)
+  patches  jarvis/jarvis.py                (import, rule after reminders, 'craving' in do(), help line)
+  patches  selftest.py                     (runs these tests)
+  patches  .gitignore                      (jarvis/quit.json)
+  backups  <file>.bak-nov15-craving next to each patched file
+
+DEPLOY (one Terminal paste; no hub restart needed for the files, but Jarvis reloads on the next hub start)
+  cd ~/"Touchdesigner Designs/Hue Rig" && python3 away/jarvis-craving/test_craving.py > /tmp/craving_test.txt; tail -1 /tmp/craving_test.txt; grep -q "^ALL" /tmp/craving_test.txt && python3 away/jarvis-craving/apply_patches.py && open -e jarvis/quit.json
+
+  Then in TextEdit write your start date + reasons, save, close. Example:
+    {"start": "2026-11-11", "reasons": ["Eat without getting sick", "Clear head when I'm producing", "Money for gear"]}
+  Then restart the hub the usual way (stop, wait 10-30 s, start) so rig_control loads the new jarvis.py.
+
+  Optional settings in jarvis/jarvis.json:
+    "craving_look": "breathe"     any look name (e.g. "redglow"); default breathe (calm breathing colours)
+    "craving_count": "off"        Jarvis gives the counts in words instead of the Mac speaking them
+    "craving_lead_ms": 12000      quiet before the Mac starts counting (shorter if you type to Jarvis on the Mac)
+
+TEST IT (2 min, lights unchanged until you say yes)
+  1. "Hey Siri, Jarvis" -> "I'm craving"  -> streak + a reason + offer; ~12 s later the Mac counts.
+  2. "Hey Siri, Jarvis" -> "yes"          -> calm breathing look.
+  3. "Hey Siri, Jarvis" -> "how many days clean".
+  4. python3 selftest.py   -> should still be 0 FAIL (one more suite: Jarvis craving support).
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && for f in jarvis/jarvis.py selftest.py .gitignore; do cp "$f.bak-nov15-craving" "$f"; done
+  (jarvis/craving.py + jarvis/quit.json can stay -- nothing loads them after the undo; restart the hub.)
+
+WATCH FOR
+  * If "yes" for something else gets eaten: it only means "calm look" for 5 minutes after a craving reply.
+  * Siri reply and the Mac count overlapping -> raise craving_lead_ms; Mac counting too fast/slow -> tell the loop.
+  * The 'breathe' look is the existing rotating calm colours, not purple-only. A true purple-only breathe would
+    need a new look in rig_control (small follow-up task if you want it).
+  * Tests: test_craving.py 105/105 passed (fake clock, fake 'say', fake rig, sockets blocked; installer run on a
+    copy of the live files, old test_jarvis passes on the patched copy, live files untouched).

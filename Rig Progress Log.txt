@@ -1,6 +1,18 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-15 09:08 UTC | Jarvis craving support (J3) | away/jarvis-craving/ (NEW): craving.py = "I'm craving" /
+  "having a craving" / "I really want to smoke" -> days clean (jarvis/quit.json start date) + one of YOUR reasons (rotates,
+  never twice in a row) + a 4-7-8 breathing count spoken on the Mac (Moira, Popen, 3 rounds ~1 min, 12 s lead-in so Siri
+  finishes) + "Want the calm look? Say yes." "yes" within 5 min -> 'breathe' look (the ONLY light change); "no" -> nothing;
+  "how many days clean"; "stop counting". "I'm craving pizza" is left alone; reminders still win; word rules only (not in
+  the model allowlist). apply_patches.py = anchored all-or-nothing patches to jarvis.py, selftest.py, .gitignore
+  (quit.json), creates an EMPTY quit.json only if missing | tests: test_craving.py 105/105 passed (fake clock/say/rig,
+  sockets blocked; installer on a copy of live files, idempotent, STOP + writes nothing if a file changed; old
+  test_jarvis passes on patched copy; live files untouched) | Michael: one Terminal paste in away/jarvis-craving/DEPLOY.txt,
+  write your start date + reasons in jarvis/quit.json, restart the hub (stop, wait, start) | Layer updates for Michael:
+  BRAIN Preferences could add "+ Cravings: 'Jarvis, I'm craving' -> streak, my reason, 4-7-8 count; calm look only if I
+  say yes" once you like it.
 2026-11-15 08:12 UTC | Head relay / chase (H1) | away/head-relay/ (NEW): hub_chase.py = one head lit at a time, a smooth
   ~50 deg pan sweep + 8 deg tilt dip in the room colour (picked at each hand-off, held all turn, never white), fade out on
   the bar line, next head takes over sweeping the other way: 1-2-3-4, back 3-2, skip 1-3-2-4. Hand-off every 2 bars, every
