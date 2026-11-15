@@ -20,7 +20,7 @@ CODES = {}                                     # one-time login codes: code -> e
 FD = {'gen': 0, 'look': None, 'since': None, 'mode': 'starting'}
 B = {}                                         # filled by start(): lamps, hue, mac_urls, log
 
-PURPLE, RED, SKY = (0.27, 0.12), (0.69, 0.30), (0.22, 0.27)
+PURPLE, RED, SKY = (0.27, 0.12), (0.69, 0.30), (0.22, 0.27)       # (looks.py has the full set now)
 RAINBOW = [(0.69, 0.30), (0.60, 0.38), (0.48, 0.47), (0.17, 0.70), (0.17, 0.36), (0.15, 0.06), (0.27, 0.12), (0.45, 0.23)]
 
 
@@ -38,44 +38,38 @@ def _body(bri, xy=None, mirek=None, ms=800):
     return b
 
 
-def _rainbow(gen):
-    i = 0
-    while FD['gen'] == gen:
-        B['lamps'](_body(75, RAINBOW[i % len(RAINBOW)], ms=9000))      # every lamp the SAME colour, breathing on
-        i += 1
-        for _ in range(100):
-            if FD['gen'] != gen:
-                return
-            time.sleep(0.1)
+PLUG_NAME = re.compile(r'^\s*(head|spot|plug)\b', re.I)
 
 
-# calm looks the Pi can do alone: name -> (reply, action)
+def _is_plug(light):
+    """Same rule as ney_brain.is_plug: smart plugs (heads, spots) and on/off-only devices are never lamps."""
+    md = light.get('metadata') or {}
+    return md.get('archetype') == 'plug' or bool(PLUG_NAME.match(md.get('name') or '')) or 'dimming' not in light
+
+
+_ENGINE = {}
+
+
+def engine():
+    """Nov 14 (away loop): the calm looks now come from looks.py -- the Mac's exact colours, fades and breathing."""
+    if 'e' not in _ENGINE:
+        import looks
+        _ENGINE['e'] = looks.Engine(hue=lambda *a, **k: B['hue'](*a, **k), lamps=lambda body: B['lamps'](body),
+                                    is_plug=lambda l: B.get('is_plug', _is_plug)(l), log=lambda m: B['log'](m))
+    return _ENGINE['e']
+
+
+# calm looks the Pi can do alone: name -> (reply, None)   (kept for anything that lists them)
 def pi_looks():
-    return {
-        'purple': ('Purple, full brightness.', lambda: B['lamps'](_body(100, PURPLE))),
-        'purplenight': ('Purple night light. Sleep well.', lambda: B['lamps'](_body(15, PURPLE, ms=3000))),
-        'nightlight': ('Red night light.', lambda: B['lamps'](_body(12, RED, ms=3000))),
-        'night': ('Night mode: red night light. The Mac is asleep, so the heads are left as they are.',
-                  lambda: B['lamps'](_body(12, RED, ms=3000))),
-        'morning': ('Morning blue.', lambda: B['lamps'](_body(60, SKY, ms=3000))),
-        'cozy': ('Cozy.', lambda: B['lamps'](_body(60, mirek=370, ms=1500))),
-        'bright': ('Bright white.', lambda: B['lamps'](_body(100, mirek=200))),
-        'off': ('Lights off.', lambda: B['lamps']({'on': {'on': False}, 'dynamics': {'duration': 1500}})),
-        'rainbow': ('Rainbow breathing, every lamp in sync.', None),       # special: background loop
-    }
+    import looks
+    return {n: ((looks.STATIC.get(n) or looks.AMBIENT.get(n))[0], None) for n in looks.looks()}
 
 
 def run_look(name):
-    looks = pi_looks()
-    if name not in looks:
+    reply = engine().run(name)                  # unknown looks (shows, movies, heads) leave the running look alone
+    if reply is None:
         return None
     FD['gen'] += 1
-    gen = FD['gen']
-    reply, fn = looks[name]
-    if name == 'rainbow':
-        threading.Thread(target=_rainbow, args=(gen,), daemon=True).start()
-    else:
-        fn()
     FD.update(look=name, since=time.strftime('%H:%M'))
     return reply
 
@@ -89,6 +83,7 @@ def pi_ask(text):
             return json.dumps({'look': FD.get('look')})
         if p.startswith('set:'):
             FD['gen'] += 1
+            engine().stop()                     # a custom colour ends any breathing loop
             B['lamps'](json.loads(p[4:]))
             FD.update(look='custom', since=time.strftime('%H:%M'))
             return ''

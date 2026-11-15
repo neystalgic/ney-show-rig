@@ -10,7 +10,7 @@ import json, os, re, subprocess, time
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, 'pi', 'brain')
 PI = 'mjney99@100.127.200.67'
-FILES = ('ney_brain.py', 'front_door.py', 'jarvis.py', 'health.html', 'test_brain.py', 'ney-brain.service', 'restart.sh')
+FILES = ('ney_brain.py', 'front_door.py', 'looks.py', 'jarvis.py', 'health.html', 'test_brain.py', 'ney-brain.service', 'restart.sh')
 STATUS = {'last': 'not run', 'brain': None}
 
 

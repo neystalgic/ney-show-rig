@@ -37,3 +37,15 @@ out = fd.pi_ask('goodnight'); assert 'night' in out.lower(), out
 assert fd.mac_base(ttl=0) is None                          # no Mac addresses -> asleep
 h = fd.health_json(); assert h['checks'][0]['level'] == 'down'
 print('front door tests passed')
+
+# --- calm looks from looks.py (Nov 14, away loop) ---
+import looks
+fd.B['hue'] = lambda m, p, b=None, timeout=5: {'data': []} if m == 'GET' else {}
+assert set(looks.looks()) <= set(fd.pi_looks()) and 'breathe' in fd.pi_looks()
+assert fd.run_look('rainbow') == 'Rainbow breathing, every lamp in sync.' and fd.FD['look'] == 'rainbow'
+t = fd.engine().thread
+assert fd.run_look('morning') == 'Morning blue.' and sent[-1]['dynamics']['duration'] == 8000
+t.join(1.0); assert not t.is_alive()
+g = fd.FD['gen']; assert fd.run_look('show') is None and fd.FD['gen'] == g and fd.FD['look'] == 'morning'
+out = fd.pi_ask('red night light'); assert 'night' in out.lower(), out
+print('pi looks tests passed')
