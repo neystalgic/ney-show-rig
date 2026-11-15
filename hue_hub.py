@@ -1047,6 +1047,13 @@ class Hub:
             hs.VIVID = self.state['calibration'].get('vivid', 1.0)
             # streaming order = sorted channel ids
             ordered = [cols[self.rig.by_ch[ch]] for ch in self.rig.channels]
+            try:                                  # HEAD RELAY: the lamps beside the lit head glow (flicker protection after)
+                if getattr(getattr(self, 'dmx', None), 'chase', None) is not None:
+                    ordered = self.dmx.chase.lamps(ordered, self.rig.channels, now, beats, pmode)
+            except Exception as e:
+                if now - getattr(self, '_chase_err_t', 0.0) > 30.0:
+                    self._chase_err_t = now
+                    say('Head relay lamps: %s' % e)
             ordered = self.lim.step(ordered, now)
             try:
                 self.grad_frame(beats, pmode)
@@ -1443,7 +1450,7 @@ class Hub:
                              intermission=bool, intermission_level=float, heads_pending=dict,
                              dmx_gain=list, dmx_gamma=float, dmx_proof=bool,
                              movie_spots=dict, movie_sweep=float, movie_volume_bri=float,
-                             dmx_unison=float, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float, strobe_max_hz=float, strobe_test=bool,
+                             dmx_unison=float, dmx_pattern=str, chase_arc=float, chase_dip=float, chase_dim=float, chase_spots=bool, chase_fast_energy=float, chase_fade_beats=float, chase_head_xy=dict, chase_lamps=dict, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float, strobe_max_hz=float, strobe_test=bool,
                              head_targets=dict, dmx_cue=dict, show_scenes_on=bool, show_scenes=list, show_scene_every=int,
                              dmx_turns=bool, dmx_turn_deg=float, dmx_turn_bars=int, dmx_pan_amp=float, dmx_walls=bool,
                              dmx_lean_cap=float, spot_fx=dict, movie_floor=float, dmx_floor_db=float, dmx_top_db=float)
@@ -1793,7 +1800,7 @@ def lan_ip():
 # the hub restarts itself when its code is updated (no more running yesterday's version by mistake)
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
               'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py',
-              'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py', 'hub_dmx.py', 'hub_vibes.py']
+              'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py', 'hub_dmx.py', 'hub_vibes.py', 'hub_chase.py']
 
 
 class Reload(Exception):

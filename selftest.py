@@ -279,12 +279,30 @@ def reminders_check():                              # Nov 15: reminders + timers
                    '%d overdue by 10+ min -- is the jarvis-reminders thread in rig_control running?' % len(late))
     return res('Automations', 'Jarvis reminders', 'ok', '%d set, none overdue' % len(items))
 
+def chase_check():                                  # Nov 15: head relay -- read-only
+    try:
+        import hub_chase
+        lamps = hub_chase.load_lamps(os.path.join(HERE, 'hub_lamps.json'))
+        with open(os.path.join(HERE, 'hub_state.json')) as f:
+            s = json.load(f).get('settings', {})
+    except Exception as e:
+        return res('Automations', 'Head relay', 'fail', 'hub_chase / hub_lamps.json unreadable (%s)' % e.__class__.__name__)
+    mode = s.get('dmx_pattern', 'normal')
+    if mode not in ('normal', 'show', 'relay'):
+        return res('Automations', 'Head relay', 'warn', 'dmx_pattern is %r (normal / show / relay)' % (mode,))
+    ch = hub_chase.Chase(type('H', (), {'state': {'settings': s}})(), lamps)
+    lonely = [str(i + 1) for i in range(4) if not ch.near(i)]
+    if not lamps or lonely:
+        return res('Automations', 'Head relay', 'warn', 'no lamp beside head(s) %s' % ', '.join(lonely or ['any']))
+    return res('Automations', 'Head relay', 'ok', 'pattern %s, %d lamps mapped' % (mode, len(lamps)))
+
 
 def main():
     t0 = time.time()
     suites()
     services()
     automations()
+    chase_check()
     reminders_check()
     n = {k: sum(1 for r in RESULTS if r['level'] == k) for k in ('ok', 'warn', 'fail')}
     summary = 'SELFTEST %s: %d ok, %d warn, %d FAIL (%.0f s)' % (time.strftime('%Y-%m-%d %H:%M'), n['ok'], n['warn'],

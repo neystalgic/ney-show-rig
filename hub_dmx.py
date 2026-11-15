@@ -115,6 +115,11 @@ class Heads:
         self.phrase_prev = None
         self.last_flash = -10.0
         self.flashes = 0
+        try:                                       # HEAD RELAY (hub_chase.py, Nov 15): one head at a time
+            import hub_chase
+            self.chase = hub_chase.Chase(hub)
+        except Exception:
+            self.chase = None
         self.run = True
         threading.Thread(target=self._poll, name='hub-dmx', daemon=True).start()
 
@@ -369,6 +374,16 @@ class Heads:
         data = bytearray(512)
         hs = self.heads()
         n = len(hs)
+        ch = getattr(self, 'chase', None)           # HEAD RELAY: one head lit at a time (dmx_pattern 'show' / 'relay')
+        cz = None
+        if ch is not None and not dark and not movie:
+            try:
+                cz = ch.step(now, beats, pmode, hs)
+            except Exception:
+                cz = None
+        if cz:                                      # the relay owns the heads: no strobe, turns, sweeps or scene rotation
+            fire, turn_deg, turning, sweep_e, cue, cue_f = False, 0.0, False, 0.0, None, 0.0
+            self.flash_mode, self.auto_cue, self.wall_t = False, None, -10.0
         for i, hd in enumerate(hs):
             st = self.st[i]
             # colour: a lamp spread across the room for each head
@@ -411,6 +426,13 @@ class Heads:
                     cap_ = avoid_cap(hd, st['pan'], th_t, margin=10.0)
                     if cap_ is not None and th_t > cap_ * 0.9:
                         th_t = cap_ * 0.9                        # toward an unsafe area: only as far as it allows
+            cv = cz['heads'].get(i) if cz else None
+            if cv is not None:                      # HEAD RELAY: this head's lean (its avoid zones still cap it)
+                th_t = ch.theta(cv, lean_max)
+                if st['pan'] is not None:
+                    cap_ = avoid_cap(hd, st['pan'], th_t, margin=10.0)
+                    if cap_ is not None and th_t > cap_ * 0.9:
+                        th_t = cap_ * 0.9
             spot = spots.get(str(i)) if isinstance(spots, dict) else None
             spot_p = None
             if movie and not dark and isinstance(spot, dict):
@@ -505,6 +527,8 @@ class Heads:
             if mfast and cue_p is None:                          # music sweep: all heads swing the same way, then back
                 sd = float(s.get('dmx_sweep_deg', 70.0)) * sweep_amp * sweep_e * (1.0 if self.sweep_n % 2 else -1.0)
                 p_t = clamp(p_t + sd / 540.0 * 65535.0, pmin, pmax)
+            if cv is not None:                      # HEAD RELAY: the sweep (inside the head's pan window)
+                p_t = ch.pan(cv, pmin, pmax)
             if st['pan'] is None:
                 st['pan'] = p_t
             pstep = (MUSIC_SWEEP_DEG_S if mfast else TURN_DEG_S if ((turning or wall_p is not None) and not movie) else
@@ -515,6 +539,16 @@ class Heads:
             tilt = int(clamp(tilt, 0, 65535))
             pan = int(clamp(st['pan'], 0, 65535))
             lv = st['lvl'] * cue_lvl
+            if cz:                                  # HEAD RELAY: only the head whose turn it is shines, in the turn's colour
+                if cv is None:
+                    lv = lv if s.get('chase_spots') else 0.0
+                else:
+                    lv = level * max(0.3, clamp(cz['v'])) * cv['level']
+                    if cz.get('rgb'):
+                        hh, ss, _ = colorsys.rgb_to_hsv(*[clamp(x) for x in cz['rgb']])
+                        ss = max(ss, 0.55)          # never white
+                        r, g, b = self.match(colorsys.hsv_to_rgb(hh, ss, 1.0), s)
+                        w = (1.0 - ss) * 0.35
             if fire and abs(st['theta']) <= cone:
                 st['flash'] = now + 0.05
             if now < st['flash']:
