@@ -1,0 +1,339 @@
+# READ-ONLY copy of TouchDesigner /project1/hue_feed/send (Nov 16) for the away loop. Do not edit TD from the loop.
+# hue_feed -- sends the picture and the beat to the Hue Hub
+GEO_NAMES = ['golden_angle', 'flower_of_life']   # heartbeat: which visual to report
+import json
+import socket
+
+import math
+import sys
+import time
+
+import numpy
+
+_S = {'sock': None, 'n': 0, 'rx_t': -10.0, 'rx_try': -10.0, 'last': None, 'shown': None, 'log': ''}
+# which Sacred Geometry visual goes with each light form, best first
+VIS_FOR = {'golden': ['golden_angle', 'flower_of_life'], 'spiral': ['golden_angle', 'flower_of_life'],
+           'flower': ['flower_of_life'], 'metatron': ['metatrons_cube', 'flower_of_life'],
+           'yantra': ['sri_yantra', 'metatrons_cube'], 'chladni': ['chladni', 'flower_of_life'],
+           'tetrahedron': ['tesseract', 'metatrons_cube'], 'cube': ['tesseract', 'metatrons_cube'],
+           'tesseract': ['tesseract', 'metatrons_cube'],
+           'kaleido': ['kaleidoscope', 'flower_of_life'],
+           'blend': ['__blend__', 'kaleidoscope', 'flower_of_life'],
+           'reaction': ['reaction_diffusion', 'golden_angle', 'flower_of_life'],
+           # the procedural pieces (build_procedural): chosen by the music, phrase by phrase
+           'warp': ['proc_warp', 'reaction_diffusion'], 'attractor': ['proc_attractor', 'golden_angle'],
+           'truchet': ['proc_truchet', 'kaleidoscope'], 'contours': ['proc_contours', 'chladni'],
+           'mandala': ['proc_mandala', 'flower_of_life'], 'voronoi': ['proc_voronoi', 'reaction_diffusion'],
+           'harmonograph': ['proc_harmonograph', 'golden_angle'], 'quasicrystal': ['proc_quasicrystal', 'kaleidoscope'],
+           'life': ['proc_life', 'reaction_diffusion']}
+LOG = r"/Users/michaelney/Touchdesigner Designs/Hue Rig/td_sync_log.txt"
+
+
+def _linear():
+    """True if this project works in linear colour (Preferences > Color, TouchDesigner 2025+).
+    The default, Pass-through, shows numbers as they are (screen / sRGB values)."""
+    if 'lin' not in _S:
+        ws = str(getattr(project, 'workingColorSpace', '')).upper()
+        _S['lin'] = ('LINEAR' in ws) or ('ACES' in ws)
+    return _S['lin']
+
+
+def _log(text):
+    if text == _S['log']:
+        return
+    _S['log'] = text
+    try:
+        with open(LOG, 'a') as f:
+            f.write(time.strftime('%H:%M:%S ') + text + '\n')
+    except OSError:
+        pass
+
+
+def _status(c, text, log=True):
+    if c.par.Syncstatus.eval() != text:
+        c.par.Syncstatus = text
+    if log:
+        _log(text)
+
+
+def _set(c, name, v):
+    p = getattr(c.par, name, None)
+    if p is not None and p.eval() != v:
+        p.val = v
+
+
+def _visual_index(c, form):
+    show = op(c.par.Showpath.eval())
+    names = show.fetch('visuals', [], search=False) if show is not None else []
+    for name in VIS_FOR.get(form, []):
+        if name in names:
+            return names.index(name)
+    return None
+
+
+EASE = {
+    'linear': lambda t: t,
+    'sine': lambda t: 0.5 - 0.5 * math.cos(math.pi * t),
+    'smooth': lambda t: t * t * (3 - 2 * t),
+    'smoother': lambda t: t * t * t * (t * (6 * t - 15) + 10),
+    'cubic': lambda t: 4 * t ** 3 if t < 0.5 else 1 - (-2 * t + 2) ** 3 / 2,
+    'expo': lambda t: 0.0 if t <= 0 else 1.0 if t >= 1 else (2 ** (20 * t - 10) / 2 if t < 0.5
+                                                              else (2 - 2 ** (-20 * t + 10)) / 2),
+    'circ': lambda t: (1 - math.sqrt(1 - (2 * t) ** 2)) / 2 if t < 0.5 else (math.sqrt(1 - (-2 * t + 2) ** 2) + 1) / 2,
+}
+
+
+def _golden_step(n):
+    step = max(1, int(round(n / 1.6180339887)))
+    while n > 1 and math.gcd(step, n) != 1:
+        step += 1
+    return step
+
+
+def _blend(c):
+    """Top row: one sacred geometry at 100%, held, then it morphs into the next along a curve.
+    Beat-locked: Hold and Morph are in beats (geo_show > Show page)."""
+    show = op(c.par.Showpath.eval())
+    if show is None or not hasattr(show.par, 'W0'):
+        return
+    names = [n for n in show.fetch('visuals', [], search=False) if n != '__blend__']
+    n = len(names)
+    if n == 0:
+        return
+    tempo = max(40.0, float(c.par.Tempo.eval()))
+    spb = 60.0 / tempo
+    hold = max(0.0, float(show.par.Hold.eval()))
+    morph = max(0.25, float(show.par.Morph.eval()))
+    # flicker safety: a morph never quicker than 0.4 s, a whole step never quicker than 1 s
+    k = max(1.0, 0.4 / (morph * spb), 1.0 / ((hold + morph) * spb))
+    hold, morph = hold * k, morph * k
+    period = hold + morph
+    pos = float(c.par.Beats.eval()) / period
+    step = int(math.floor(pos))
+    f = (pos - step) * period
+    order = str(show.par.Order.eval())
+    jump = _golden_step(n) if order == 'golden' else 1
+    a = (step * jump) % n
+    b = ((step + 1) * jump) % n
+    t = 0.0 if f < hold else min(1.0, (f - hold) / morph)
+    e = max(0.0, min(1.0, EASE.get(str(show.par.Curve.eval()), EASE['sine'])(t)))
+    w = [0.0] * n
+    w[a] += 1.0 - e
+    w[b] += e
+    for i in range(32):
+        p = getattr(show.par, 'W%d' % i, None)
+        if p is not None:
+            v = round(w[i], 4) if i < n else 0.0
+            if p.eval() != v:
+                p.val = v
+    txt = names[a] if e < 0.005 else names[b] if e > 0.995 else '%s -> %s  %d%%' % (names[a], names[b], int(e * 100))
+    if hasattr(show.par, 'Showing') and show.par.Showing.eval() != txt:
+        show.par.Showing = txt
+
+
+def _crossfade(c, dt):
+    """Fades geo_show from the visual it shows to the one that matches what's playing."""
+    want = _visual_index(c, str(c.par.Vis.eval()))
+    if want is None:
+        return
+    if _S['shown'] is None:
+        _S['shown'] = want
+        _set(c, 'Forma', want)
+        _set(c, 'Formb', want)
+        _set(c, 'Mix', 1.0)
+    if want != int(c.par.Formb.eval()) and c.par.Mix.eval() >= 1.0:
+        _set(c, 'Forma', int(c.par.Formb.eval()))
+        _set(c, 'Formb', want)
+        _set(c, 'Mix', 0.0)
+    show = op(c.par.Showpath.eval())
+    fade = max(0.05, float(show.par.Fade.eval())) if show is not None and hasattr(show.par, 'Fade') else 0.4
+    if c.par.Mix.eval() < 1.0:
+        _set(c, 'Mix', min(1.0, c.par.Mix.eval() + dt / fade))
+    _set(c, 'Formindex', int(c.par.Formb.eval()))
+
+
+def _apply(c, m):
+    if 'movie' in m:
+        _set(c, 'Movie', bool(m.get('movie')))
+        if m.get('moviesrc') in ('capture', 'screen', 'camera'):
+            _set(c, 'Moviesrc', m['moviesrc'])
+    _set(c, 'Georot', float(m.get('rot', 0.0)))
+    _set(c, 'Phase', float(m.get('phase', 0.0)))
+    ch = m.get('chladni') or [3, 5, -1]
+    _set(c, 'Chladn', float(ch[0]))
+    _set(c, 'Chladm', float(ch[1]))
+    _set(c, 'Chladsign', float(ch[2]))
+    for key, name in (('colora', 'Geocola'), ('colorb', 'Geocolb')):
+        col = m.get(key) or [1, 1, 1]
+        for ch_, v in zip('rgb', col):
+            v = float(v)
+            if _linear():                                 # the shaders get colours in the project's space
+                v = v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+            _set(c, name + ch_, round(v, 4))
+    for i, col in enumerate(m.get('vcols') or []):
+        for k_, ch_ in enumerate(('ar', 'ag', 'ab', 'br', 'bg', 'bb')):
+            if k_ < len(col):
+                v = float(col[k_])
+                if _linear():
+                    v = v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+                _set(c, 'Vc%d%s' % (i, ch_), round(v, 4))
+    for key, name in (('beats', 'Beats'), ('build', 'Build'), ('energy', 'Energy'), ('press', 'Press'), ('tempo', 'Tempo'),
+                      ('guard', 'Guard'), ('master', 'Master'), ('x', 'X'), ('zoom', 'Zoom'), ('turn', 'Turn'),
+                      ('line', 'Line'), ('akick', 'Akick'), ('asnare', 'Asnare'), ('ahats', 'Ahats'),
+                      ('alevel', 'Alevel'), ('abright', 'Abright'), ('adrop', 'Adrop')):
+        if key in m:
+            _set(c, name, round(float(m[key]), 4))
+    if 'section' in m:
+        _set(c, 'Section', str(m['section']))
+    lam = m.get('lamps')
+    t = c.op('lamps')
+    if lam is not None and t is not None:                 # every lamp's live colour (for the Shape Mapper)
+        keys = [str(row[0]) for row in lam]
+        if t.numRows != len(lam) + 1 or [str(t[r, 0]) for r in range(1, t.numRows)] != keys:
+            t.clear()
+            t.appendRow(['key', 'label', 'r', 'g', 'b'])
+            for row in lam:
+                t.appendRow([str(row[0]), str(row[1]), row[2], row[3], row[4]])
+        else:
+            for r, row in enumerate(lam, 1):
+                for k_, v in enumerate(row[2:5]):
+                    if str(t[r, 2 + k_]) != str(v):
+                        t[r, 2 + k_] = v
+    _set(c, 'Form', str(m.get('form', '')))
+    if m.get('vis'):
+        _set(c, 'Vis', str(m['vis']))
+
+
+def _receive(c, dt):
+    """The hub's geometry clock (port 7012). Without the hub the visuals keep moving on their own."""
+    rx = getattr(sys, '_hue_sync_sock', None)        # one socket for the whole TD session
+    if rx is None and absTime.seconds - _S['rx_try'] >= 2.0:
+        _S['rx_try'] = absTime.seconds
+        try:
+            rx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            rx.bind(('127.0.0.1', int(c.par.Syncport.eval())))
+            rx.setblocking(False)
+            sys._hue_sync_sock = rx
+        except OSError as e:
+            rx = None
+            _status(c, 'cannot listen on port %d: %s' % (int(c.par.Syncport.eval()), e))
+    last = None
+    while rx is not None:
+        try:
+            last = rx.recv(65536)
+        except (BlockingIOError, OSError):
+            break
+    m = None
+    if last is not None:
+        try:
+            m = json.loads(last.decode())
+        except ValueError:
+            m = None
+    if m is not None:
+        _S['rx_t'] = absTime.seconds
+        _S['rx_n'] = _S.get('rx_n', 0) + 1
+        _apply(c, m)
+        _status(c, 'in step with the hub -- %s, visual: %s' % (m.get('form', ''), m.get('vis', '')), log=False)
+        _log('in step with the hub')
+        if absTime.seconds - _S.get('beat_t', -100.0) >= 15.0:      # a heartbeat in td_sync_log.txt (for checking)
+            _S['beat_t'] = absTime.seconds
+            g = op(c.parent().path + '/' + GEO_NAMES[0]) if GEO_NAMES else None
+            def pv(o, n):
+                q = getattr(o.par, n, None) if o is not None else None
+                return ('%.3f' % q.eval()) if q is not None else '-'
+            _log('rx %d | vis %s | Georot %s Energy %s Akick %s Alevel %s Zoom %s | %s: Rotate %s Scale %s Glow %s' % (
+                _S['rx_n'], m.get('vis'), pv(c, 'Georot'), pv(c, 'Energy'), pv(c, 'Akick'), pv(c, 'Alevel'),
+                pv(c, 'Zoom'), GEO_NAMES[0] if GEO_NAMES else '-', pv(g, 'Rotate'), pv(g, 'Scale'), pv(g, 'Glow')))
+    elif absTime.seconds - _S['rx_t'] > 2.0:
+        # no hub: keep the geometry alive here in TouchDesigner
+        t = absTime.seconds
+        _set(c, 'Georot', (c.par.Georot.eval() + 6.0 * dt) % 360.0)
+        _set(c, 'Phase', c.par.Phase.eval() + dt * 0.25)
+        _set(c, 'Beats', c.par.Beats.eval() + dt * max(40.0, c.par.Tempo.eval()) / 60.0)
+        _set(c, 'Build', min(1.0, c.par.Build.eval() + dt * 0.5))
+        _set(c, 'Energy', round(0.6 + 0.15 * math.sin(t * 2 * math.pi * 0.1), 4))
+        _set(c, 'Press', 0.0)
+        for a_ in ('Akick', 'Asnare', 'Ahats', 'Alevel', 'Adrop'):
+            _set(c, a_, 0.0)
+        _set(c, 'Master', 1.0)
+        _status(c, 'hub not running -- the visuals animate on their own')
+    _crossfade(c, dt)
+    _blend(c)
+
+
+BUILD = r"/Users/michaelney/Touchdesigner Designs/Hue Rig/build_hue_hub_td.py"
+
+
+def _autoupdate(c):
+    """When build_hue_hub_td.py in the Hue Rig folder is updated, rebuild hue_feed with it and put the
+    Sacred Geometry back in step -- no Textport needed. (Save the project afterwards to keep it.)"""
+    import os
+    if absTime.seconds - _S.get('upd_t', -100.0) < 3.0 or _S.get('upd_busy'):
+        return
+    _S['upd_t'] = absTime.seconds
+    try:
+        mt = os.path.getmtime(BUILD)
+    except OSError:
+        return
+    seen = c.fetch('build_mtime', None, search=False)
+    if seen is None:
+        c.store('build_mtime', mt)
+        return
+    if mt > seen + 0.5:
+        _S['upd_busy'] = True
+        c.store('build_mtime', mt)
+        _log('build_hue_hub_td.py was updated -- rebuilding hue_feed and re-syncing the geometry')
+        run("exec(open(args[0]).read()); "
+            "sync_geometry() if op('/project1/geo_show') is not None or args[1] else None; "
+            "geo_check()", BUILD, True, delayFrames=20)
+
+
+def onFrameEnd(frame):
+    c = parent()
+    now = absTime.seconds
+    dt = 0.0 if _S['last'] is None else max(0.0, min(0.25, now - _S['last']))
+    _S['last'] = now
+    try:
+        _receive(c, dt)
+    except Exception as e:
+        _status(c, 'sync error: %s' % e)
+    try:
+        _autoupdate(c)
+    except Exception as e:
+        _log('auto-update error: %s' % e)
+    if not c.par.Active.eval():
+        c.par.Status = 'Off'
+        return
+    _S['n'] += 1                                 # every frame: the lamps follow the picture in real time
+    msg = {}
+    clk = op(c.par.Clockpath.eval())
+    if clk is not None and hasattr(clk.par, 'Beats'):
+        msg['beats'] = float(clk.par.Beats.eval())
+        msg['tempo'] = float(clk.par.Tempo.eval())
+        msg['source'] = 'Ableton Link' if 'Link' in str(clk.par.Status.eval()) else 'show_clock'
+    else:
+        msg['beats'] = None
+    pic = 'no picture'
+    if c.par.Sendpicture.eval() and (len(c.inputs) > 0 or c.par.Movie.eval()):
+        try:
+            a = op('small').numpyArray(delayed=True)
+            if a is not None and a.size:
+                a = a[::-1, :, :3]                        # top row first
+                a = a.clip(0, 1)
+                if _linear():                             # linear project: back to screen (sRGB) values
+                    a = numpy.where(a <= 0.0031308, a * 12.92, 1.055 * numpy.power(a, 1 / 2.4) - 0.055)
+                g = (a * 255 + 0.5).astype('uint8')
+                msg['grid'], msg['h'], msg['w'] = g.reshape(-1).tolist(), int(g.shape[0]), int(g.shape[1])
+                pic = 'picture %dx%d' % (g.shape[1], g.shape[0])
+        except Exception as e:
+            pic = 'picture error: %s' % e
+    if _S['sock'] is None:
+        _S['sock'] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        _S['sock'].sendto(json.dumps(msg, separators=(',', ':')).encode(), ('127.0.0.1', int(c.par.Port.eval())))
+        st = 'Sending %s + %s to the hub' % ('beat' if msg['beats'] is not None else 'no beat', pic)
+    except OSError as e:
+        st = 'Could not send: %s' % e
+    if c.par.Status.eval() != st:
+        c.par.Status = st
+    return

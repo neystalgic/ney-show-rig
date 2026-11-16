@@ -58,6 +58,26 @@ W5. [SAFE] todo -- CONTENT MODE (approved in AGENTS.md Nov 15): Mac side only --
    The node's eye-level limits are on the Pi -- write away/content-mode/NODE-PLAN.txt for how to lift them except the
    studio seat (do NOT touch the Pi). Tests with a fake clock.
 
+W6. [SAFE] todo -- PUSH 2 "SHOW" mode + visuals in sync (Michael Nov 16: "bind light modes to buttons on the Push and
+   have them synchronized with our sacred geometry in colour and intensity"). HUB SIDE ONLY (never edit TouchDesigner;
+   read-only copies of TD's hue_feed code + visual list are in away/push-show-ref/). Build in away/push-show/ (copies of
+   hub_push2.py, hue_hub.py as needed):
+   (a) a SHOW pad mode on a free Push 2 button (find one unused in hub_push2.py; document it): top row = the acts
+       (Hue showcase, Head moment, Gobos, Zones, UV, Burst) + AUTO; next row = the 7 zone modes; next = wave direction
+       (bounce/forward/back/alternate) + loop direction (alternate/ccw/cw); next = audio mix 0/25/50/60/75/100%.
+       Pads light in the rig's colours: the playing act/mode bright purple, others dim; pressing = POST-equivalent
+       settings via the hub's own setting path (show_lock, show_wave, show_loop_dir, show_audio). Display text shows
+       act / mode / bar x of 8.
+   (b) visuals follow the lights: in the hub -> TouchDesigner message hue_feed already reads (fields 'form', 'vis',
+       energy/kick/level -- see td_hue_feed_send.txt _apply/_receive), add the director's state: act, mode, hue
+       (0-1), level (mean zone level 0-1), kick; and pick the TD visual per act/mode with a VIS_FOR-style table:
+       hues->flower_of_life, heads->metatrons_cube, gobos->sri_yantra, uv->tesseract, burst->kaleidoscope,
+       pulse->golden_angle, wave->chladni, loop->proc_mandala, call->proc_voronoi, split->proc_quasicrystal,
+       orbit->proc_harmonograph, relay->proc_attractor (names from td_geo_show_visuals.txt). Only send names TD has.
+   (c) PLAN.txt for the TD half (Claude does it live with Michael): which hue_feed params to add so the visual's
+       tint = the director's hue and its brightness = the zone level.
+   Offline tests: fake Push MIDI in/out (pad -> setting, LED colours), message fields, unknown visual names skipped.
+
 --- TONIGHT (Nov 14, 1:30 am): Michael asleep -- NON-LIGHTING work only, these first ----------
 N1. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-food/DEPLOY.txt) -- Jarvis food logging polish. Bugs seen Nov 13: "I ate a Chipotle chicken quesadilla, about 1050
    calories and 60 grams of protein" logged the item as "a chipotle chicken quesadilla about" (strip trailing

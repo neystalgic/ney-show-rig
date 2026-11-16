@@ -1,0 +1,17 @@
+vis_0 -> /project1/golden_angle/out1
+vis_1 -> /project1/flower_of_life/out1
+vis_2 -> /project1/metatrons_cube/out1
+vis_3 -> /project1/sri_yantra/out1
+vis_4 -> /project1/chladni/out1
+vis_5 -> /project1/tesseract/out1
+vis_6 -> /project1/kaleidoscope/out1
+vis_7 -> /project1/reaction_diffusion/out1
+vis_8 -> /project1/proc_warp/out1
+vis_9 -> /project1/proc_attractor/out1
+vis_10 -> /project1/proc_truchet/out1
+vis_11 -> /project1/proc_contours/out1
+vis_12 -> /project1/proc_mandala/out1
+vis_13 -> /project1/proc_voronoi/out1
+vis_14 -> /project1/proc_harmonograph/out1
+vis_15 -> /project1/proc_quasicrystal/out1
+vis_16 -> /project1/proc_life/out1
