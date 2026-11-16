@@ -816,6 +816,7 @@ if __name__ == '__main__':
         try:
             d = json.loads(urllib.request.urlopen('http://127.0.0.1:7020/api/live', timeout=2).read())
             out = {k: d.get(k) for k in ('palette', 'vibe', 'bridge', 'blackout', 'heads', 'level', 'show')}
+            out['master'] = (d.get('live') or {}).get('master') if isinstance(d.get('live'), dict) else None
             out.update(audio=(d.get('audio') or {}).get('status'), section=(d.get('audio') or {}).get('section'))
             return out
         except Exception as e:
@@ -1087,6 +1088,7 @@ if __name__ == '__main__':
                                     'make_missing_shortcuts': _make_missing, 'py_env': _py_env,
                                     'build_jarvis_app': _build_jarvis_app, 'voices': _voices, 'chime_demo': _chime_demo,
                                     'jarvis_restart': lambda: sh('pkill -f "[j]arvis/listen.py" || true'),
+                                    'procs': lambda: open(os.path.join(HERE, 'bridge', 'outbox', 'procs.txt'), 'w').write(sh('ps -axo pid,etime,command | grep -E "hue_hub|calib.py|ambient_fade|beat_sender|listen.py|front_door|ney_brain" | grep -v grep || true')),
                                     'selftest': _selftest, 'hub_dump': lambda: sh('pkill -USR1 -f hue_hub.py || true') or 'stack dump requested',
                                     'calib_zones': lambda: _calib('zones'), 'calib_stop': _calib_stop,
                                     'calib_sweep1': lambda: _calib('sweep', '1'), 'calib_sweep2': lambda: _calib('sweep', '2'),

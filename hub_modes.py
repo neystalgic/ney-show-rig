@@ -625,9 +625,11 @@ class Director:
     def status(self):
         z = self.last
         _audio = self.audio_mix()
+        _heads = {str(h + 1): [round(cv.get('level', 0), 2), round(cv.get('u', -1), 2), round(cv.get('lean', -1), 2)]
+                  for h, cv in ((z or {}).get('heads') or {}).items()}
         a = (z or {}).get('act', 'zones')
         return dict(on=bool(z), pattern=self.pattern(), act=a if z else None, act_name=ACT_NAMES.get(a, '') if z else '',
-                    acts=[dict(id=x, name=ACT_NAMES[x]) for x in ACTS], acts_on=self.acts_on(), audio_mix=_audio,
+                    acts=[dict(id=x, name=ACT_NAMES[x]) for x in ACTS], acts_on=self.acts_on(), audio_mix=_audio, head_out=_heads,
                     mode=(z or {}).get('mode'), name=NAMES.get((z or {}).get('mode'), '') if a == 'zones' else ACT_NAMES.get(a, ''),
                     bar=(z or {}).get('phrase_bar', 0) + 1 if z else 0, bars=self.bars_per_phrase(),
                     lock=str(self.settings().get('show_lock', '') or ''), speed=self.speed(),

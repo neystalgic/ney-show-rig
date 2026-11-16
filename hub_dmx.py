@@ -383,8 +383,13 @@ class Heads:
         if ch is not None and not dark and not movie:
             try:
                 cz = ch.step(now, beats, pmode, hs)
-            except Exception:
+            except Exception as e:                  # Nov 15: never silent again -- log each kind of error once
                 cz = None
+                key = '%s: %s' % (type(e).__name__, e)
+                if key not in getattr(self, '_cz_err', set()):
+                    import traceback
+                    self._cz_err = getattr(self, '_cz_err', set()) | {key}
+                    print('DIRECTOR ERROR (heads fall back to the normal show): ' + traceback.format_exc(), flush=True)
         self.act_fx = (cz or {}).get('spots') or {}    # SHOW ACTS (Nov 15): gobos / UV for the spots this frame
         if cz:                                      # the relay owns the heads: no strobe, turns, sweeps or scene rotation
             fire, turn_deg, turning, sweep_e, cue, cue_f = False, 0.0, False, 0.0, None, 0.0

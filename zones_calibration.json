@@ -54,7 +54,27 @@
      "tilt": 13623
     }
    },
-   "plan": "Michael may move the speaker onto the table and Head 3 behind it on the speaker stand (fiber mesh) -- re-calibrate Head 3 after"
+   "plan": "Michael may move the speaker onto the table and Head 3 behind it on the speaker stand (fiber mesh) -- re-calibrate Head 3 after",
+   "moved": "2026-11-16 02:02 -- now behind the speaker on the stand; limits + aims need re-calibration; out of the show until then"
+  },
+  "4": {
+   "confirmed": "2026-11-16 01:12",
+   "zone": "2A",
+   "where": "by the gray couch near the studio (rolly desk)",
+   "aims": {
+    "UV tapestry": {
+     "pan": 4409,
+     "tilt": 14206
+    }
+   }
+  },
+  "1": {
+   "confirmed": "2026-11-16 01:13",
+   "zone": "2B",
+   "where": "north/projector wall, white desk side table",
+   "aims": {
+    "Coffee table": "existing target is good (Michael)"
+   }
   }
  },
  "groups": {
