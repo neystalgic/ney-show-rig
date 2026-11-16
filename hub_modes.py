@@ -549,7 +549,7 @@ class Director:
             except (TypeError, ValueError, IndexError, ZeroDivisionError):
                 g = GOBOS[0]
             for i in self.spots_i:
-                spots[i] = dict(level=0.9, fx=dict(gobo=g, gobo_rot=140, breathe=50, breathe_s=8.0, uv=0, uv_only=False))
+                spots[i] = dict(level=0.9, fx=dict(gobo=g, gobo_rot=0, breathe=50, breathe_s=8.0, uv=0, uv_only=False))   # static: rotating wheels drift apart
         elif act == 'burst':                                 # DROP: everything, rainbow stepping on the beat, flashing on the kick
             n_ = max(1, len(zl))
             step_ = int(math.floor(beats))

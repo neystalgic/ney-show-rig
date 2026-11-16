@@ -658,13 +658,21 @@ class Heads:
         br = clamp(float(fx.get('breathe', 0)), 0.0, 127.0)
         if br > 0:
             foc += br * math.sin(2 * math.pi * now / max(2.0, float(fx.get('breathe_s', 12.0))))
+        gobo, grot = int(clamp(int(fx.get('gobo', 0)), 0, 255)), int(clamp(int(fx.get('gobo_rot', 0)), 0, 255))
+        # SPOTS IN SYNC (Nov 15, Michael: "sloppy when they aren't on the same gobo -- always stay with one another"):
+        # the first spot each frame decides colour slot / gobo / rotation / focus; the other copies it
+        sync = getattr(self, '_spot_sync', None)
+        if sync is not None and sync[0] == now and not fx.get('no_sync'):
+            slot, gobo, grot, foc = sync[1]
+        else:
+            self._spot_sync = (now, (slot, gobo, grot, foc))
         lvl = clamp(lv * clamp(float(fx.get('level', 1.0))))
         m = 0 if lvl < 0.004 else int(round(lvl * 255))
         data[a + 0], data[a + 1] = p16 >> 8, p16 & 255
         data[a + 2], data[a + 3] = tilt >> 8, tilt & 255
         data[a + 4] = slot
-        data[a + 5] = int(clamp(int(fx.get('gobo', 0)), 0, 255))
-        data[a + 6] = int(clamp(int(fx.get('gobo_rot', 0)), 0, 255))
+        data[a + 5] = gobo
+        data[a + 6] = grot
         data[a + 7] = int(clamp(int(foc), 0, 255))
         data[a + 8] = 12 if m > 0 else 0                         # shutter open
         if getattr(self, 'flash_mode', False):
