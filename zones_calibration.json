@@ -138,5 +138,13 @@
   "2": "Head 2",
   "3": "Head 3",
   "4": "Head 4"
+ },
+ "spots": {
+  "2": {
+   "moved": "2026-11-16 morning -- aims (UV stars) + limits need re-calibration"
+  },
+  "1": {
+   "todo": "re-calibrate aims, gobo values, UV star aim"
+  }
  }
 }

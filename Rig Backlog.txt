@@ -78,6 +78,15 @@ W6. [SAFE] todo -- PUSH 2 "SHOW" mode + visuals in sync (Michael Nov 16: "bind l
        tint = the director's hue and its brightness = the zone level.
    Offline tests: fake Push MIDI in/out (pad -> setting, LED colours), message fields, unknown visual names skipped.
 
+W7. [SAFE] todo -- calib.py for the FOCUS SPOTS (needed tonight: Michael recalibrates Head 3, Spot 1 and Spot 2 -- Spot 2
+   was moved Nov 16 morning). calib.py's Heads.send() writes the LM70S 14-ch layout; the spots are 17-ch (see
+   hub_dmx.focus_out: a+0..3 pan/tilt, a+4 colour slot, a+5 gobo, a+6 gobo rot, a+7 focus, a+8 shutter 12 = open,
+   a+9 dimmer, a+10 UV shutter, a+11 UV, a+15 motor speed). Copy calib.py to away/spot-calib/, make send() pick the
+   layout per fixture type, add modes 'spot N' (one spot lit, open white-free colour slot, dimmer 60%, on its saved
+   aim) and 'aimspot N' (follows bridge/calib_aim.json incl. optional gobo/focus/uv so Claude can nudge it live),
+   and 'uvaim N' (UV only). Spots are indexes 4 and 5 in the node list ("Spot 1" = 5th fixture). Offline test with a
+   fake socket: byte layout per type, nothing sent to other fixtures, UV-only frames have dimmer 0.
+
 --- TONIGHT (Nov 14, 1:30 am): Michael asleep -- NON-LIGHTING work only, these first ----------
 N1. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-food/DEPLOY.txt) -- Jarvis food logging polish. Bugs seen Nov 13: "I ate a Chipotle chicken quesadilla, about 1050
    calories and 60 grams of protein" logged the item as "a chipotle chicken quesadilla about" (strip trailing
