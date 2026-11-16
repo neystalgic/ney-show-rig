@@ -54,6 +54,7 @@ SUITES = [  # (name, test file, [(live file, the copy that test exercises)])
     ('Pi brain (schedule failover, front door)', 'pi/brain/test_brain.py', []),
     ('Pi calm looks (covers when the Mac sleeps)', 'pi/brain/test_looks.py', []),
     ('Show director (modes, zones, 8-bar switch)', 'test_hub_modes.py', []),
+    ('Hub watchdog (start-up grace)', 'test_hub_watchdog.py', []),
     ('Health Report v2', 'away/health-report-v2/test_health_report.py',
      [('body_log.py', 'away/health-report-v2/body_log.py'), ('body.html', 'away/health-report-v2/body.html')]),
     ('Weekly health sheet', 'away/health-weekly/test_health_weekly.py',

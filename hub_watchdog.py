@@ -133,6 +133,13 @@ def _tick(busy, stop_hub, start_hub, after_start):
     if not hub_running():                                  # stopped on purpose (or not started): leave it be
         _reset_timers()
         STATE['last'] = 'hub not running -- nothing to watch'
+        STATE['was_running'] = False
+        return
+    if not STATE.get('was_running'):                        # Nov 15: a hub just started (by anyone) gets the same grace --
+        STATE['was_running'] = True                        # its Hue bridge connect can take 60 s+ of retries
+        STATE['grace_until'] = max(STATE['grace_until'], now + s['grace_s'])
+        _reset_timers()
+        STATE['last'] = 'hub starting -- grace %d s' % s['grace_s']
         return
     try:
         live = hub_live()
