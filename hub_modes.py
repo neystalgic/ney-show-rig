@@ -12,6 +12,8 @@
 #   call       call & response ACROSS the room: row A (south wall) answers the kick, row B (north wall) the snare
 #   wave       down the room: column 1 (1A+1B) -> 2 (2A+2B) -> 3 (3A), one column per beat
 #   loop       round the living room: 1A -> 2A -> 2B -> 1B -> 1A (setting show_loop), one zone per beat
+#   directions: show_wave = bounce (default: 1-2-3-2-1) | forward | back | alternate (flips each phrase)
+#               show_loop_dir = alternate (default, flips each phrase) | ccw (1A-2A-2B-1B) | cw (1A-1B-2B-2A)
 #   split      row A (south) warm + big on the bass, row B (north) cool + quick on the hi-hats
 #   orbit      heads trace slow circles out of phase; colour drifts; speed follows the energy
 #   relay      one head at a time sweeps and hands off on the bar (hub_chase.py)
@@ -175,6 +177,26 @@ class Director:
             out.append((int(m.group(1)), m.group(2).upper()) if m else (k, 'A' if k % 2 == 0 else 'B'))
         return out
 
+    def direction(self, key, default, allowed):
+        v = str(self.settings().get(key, default) or default).strip().lower()
+        return v if v in allowed else default
+
+    def wave_seq(self, cols):
+        d = self.direction('show_wave', 'bounce', ('bounce', 'forward', 'back', 'alternate'))
+        if d == 'alternate':
+            d = 'forward' if (self.phrase or 0) % 2 == 0 else 'back'
+        if d == 'back':
+            return list(reversed(cols))
+        if d == 'bounce' and len(cols) > 2:
+            return cols + cols[-2:0:-1]                    # 1, 2, 3, 2 -> 1, 2, 3, 2 ...
+        return list(cols)
+
+    def loop_dir(self):
+        d = self.direction('show_loop_dir', 'alternate', ('alternate', 'ccw', 'cw'))
+        if d == 'alternate':
+            d = 'ccw' if (self.phrase or 0) % 2 == 0 else 'cw'
+        return d
+
     def loop_order(self, zl):
         ids = [z['id'] for z in zl]
         want = self.settings().get('show_loop')
@@ -189,7 +211,10 @@ class Director:
                 lastc = max(c for c, r in g if r == 'B')
                 a = [zid for zid in a if self.grid([dict(id=zid)])[0][0] <= lastc]
             want = a + b
-        return [z for z in want if z in ids] or ids
+        out = [z for z in want if z in ids] or ids
+        if self.loop_dir() == 'cw' and len(out) > 2:       # same start, the other way round
+            out = [out[0]] + out[:0:-1]
+        return out
 
     # -------------------------------------------------------------------------- when it runs
     def wanted(self, pmode):
@@ -299,7 +324,7 @@ class Director:
         g = self.grid(zl)
         cols = sorted({c for c, _ in g})
         loop = self.loop_order(zl)
-        beat_i = int(math.floor(beats))
+        beat_i = int(math.floor(beats)) - (self.phrase or 0) * self.bars_per_phrase() * bpb   # beats into this phrase
         for r, zone in enumerate(zl):
             col, row = g[r]
             side = 0 if row == 'A' else 1                     # south wall (A) / north wall (B)
@@ -316,7 +341,8 @@ class Director:
                 u = 0.5 + 0.25 * math.sin(2 * math.pi * beats / (16.0 / sp)) * (1 if a else -1)
                 hue = self.hue if a else self.hue + 0.5
             elif self.mode == 'wave':
-                on = cols[beat_i % len(cols)] == col
+                wseq = self.wave_seq(cols)
+                on = wseq[beat_i % len(wseq)] == col
                 lvl = 0.12 + 0.88 * (decay(frac, 0.45 / sp) if on else 0.0) + 0.25 * e['kick'] * (0 if on else 1)
                 lean = 0.85 if on else 0.5
                 u = 0.5 + 0.3 * math.sin(2 * math.pi * beats / (16.0 / sp))

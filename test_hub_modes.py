@@ -147,7 +147,7 @@ lit = sorted(order.index(i) % 2 for i, cv in z['heads'].items() if cv['level'] >
 check('call: snare lights zone B only', lit and all(x == 1 for x in lit), z['heads'])
 
 # 8. wave: one zone per beat, travelling across the room
-hub = Hub(show_lock='wave')
+hub = Hub(show_lock='wave', show_wave='forward')
 d = hm.Director(hub, LAMPS)
 peaks = []
 for k in range(8):
@@ -215,7 +215,7 @@ ZMAP = {'order': ['1A', '1B', '2A', '2B', '3A'],
                   '3A': {'heads': [], 'lamps': ['Hue color lamp 1', 'Behind Desk']}}}
 L2 = {0: (0, 0, 'Behind Desk'), 1: (0, 0, 'Floor Shade'), 2: (0, 0, 'Top Lamp'), 3: (0, 0, 'Play'),
       4: (0, 0, 'Hue color lamp 1'), 5: (0, 0, 'Hue color lamp 2')}
-hub = Hub(show_zones=ZMAP, show_lock='wave')
+hub = Hub(show_zones=ZMAP, show_lock='wave', show_wave='forward', show_loop_dir='ccw')
 d = hm.Director(hub, L2)
 d.heads_i = [0, 1, 2, 3]
 zl = d.zone_list()
@@ -237,6 +237,7 @@ check('map: on column 3\'s beat the two studio lamps are the bright ones', brigh
 check('map: tandem lamps (Top Lamp + colour lamp 2) always match', all(abs(a - b) < 1e-9 for a, b in zip(out[2], out[5])))
 # loop round the living room
 hub.state['settings']['show_lock'] = 'loop'
+hub.state['settings']['show_loop_dir'] = 'ccw'
 d3 = hm.Director(hub, L2)
 seq = []
 for k in range(8):
@@ -265,6 +266,40 @@ for b, z in run(hub, d2, 0, 40, 0.25):
         if lit and (not heads_lit or heads_lit[-1] != lit[0]):
             heads_lit.append(lit[0])
 check('map: relay hands off round the loop (Head 3, 4, 1, 2)', heads_lit[:4] == [2, 3, 0, 1], heads_lit)
+
+# 15. directions: wave back / bounce / alternate, loop clockwise / alternate
+def wave_cols(hub_, beats_list, t0):
+    d_ = hm.Director(hub_, L2)
+    out_ = []
+    for k, b in enumerate(beats_list):
+        z = d_.step(t0 + k, b, 'music', HEADS)
+        top = max(zo['level'] for zo in z['zones'])
+        out_.append(sorted({zo['id'][0] for zo in z['zones'] if zo['level'] > top - 1e-6}))
+    return out_
+hb = Hub(show_zones=ZMAP, show_lock='wave', show_wave='back')
+check('wave back: 3A -> 2A+2B -> 1A+1B', wave_cols(hb, [k + 0.01 for k in range(6)], 200) == [['3'], ['2'], ['1']] * 2)
+hb = Hub(show_zones=ZMAP, show_lock='wave', show_wave='bounce')
+check('wave bounce: 1-2-3-2-1-2-3-2', wave_cols(hb, [k + 0.01 for k in range(8)], 300) == [['1'], ['2'], ['3'], ['2']] * 2)
+hb = Hub(show_zones=ZMAP, show_lock='wave', show_wave='alternate')
+first = wave_cols(hb, [k + 0.01 for k in range(3)], 400)
+hb2 = Hub(show_zones=ZMAP, show_lock='wave', show_wave='alternate')
+dd = hm.Director(hb2, L2)
+dd.step(500, 0.01, 'music', HEADS)
+nxt = []
+for k in range(3):                                   # next phrase (bar 8+)
+    z = dd.step(501 + k, 32 + k + 0.01, 'music', HEADS)
+    top = max(zo['level'] for zo in z['zones'])
+    nxt.append(sorted({zo['id'][0] for zo in z['zones'] if zo['level'] > top - 1e-6}))
+check('wave alternate: forward one phrase, back the next', first == [['1'], ['2'], ['3']] and nxt == [['3'], ['2'], ['1']], (first, nxt))
+hb = Hub(show_zones=ZMAP, show_lock='loop', show_loop_dir='cw')
+dl = hm.Director(hb, L2)
+seq = [max(dl.step(600 + k, k + 0.01, 'music', HEADS)['zones'], key=lambda zo: zo['level'])['id'] for k in range(4)]
+check('loop clockwise: 1A -> 1B -> 2B -> 2A', seq == ['1A', '1B', '2B', '2A'], seq)
+hb = Hub(show_zones=ZMAP, show_lock='loop', show_loop_dir='alternate')
+dl = hm.Director(hb, L2)
+a = [max(dl.step(700 + k, k + 0.01, 'music', HEADS)['zones'], key=lambda zo: zo['level'])['id'] for k in range(4)]
+b = [max(dl.step(800 + k, 32 + k + 0.01, 'music', HEADS)['zones'], key=lambda zo: zo['level'])['id'] for k in range(4)]
+check('loop alternate: ccw one phrase, cw the next', a == ['1A', '2A', '2B', '1B'] and b == ['1A', '1B', '2B', '2A'], (a, b))
 
 print('hub_modes tests: %d passed, %d failed' % (PASSES[0], len(FAILS)))
 sys.exit(1 if FAILS else 0)

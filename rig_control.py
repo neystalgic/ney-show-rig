@@ -632,7 +632,7 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 return self.reply(400, 'Send JSON.')
             ok_keys = {'dmx_pattern': ('normal', 'show', 'relay', 'modes'), 'show_lock': None, 'show_speed': None,
-                       'show_bars': None, 'show_pool': None, 'show_zones': None, 'chase_lamps': None, 'chase_head_xy': None,
+                       'show_bars': None, 'show_pool': None, 'show_zones': None, 'show_wave': ('bounce', 'forward', 'back', 'alternate'), 'show_loop_dir': ('alternate', 'ccw', 'cw'), 'chase_lamps': None, 'chase_head_xy': None,
                        'chase_arc': None, 'energy': None}
             done = []
             for k, v in (data or {}).items():
