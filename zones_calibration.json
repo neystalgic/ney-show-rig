@@ -1,0 +1,109 @@
+{
+ "note": "Michael's room calibration (Nov 15): lamps + heads by real location, zones numbered from the front door",
+ "lamps": {
+  "Floor Shade": {
+   "where": "next to the gray couch, near the studio",
+   "group": "2A",
+   "with_head": 4,
+   "confirmed": "2026-11-16 00:44"
+  },
+  "Hue Play floor lamp large 1": {
+   "where": "near Head 2; the multi-colour (gradient) floor lamp",
+   "group": "1B",
+   "with_head": 2,
+   "gradient": true,
+   "confirmed": "2026-11-16 00:46"
+  },
+  "Hue color lamp 1": {
+   "where": "studio desk, behind the Elektron devices",
+   "group": "3A",
+   "with_head": null,
+   "confirmed": "2026-11-16 00:47"
+  },
+  "Behind Desk": {
+   "where": "behind the studio desk",
+   "group": "3A",
+   "with_head": null,
+   "confirmed": "2026-11-16 00:48"
+  },
+  "Top Lamp": {
+   "where": "the top lamp (zone 1A)",
+   "group": "1A",
+   "with_head": 3,
+   "confirmed": "2026-11-16 00:49"
+  },
+  "Hue color lamp 2": {
+   "where": "directly below the Top Lamp",
+   "group": "1A",
+   "with_head": 3,
+   "tandem_with": [
+    "Top Lamp",
+    "Head 3"
+   ],
+   "confirmed": "2026-11-16 00:50"
+  }
+ },
+ "heads": {},
+ "groups": {
+  "2A": {
+   "heads": [
+    4
+   ],
+   "lamps": [
+    "Floor Shade"
+   ],
+   "spots": [
+    1
+   ]
+  },
+  "1B": {
+   "heads": [
+    2
+   ],
+   "lamps": [
+    "Hue Play floor lamp large 1"
+   ]
+  },
+  "3A": {
+   "heads": [],
+   "lamps": [
+    "Hue color lamp 1",
+    "Behind Desk"
+   ],
+   "note": "studio desk zone, no head"
+  },
+  "1A": {
+   "heads": [
+    3
+   ],
+   "lamps": [
+    "Top Lamp",
+    "Hue color lamp 2"
+   ],
+   "spots": [
+    2
+   ],
+   "note": "Top Lamp + Hue color lamp 2 (directly below) work in tandem with Head 3 (+ Spot 2)"
+  },
+  "2B": {
+   "heads": [
+    1
+   ],
+   "lamps": []
+  }
+ },
+ "order": [
+  "1A",
+  "1B",
+  "2A",
+  "2B",
+  "3A"
+ ],
+ "order_note": "numbered from the front door: 1 closest, 3 = the studio (far end)",
+ "heads_named": {
+  "1": "Head 1",
+  "2": "Head 2",
+  "3": "Head 3",
+  "4": "Head 4"
+ }
+}

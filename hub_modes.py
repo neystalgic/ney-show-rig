@@ -4,8 +4,8 @@
 # Michael: "different modes that react differently with colour, head speed and rhythm, then go to a
 # different audio-reactive but equally sick pattern every 8 bars ... zones, each doing something different."
 #
-# ZONES come from where things sit (the same x/y frame as hub_lamps.json): each head is a zone and every
-# Hue lamp belongs to the head nearest it. Left -> right across the room (by x) is the "room order".
+# ZONES: Michael's calibrated map (setting show_zones, Nov 15: 1A, 1B, 2A, 2B, 3A numbered from the front door; a zone
+# can be lamps only or a head only). Without it: one zone per head, lamps by the nearest head, left -> right.
 #
 # MODES (each one: colour behaviour + head motion + what part of the beat drives it)
 #   pulse      one colour room-wide; every zone hits on the KICK; heads snap between two leans
@@ -121,7 +121,8 @@ class Director:
             return hub_chase.DEFAULT_HEAD_XY.get(i, (0.0, 0.0))
 
     def zones(self):
-        """{lamp channel: head index} (nearest head; chase_lamps names win) and the heads in room order."""
+        """{lamp channel: head index} (nearest head; chase_lamps names win) and the heads in room order.
+        (Used by the fallback when no calibrated map exists.)"""
         key = (tuple(self.heads_i), repr(self.settings().get('chase_head_xy')), repr(self.settings().get('chase_lamps')))
         if self._zone_cache and self._zone_cache[0] == key:
             return self._zone_cache[1], self._zone_cache[2]
@@ -136,6 +137,32 @@ class Director:
         order = sorted(self.heads_i, key=lambda h: self.head_xy(h)[0])
         self._zone_cache = (key, lz, order)
         return lz, order
+
+    def zone_list(self):
+        """The zones in order: [{'id', 'heads': [node index], 'channels': [lamp channel]}].
+        Setting show_zones (Michael's calibrated map, Nov 15) = {"order": ["1A", ...],
+        "zones": {"1A": {"heads": [3], "lamps": ["Top Lamp", ...]}}} with heads numbered 1-4 like the room.
+        Without it: one zone per head, left -> right, lamps by nearest head."""
+        cfg = self.settings().get('show_zones')
+        if isinstance(cfg, dict) and isinstance(cfg.get('zones'), dict) and cfg.get('order'):
+            key = ('map', repr(cfg), tuple(self.heads_i))
+            if self._zone_cache and self._zone_cache[0] == key:
+                return self._zone_cache[1]
+            by_name = {}
+            for ch, (_, _, nm) in self.lamp_xy.items():
+                by_name.setdefault(nm, []).append(ch)
+            out = []
+            for zid in cfg['order']:
+                z = cfg['zones'].get(zid) or {}
+                heads = [int(h) - 1 for h in (z.get('heads') or []) if str(h).isdigit() and int(h) - 1 in self.heads_i]
+                chans = [c for nm in (z.get('lamps') or []) for c in by_name.get(nm, [])]
+                if heads or chans:
+                    out.append(dict(id=str(zid), heads=heads, channels=chans))
+            if out:
+                self._zone_cache = (key, out)
+                return out
+        lz, order = self.zones()
+        return [dict(id='Head %d' % (h + 1), heads=[h], channels=[c for c, o in lz.items() if o == h]) for h in order]
 
     # -------------------------------------------------------------------------- when it runs
     def wanted(self, pmode):
@@ -216,8 +243,11 @@ class Director:
         bar, bpb = self.tick_phrase(beats)
         if self.mode == 'relay':
             self.chase.forced = True                          # the relay runs on its own clock for this phrase
+            order = [h for z in self.zone_list() for h in z['heads']]
+            if order and order != self.chase.relay_heads:     # hand-offs follow the zones from the front door
+                self.chase.relay_heads, self.chase.idx = order, 0
             try:
-                out = self.chase.step(now, beats, pmode, heads)
+                out = self.chase.step(now, beats, pmode, None if order else heads)
             finally:
                 self.chase.forced = False
             if out:
@@ -231,15 +261,13 @@ class Director:
             self.hue_t = bar
         e, en = self.env(), self.energy()
         sp = self.speed()
-        lz, order = self.zones()
-        rank = {h: order.index(h) for h in order}
-        n = max(1, len(order))
+        zl = self.zone_list()
+        n = max(1, len(zl))
         frac = beats - math.floor(beats)
         bib = int(math.floor(beats)) % bpb                    # beat in bar
-        hs = {}
-        for h in self.heads_i:
-            r = rank.get(h, 0)
-            side = 0 if r < n / 2.0 else 1                    # left half / right half of the room
+        hs, zout = {}, []
+        for r, zone in enumerate(zl):
+            side = 0 if r < n / 2.0 else 1                    # front-door half / far half of the room
             lvl, lean, u, hue = 0.6, 0.6, 0.5, self.hue
             if self.mode == 'pulse':
                 lvl = 0.2 + 0.8 * e['kick']
@@ -276,8 +304,13 @@ class Director:
                 lean = 0.55 + 0.3 * math.cos(ph)
                 u = 0.5 + 0.35 * math.sin(ph)
                 hue = self.hue + 0.05 * math.sin(2 * math.pi * beats / 64.0) + 0.04 * r
-            hs[h] = dict(level=clamp(lvl), lean=clamp(lean), u=clamp(u), rgb=hsv(hue, 0.9, 1.0), zone=r)
-        out = dict(heads=hs, rgb=hsv(self.hue), v=self.v, head=None, turn=self.phrase, new=False, p=0.0,
+            rgb = hsv(hue, 0.9, 1.0)
+            zout.append(dict(id=zone['id'], level=clamp(lvl), rgb=rgb, channels=zone['channels']))
+            for h in zone['heads']:
+                hs[h] = dict(level=clamp(lvl), lean=clamp(lean), u=clamp(u), rgb=rgb, zone=r)
+        for h in self.heads_i:                                # a head in no zone stays dark
+            hs.setdefault(h, dict(level=0.0, lean=0.5, u=0.5, rgb=hsv(self.hue), zone=None))
+        out = dict(heads=hs, zones=zout, rgb=hsv(self.hue), v=self.v, head=None, turn=self.phrase, new=False, p=0.0,
                    mode=self.mode, bar=bar, phrase_bar=bar % self.bars_per_phrase(), bib=bib)
         self._cache, self.last, self.active = (now, out), out, True
         return out
@@ -308,17 +341,17 @@ class Director:
                 return self.chase.lamps(cols, channels, now, beats, pmode)
             finally:
                 self.chase.forced = False
-        lz, _ = self.zones()
+        zmap = {ch: zo for zo in z.get('zones', []) for ch in zo['channels']}
         v = max(self.v, 0.35)
         dim = 0.15
         out = []
         for ch in channels:
-            hv = z['heads'].get(lz.get(ch))
-            if hv is None:
+            zo = zmap.get(ch)
+            if zo is None:
                 out.append(hsv(self.hue, 0.9, v * dim))
                 continue
-            hh, ss, _ = colorsys.rgb_to_hsv(*hv['rgb'])
-            out.append(colorsys.hsv_to_rgb(hh, max(ss, 0.55), v * (dim + (1.0 - dim) * hv['level'])))
+            hh, ss, _ = colorsys.rgb_to_hsv(*zo['rgb'])
+            out.append(colorsys.hsv_to_rgb(hh, max(ss, 0.55), v * (dim + (1.0 - dim) * zo['level'])))
         return out
 
     def describe(self, z=None):
@@ -333,4 +366,5 @@ class Director:
         return dict(on=bool(z), pattern=self.pattern(), mode=(z or {}).get('mode'), name=NAMES.get((z or {}).get('mode'), ''),
                     bar=(z or {}).get('phrase_bar', 0) + 1 if z else 0, bars=self.bars_per_phrase(),
                     lock=str(self.settings().get('show_lock', '') or ''), speed=self.speed(),
-                    history=list(self.history[-4:]), section=self.section(), modes=[dict(id=m, name=NAMES[m]) for m in MODES])
+                    history=list(self.history[-4:]), section=self.section(),
+                    zones=[dict(id=z['id'], heads=[h + 1 for h in z['heads']], lamps=len(z['channels'])) for z in self.zone_list()], modes=[dict(id=m, name=NAMES[m]) for m in MODES])

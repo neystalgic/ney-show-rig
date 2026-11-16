@@ -632,12 +632,20 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 return self.reply(400, 'Send JSON.')
             ok_keys = {'dmx_pattern': ('normal', 'show', 'relay', 'modes'), 'show_lock': None, 'show_speed': None,
-                       'show_bars': None, 'show_pool': None, 'chase_lamps': None, 'chase_head_xy': None,
+                       'show_bars': None, 'show_pool': None, 'show_zones': None, 'chase_lamps': None, 'chase_head_xy': None,
                        'chase_arc': None, 'energy': None}
             done = []
             for k, v in (data or {}).items():
                 if k not in ok_keys or (ok_keys[k] and v not in ok_keys[k]):
                     return self.reply(400, 'Not allowed: %s' % k)
+            if not hub_up():                            # hub off (calm looks): save for its next start
+                sp = os.path.join(HERE, 'hub_state.json')
+                st_ = json.load(open(sp))
+                st_.setdefault('settings', {}).update(data)
+                with open(sp + '.tmp', 'w') as f:
+                    json.dump(st_, f, indent=1)
+                os.replace(sp + '.tmp', sp)
+                return self.reply(200, 'Saved for the next show: ' + ', '.join(data))
             for k, v in data.items():
                 hub_setting(k, v)                       # the hub validates types; strobe/safety keys aren't reachable here
                 done.append(k)
@@ -1054,6 +1062,21 @@ if __name__ == '__main__':
             time.sleep(60)
     threading.Thread(target=_selftest_daily, name='selftest', daemon=True).start()
 
+    def _calib(*args):                              # Nov 15: calibration helper (calib.py) -- no music needed
+        stop_all()
+        lamp_only = bool(args) and args[0] == 'lamp'      # lamp checks don't need the heads (or their fans)
+        on = any((head_power.status().get('on') or {}).values())
+        if not lamp_only:
+            head_power.request_on(quiet=True)
+        logf = open('/tmp/calib.log', 'w')
+        subprocess.Popen([PY, os.path.join(HERE, 'calib.py')] + list(args) + ['--wait', '0' if lamp_only else '4' if on else '32'], cwd=HERE,
+                         stdout=logf, stderr=subprocess.STDOUT, start_new_session=True)
+        return 'calibration started: %s' % ' '.join(args)
+
+    def _calib_stop():
+        open(os.path.join(HERE, 'calib.stop'), 'w').close()
+        return 'calibration stopping'
+
     claude_bridge.start(dict(looks=set(LOOKS), look=lambda n: threading.Thread(target=apply, args=(n,), daemon=True).start(),
                              ask=ask_jarvis, status=_bridge_status, reload=_reload, hub_restart=_hub_restart,
                              beat_start=_beat_start, tasks={'pi_hue_key': lambda: __import__('pi_hue_key').create(180),
@@ -1064,5 +1087,10 @@ if __name__ == '__main__':
                                     'make_missing_shortcuts': _make_missing, 'py_env': _py_env,
                                     'build_jarvis_app': _build_jarvis_app, 'voices': _voices, 'chime_demo': _chime_demo,
                                     'jarvis_restart': lambda: sh('pkill -f "[j]arvis/listen.py" || true'),
-                                    'selftest': _selftest}))
+                                    'selftest': _selftest,
+                                    'calib_zones': lambda: _calib('zones'), 'calib_stop': _calib_stop,
+                                    'calib_sweep1': lambda: _calib('sweep', '1'), 'calib_sweep2': lambda: _calib('sweep', '2'),
+                                    'calib_sweep3': lambda: _calib('sweep', '3'), 'calib_sweep4': lambda: _calib('sweep', '4'),
+                                    'calib_coffee': lambda: _calib('target', 'Coffee', 'table'),
+                                    'calib_cmd': lambda: _calib(*json.load(open(os.path.join(HERE, 'bridge', 'calib_cmd.json'))))}))
     ThreadingHTTPServer(('0.0.0.0', PORT), Handler).serve_forever()

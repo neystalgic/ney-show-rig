@@ -208,5 +208,40 @@ check('lamps: all in range', all(0 <= x <= 1 for c in out for x in c))
 st = d.status()
 check('status for the control page', st['on'] and st['mode'] == 'split' and st['bars'] == 8 and len(st['modes']) == len(hm.MODES), st)
 
+# 14. Michael's calibrated map (show_zones): zones in front-door order, lamp-only + head-only zones
+ZMAP = {'order': ['1A', '1B', '2A', '2B', '3A'],
+        'zones': {'1A': {'heads': [3], 'lamps': ['Top Lamp', 'Hue color lamp 2']}, '1B': {'heads': [2], 'lamps': ['Play']},
+                  '2A': {'heads': [4], 'lamps': ['Floor Shade']}, '2B': {'heads': [1], 'lamps': []},
+                  '3A': {'heads': [], 'lamps': ['Hue color lamp 1', 'Behind Desk']}}}
+L2 = {0: (0, 0, 'Behind Desk'), 1: (0, 0, 'Floor Shade'), 2: (0, 0, 'Top Lamp'), 3: (0, 0, 'Play'),
+      4: (0, 0, 'Hue color lamp 1'), 5: (0, 0, 'Hue color lamp 2')}
+hub = Hub(show_zones=ZMAP, show_lock='wave')
+d = hm.Director(hub, L2)
+d.heads_i = [0, 1, 2, 3]
+zl = d.zone_list()
+check('map: 5 zones in front-door order', [z['id'] for z in zl] == ZMAP['order'], zl)
+check('map: heads numbered like the room (Head 3 -> index 2 in 1A)', zl[0]['heads'] == [2] and zl[3]['heads'] == [0], zl)
+check('map: 3A is lamps only', zl[4]['heads'] == [] and sorted(zl[4]['channels']) == [0, 4], zl[4])
+check('map: 2B is a head only', zl[3]['channels'] == [] and zl[3]['heads'] == [0], zl[3])
+seq = []
+for k in range(10):
+    z = d.step(50.0 + k, float(k) + 0.01, 'music', HEADS)
+    seq.append(max(z['zones'], key=lambda zo: zo['level'])['id'])
+check('map: the wave travels 1A -> 1B -> 2A -> 2B -> 3A', seq == ZMAP['order'] * 2, seq)
+z = d.step(70.0, 4.01, 'music', HEADS)                       # beat 4 -> zone 3A (lamps only)
+out = d.lamps([(0.5, 0, 1)] * 6, [0, 1, 2, 3, 4, 5], 70.0, 4.01, 'music')
+bright = {ch for ch, c in enumerate(out) if max(c) > 0.3}
+check('map: on 3A\'s beat its two lamps are the bright ones', bright == {0, 4}, out)
+check('map: tandem lamps (Top Lamp + colour lamp 2) always match', all(abs(a - b) < 1e-9 for a, b in zip(out[2], out[5])))
+hub.state['settings']['show_lock'] = 'relay'
+d2 = hm.Director(hub, L2)
+heads_lit = []
+for b, z in run(hub, d2, 0, 40, 0.25):
+    if z:
+        lit = [i for i, cv in z['heads'].items() if cv['level'] > 0.5]
+        if lit and (not heads_lit or heads_lit[-1] != lit[0]):
+            heads_lit.append(lit[0])
+check('map: relay hands off in zone order (Head 3, 2, 4, 1)', heads_lit[:4] == [2, 1, 3, 0], heads_lit)
+
 print('hub_modes tests: %d passed, %d failed' % (PASSES[0], len(FAILS)))
 sys.exit(1 if FAILS else 0)
