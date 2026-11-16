@@ -290,8 +290,8 @@ def chase_check():                                  # Nov 15: head relay -- read
     except Exception as e:
         return res('Automations', 'Head relay', 'fail', 'hub_chase / hub_lamps.json unreadable (%s)' % e.__class__.__name__)
     mode = s.get('dmx_pattern', 'normal')
-    if mode not in ('normal', 'show', 'relay'):
-        return res('Automations', 'Head relay', 'warn', 'dmx_pattern is %r (normal / show / relay)' % (mode,))
+    if mode not in ('normal', 'show', 'relay', 'modes'):              # 'modes' = the show director (Nov 15)
+        return res('Automations', 'Head relay', 'warn', 'dmx_pattern is %r (normal / show / relay / modes)' % (mode,))
     ch = hub_chase.Chase(type('H', (), {'state': {'settings': s}})(), lamps)
     lonely = [str(i + 1) for i in range(4) if not ch.near(i)]
     if not lamps or lonely:
