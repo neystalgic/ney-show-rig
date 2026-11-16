@@ -28,6 +28,15 @@ H1. [SAFE] ready for Michael (built + tested Nov 15, see away/head-relay/DEPLOY.
    selftest line.
 
 --- QUEUE for Nov 16 (Michael at work 3-8 pm) -- build + test only, nothing changes the room ---------
+W7. [SAFE] todo -- calib.py for the FOCUS SPOTS (needed tonight: Michael recalibrates Head 3, Spot 1 and Spot 2 -- Spot 2
+   was moved Nov 16 morning). calib.py's Heads.send() writes the LM70S 14-ch layout; the spots are 17-ch (see
+   hub_dmx.focus_out: a+0..3 pan/tilt, a+4 colour slot, a+5 gobo, a+6 gobo rot, a+7 focus, a+8 shutter 12 = open,
+   a+9 dimmer, a+10 UV shutter, a+11 UV, a+15 motor speed). Copy calib.py to away/spot-calib/, make send() pick the
+   layout per fixture type, add modes 'spot N' (one spot lit, open white-free colour slot, dimmer 60%, on its saved
+   aim) and 'aimspot N' (follows bridge/calib_aim.json incl. optional gobo/focus/uv so Claude can nudge it live),
+   and 'uvaim N' (UV only). Spots are indexes 4 and 5 in the node list ("Spot 1" = 5th fixture). Offline test with a
+   fake socket: byte layout per type, nothing sent to other fixtures, UV-only frames have dimmer 0.
+
 W1. [SAFE] todo -- SPOT POWER with the new Hue plugs (arriving today; Michael will name them "Spot 1" / "Spot 2" in the Hue
    app). Build away/spot-power/: spot_power.py modelled on head_power.py (find plugs by name, dormant until they exist):
    spots power ON when a look/act needs them (show modes gobos/uv/burst acts, uvstars, movieuv, moviechill, showuv), OFF
@@ -42,22 +51,6 @@ W2. [SAFE] todo -- RIG CONSOLE page v1 (Michael: "voice is cool but sometimes I 
    (show_audio), speed (show_speed), acts on/off; quick looks (purple, cozy, moviechill, night, heads on/off, guest
    on/off); a small zone map 1A 1B 2A 2B 3A with heads listed. Uses POST /show/set (already allowlisted) + GET looks.
    Phone-first layout. Offline test: page JS against a fake status JSON in node; route test with a fake handler.
-W3. [SAFE] todo -- Jarvis phrases for the new show: "lock wave / lock the heads / gobos", "auto" / "unlock",
-   "more audio / clock only / audio only" (show_audio 1.0 / 0.0 / 0.6), "wave backwards / bounce", "loop clockwise /
-   counter clockwise", "acts off / acts on", "what's playing" (reads act + mode + bar). All through /show/set's
-   allowlist. Extend jarvis tests; no model-allowlist changes for anything that strobes.
-W4. [SAFE] todo -- MacBook CAMERA colour reader without TouchDesigner (Michael asked why the border-colour tracking
-   stopped: it needed TD's movie_in). Build away/camera-colour/: cam_colour.py using AVFoundation via ffmpeg OR
-   OpenCV (check what's installed; no installs -- if neither exists, write the plan + install line for Michael),
-   samples the projected image's border every 200 ms, sends the same feed the hub's movie_in expects (read
-   hue_hub feed_listener / movie code first). Offline test with saved frames. DEPLOY.txt notes the one-time macOS
-   camera permission prompt.
-W5. [SAFE] todo -- CONTENT MODE (approved in AGENTS.md Nov 15): Mac side only -- look 'content' (needs Jarvis
-   "confirmed"), auto-off after 5 min (re-armable "content mode again"), blocked by guest mode, strobe + white anytime,
-   skips the director's 2-bar colour rule; a 'studio_seat' no-go setting placeholder (filled when Michael calibrates).
-   The node's eye-level limits are on the Pi -- write away/content-mode/NODE-PLAN.txt for how to lift them except the
-   studio seat (do NOT touch the Pi). Tests with a fake clock.
-
 W6. [SAFE] todo -- PUSH 2 "SHOW" mode + visuals in sync (Michael Nov 16: "bind light modes to buttons on the Push and
    have them synchronized with our sacred geometry in colour and intensity"). HUB SIDE ONLY (never edit TouchDesigner;
    read-only copies of TD's hue_feed code + visual list are in away/push-show-ref/). Build in away/push-show/ (copies of
@@ -78,14 +71,21 @@ W6. [SAFE] todo -- PUSH 2 "SHOW" mode + visuals in sync (Michael Nov 16: "bind l
        tint = the director's hue and its brightness = the zone level.
    Offline tests: fake Push MIDI in/out (pad -> setting, LED colours), message fields, unknown visual names skipped.
 
-W7. [SAFE] todo -- calib.py for the FOCUS SPOTS (needed tonight: Michael recalibrates Head 3, Spot 1 and Spot 2 -- Spot 2
-   was moved Nov 16 morning). calib.py's Heads.send() writes the LM70S 14-ch layout; the spots are 17-ch (see
-   hub_dmx.focus_out: a+0..3 pan/tilt, a+4 colour slot, a+5 gobo, a+6 gobo rot, a+7 focus, a+8 shutter 12 = open,
-   a+9 dimmer, a+10 UV shutter, a+11 UV, a+15 motor speed). Copy calib.py to away/spot-calib/, make send() pick the
-   layout per fixture type, add modes 'spot N' (one spot lit, open white-free colour slot, dimmer 60%, on its saved
-   aim) and 'aimspot N' (follows bridge/calib_aim.json incl. optional gobo/focus/uv so Claude can nudge it live),
-   and 'uvaim N' (UV only). Spots are indexes 4 and 5 in the node list ("Spot 1" = 5th fixture). Offline test with a
-   fake socket: byte layout per type, nothing sent to other fixtures, UV-only frames have dimmer 0.
+W3. [SAFE] todo -- Jarvis phrases for the new show: "lock wave / lock the heads / gobos", "auto" / "unlock",
+   "more audio / clock only / audio only" (show_audio 1.0 / 0.0 / 0.6), "wave backwards / bounce", "loop clockwise /
+   counter clockwise", "acts off / acts on", "what's playing" (reads act + mode + bar). All through /show/set's
+   allowlist. Extend jarvis tests; no model-allowlist changes for anything that strobes.
+W4. [SAFE] todo -- MacBook CAMERA colour reader without TouchDesigner (Michael asked why the border-colour tracking
+   stopped: it needed TD's movie_in). Build away/camera-colour/: cam_colour.py using AVFoundation via ffmpeg OR
+   OpenCV (check what's installed; no installs -- if neither exists, write the plan + install line for Michael),
+   samples the projected image's border every 200 ms, sends the same feed the hub's movie_in expects (read
+   hue_hub feed_listener / movie code first). Offline test with saved frames. DEPLOY.txt notes the one-time macOS
+   camera permission prompt.
+W5. [SAFE] todo -- CONTENT MODE (approved in AGENTS.md Nov 15): Mac side only -- look 'content' (needs Jarvis
+   "confirmed"), auto-off after 5 min (re-armable "content mode again"), blocked by guest mode, strobe + white anytime,
+   skips the director's 2-bar colour rule; a 'studio_seat' no-go setting placeholder (filled when Michael calibrates).
+   The node's eye-level limits are on the Pi -- write away/content-mode/NODE-PLAN.txt for how to lift them except the
+   studio seat (do NOT touch the Pi). Tests with a fake clock.
 
 --- TONIGHT (Nov 14, 1:30 am): Michael asleep -- NON-LIGHTING work only, these first ----------
 N1. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-food/DEPLOY.txt) -- Jarvis food logging polish. Bugs seen Nov 13: "I ate a Chipotle chicken quesadilla, about 1050
