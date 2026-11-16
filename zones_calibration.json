@@ -43,7 +43,20 @@
    "confirmed": "2026-11-16 00:50"
   }
  },
- "heads": {},
+ "heads": {
+  "3": {
+   "confirmed": "2026-11-16 01:06",
+   "zone": "1A",
+   "where": "south wall by the Top Lamp, near the front door",
+   "aims": {
+    "UV tapestry": {
+     "pan": 14094,
+     "tilt": 13623
+    }
+   },
+   "plan": "Michael may move the speaker onto the table and Head 3 behind it on the speaker stand (fiber mesh) -- re-calibrate Head 3 after"
+  }
+ },
  "groups": {
   "2A": {
    "heads": [

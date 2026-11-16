@@ -206,6 +206,24 @@ def main(argv):
             log('HEAD %d (zone %s): lit on its coffee-table aim; zone lamps %s' % (n, zid, ', '.join(grp.get('lamps', [])) or '(none)'))
             lamps.set(set(grp.get('lamps', [])), others=1.0)
             hold(heads, {n - 1: (pan, tilt, 0.8)}, 60.0)
+        elif argv[0] == 'aim':                       # live aiming: head N follows bridge/calib_aim.json {pan, tilt} (Claude nudges it)
+            n = int(argv[1])
+            ap = os.path.join(HERE, 'bridge', 'calib_aim.json')
+            log('AIM head %d: follows calib_aim.json' % n)
+            end, last = time.time() + 900, None
+            while time.time() < end and not os.path.exists(STOP):
+                try:
+                    a = json.load(open(ap))
+                    want = (float(a['pan']), float(a['tilt']))
+                except Exception:
+                    want = last
+                if want:
+                    if want != last:
+                        log('  head %d -> pan %d, tilt %d' % (n, want[0], want[1]))
+                        last = want
+                    heads.send({n - 1: (want[0], want[1], 0.8)})
+                time.sleep(1.0 / 25.0)
+            return 0
         elif argv[0] == 'lamp':                      # one Hue lamp bright purple, every other lamp nearly off
             name = ' '.join(argv[1:])
             log('LAMP %s on, the rest dim' % name)
