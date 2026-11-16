@@ -27,6 +27,37 @@ H1. [SAFE] ready for Michael (built + tested Nov 15, see away/head-relay/DEPLOY.
    and a 2-minute LIVE TEST script for Michael (Jarvis phrase to start it, what he should see). Add a read-only
    selftest line.
 
+--- QUEUE for Nov 16 (Michael at work 3-8 pm) -- build + test only, nothing changes the room ---------
+W1. [SAFE] todo -- SPOT POWER with the new Hue plugs (arriving today; Michael will name them "Spot 1" / "Spot 2" in the Hue
+   app). Build away/spot-power/: spot_power.py modelled on head_power.py (find plugs by name, dormant until they exist):
+   spots power ON when a look/act needs them (show modes gobos/uv/burst acts, uvstars, movieuv, moviechill, showuv), OFF
+   after spot_idle_min (default 10) dark minutes; Spot 2 ON -> Jarvis says once "Spot 2 is on -- ceiling fan off please"
+   (AGENTS rule). Never a plug on the Mac / Scarlett / projector. Offline tests with a fake bridge + clock; DEPLOY.txt
+   = one paste + reload + selftest line. Rig Health row "Spots".
+W2. [SAFE] todo -- RIG CONSOLE page v1 (Michael: "voice is cool but sometimes I want to do things manually"; design
+   rules: NO AI-slop -- no gradients/glass/emoji, dark stage-like background, ONE accent = purple, real data only,
+   tight type, controls that feel like a lighting console). away/console/console.html served by rig_control at
+   /console (same login as /health). Shows hub_live.show (act, mode, bar x/8, section, audio level) live every 1 s;
+   buttons: each act + each mode (lock), Auto (unlock), wave direction, loop direction, audio mix slider
+   (show_audio), speed (show_speed), acts on/off; quick looks (purple, cozy, moviechill, night, heads on/off, guest
+   on/off); a small zone map 1A 1B 2A 2B 3A with heads listed. Uses POST /show/set (already allowlisted) + GET looks.
+   Phone-first layout. Offline test: page JS against a fake status JSON in node; route test with a fake handler.
+W3. [SAFE] todo -- Jarvis phrases for the new show: "lock wave / lock the heads / gobos", "auto" / "unlock",
+   "more audio / clock only / audio only" (show_audio 1.0 / 0.0 / 0.6), "wave backwards / bounce", "loop clockwise /
+   counter clockwise", "acts off / acts on", "what's playing" (reads act + mode + bar). All through /show/set's
+   allowlist. Extend jarvis tests; no model-allowlist changes for anything that strobes.
+W4. [SAFE] todo -- MacBook CAMERA colour reader without TouchDesigner (Michael asked why the border-colour tracking
+   stopped: it needed TD's movie_in). Build away/camera-colour/: cam_colour.py using AVFoundation via ffmpeg OR
+   OpenCV (check what's installed; no installs -- if neither exists, write the plan + install line for Michael),
+   samples the projected image's border every 200 ms, sends the same feed the hub's movie_in expects (read
+   hue_hub feed_listener / movie code first). Offline test with saved frames. DEPLOY.txt notes the one-time macOS
+   camera permission prompt.
+W5. [SAFE] todo -- CONTENT MODE (approved in AGENTS.md Nov 15): Mac side only -- look 'content' (needs Jarvis
+   "confirmed"), auto-off after 5 min (re-armable "content mode again"), blocked by guest mode, strobe + white anytime,
+   skips the director's 2-bar colour rule; a 'studio_seat' no-go setting placeholder (filled when Michael calibrates).
+   The node's eye-level limits are on the Pi -- write away/content-mode/NODE-PLAN.txt for how to lift them except the
+   studio seat (do NOT touch the Pi). Tests with a fake clock.
+
 --- TONIGHT (Nov 14, 1:30 am): Michael asleep -- NON-LIGHTING work only, these first ----------
 N1. [SAFE] ready for Michael (built + tested Nov 14, see away/jarvis-food/DEPLOY.txt) -- Jarvis food logging polish. Bugs seen Nov 13: "I ate a Chipotle chicken quesadilla, about 1050
    calories and 60 grams of protein" logged the item as "a chipotle chicken quesadilla about" (strip trailing
