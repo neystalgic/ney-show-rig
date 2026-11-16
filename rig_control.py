@@ -462,6 +462,8 @@ LOOKS = {
                                                                  'dynamics': {'duration': 1500}}))),
     'movienight': ('Movie night', lambda: movie_flag()),
     'movieuv': ('Movie night: UV stars from both spots, fill speaker +6 dB', lambda: movie_uv()),
+    'moviechill': ('Movie, chill: soft slow colour drift with the film, UV stars on the ceiling', lambda: (
+        movie_lights('movie'), hub_vibe('dreamy', 0.2), hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always')))),   # Nov 15
     'showuv': ('Light show with the UV stars: heads to the music, both spots holding UV on the stars', lambda: show_uv()),
     'purplenight': ('Purple night light: heads park and power off, lamps dim purple', lambda: (
         head_power.request_off(why='purplenight'), stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 15.0},
@@ -815,7 +817,7 @@ if __name__ == '__main__':
     def _hub_summary():
         try:
             d = json.loads(urllib.request.urlopen('http://127.0.0.1:7020/api/live', timeout=2).read())
-            out = {k: d.get(k) for k in ('palette', 'vibe', 'bridge', 'blackout', 'heads', 'level', 'show')}
+            out = {k: d.get(k) for k in ('palette', 'vibe', 'bridge', 'blackout', 'heads', 'level', 'show', 'movie')}
             out['master'] = (d.get('live') or {}).get('master') if isinstance(d.get('live'), dict) else None
             out.update(audio=(d.get('audio') or {}).get('status'), section=(d.get('audio') or {}).get('section'))
             return out
