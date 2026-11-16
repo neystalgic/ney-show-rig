@@ -9,9 +9,10 @@
 #
 # MODES (each one: colour behaviour + head motion + what part of the beat drives it)
 #   pulse      one colour room-wide; every zone hits on the KICK; heads snap between two leans
-#   call       call & response: zones A/B in opposite colours, A answers the kick, B the snare
-#   wave       a ripple across the room, one zone per beat, colours graded left -> right
-#   split      bass zones (left) warm + slow, hi-hat zones (right) cool + quick
+#   call       call & response ACROSS the room: row A (south wall) answers the kick, row B (north wall) the snare
+#   wave       down the room: column 1 (1A+1B) -> 2 (2A+2B) -> 3 (3A), one column per beat
+#   loop       round the living room: 1A -> 2A -> 2B -> 1B -> 1A (setting show_loop), one zone per beat
+#   split      row A (south) warm + big on the bass, row B (north) cool + quick on the hi-hats
 #   orbit      heads trace slow circles out of phase; colour drifts; speed follows the energy
 #   relay      one head at a time sweeps and hands off on the bar (hub_chase.py)
 # Drops are NOT a mode here: in a drop the director steps aside and the normal show dances (+ strobe,
@@ -32,11 +33,11 @@ import math
 
 import hub_chase
 
-MODES = ['pulse', 'call', 'wave', 'split', 'orbit', 'relay']
-POOLS = {'groove': ['pulse', 'call', 'wave', 'split', 'relay', 'orbit'],
-         'breakdown': ['orbit', 'relay', 'wave'],
+MODES = ['pulse', 'call', 'wave', 'loop', 'split', 'orbit', 'relay']
+POOLS = {'groove': ['pulse', 'call', 'wave', 'loop', 'split', 'relay', 'orbit'],
+         'breakdown': ['orbit', 'loop', 'relay', 'wave'],
          'quiet': ['orbit']}
-NAMES = {'pulse': 'Pulse', 'call': 'Call & Response', 'wave': 'Wave', 'split': 'Split',
+NAMES = {'pulse': 'Pulse', 'call': 'Call & Response', 'wave': 'Wave', 'loop': 'Loop', 'split': 'Split',
          'orbit': 'Orbit', 'relay': 'Relay'}
 PURPLE = 0.78                     # hue used when the lamps give no colour
 
@@ -164,6 +165,32 @@ class Director:
         lz, order = self.zones()
         return [dict(id='Head %d' % (h + 1), heads=[h], channels=[c for c, o in lz.items() if o == h]) for h in order]
 
+    def grid(self, zl):
+        """Zone ids like '2A' -> (column 2, row 'A'). Rows: A = south wall (gray couch), B = north (projector).
+        Zones without that shape get their own column, row A."""
+        import re
+        out = []
+        for k, z in enumerate(zl):
+            m = re.match(r'^\s*(\d+)\s*([A-Za-z])\s*$', str(z['id']))
+            out.append((int(m.group(1)), m.group(2).upper()) if m else (k, 'A' if k % 2 == 0 else 'B'))
+        return out
+
+    def loop_order(self, zl):
+        ids = [z['id'] for z in zl]
+        want = self.settings().get('show_loop')
+        if isinstance(want, str):
+            want = [x.strip() for x in want.split(',')]
+        if not isinstance(want, list) or not want:
+            g = self.grid(zl)
+            cols = sorted({c for c, _ in g})
+            a = [zl[i]['id'] for c in cols for i, (c2, r) in enumerate(g) if c2 == c and r == 'A']
+            b = [zl[i]['id'] for c in reversed(cols) for i, (c2, r) in enumerate(g) if c2 == c and r == 'B']
+            if a and b:                                   # out along the south wall, back along the north wall
+                lastc = max(c for c, r in g if r == 'B')
+                a = [zid for zid in a if self.grid([dict(id=zid)])[0][0] <= lastc]
+            want = a + b
+        return [z for z in want if z in ids] or ids
+
     # -------------------------------------------------------------------------- when it runs
     def wanted(self, pmode):
         pat = self.pattern()
@@ -243,7 +270,10 @@ class Director:
         bar, bpb = self.tick_phrase(beats)
         if self.mode == 'relay':
             self.chase.forced = True                          # the relay runs on its own clock for this phrase
-            order = [h for z in self.zone_list() for h in z['heads']]
+            zl_ = self.zone_list()
+            byid = {z['id']: z for z in zl_}
+            lo = self.loop_order(zl_)
+            order = [h for zid in lo for h in byid[zid]['heads']] + [h for z in zl_ if z['id'] not in lo for h in z['heads']]
             if order and order != self.chase.relay_heads:     # hand-offs follow the zones from the front door
                 self.chase.relay_heads, self.chase.idx = order, 0
             try:
@@ -266,33 +296,48 @@ class Director:
         frac = beats - math.floor(beats)
         bib = int(math.floor(beats)) % bpb                    # beat in bar
         hs, zout = {}, []
+        g = self.grid(zl)
+        cols = sorted({c for c, _ in g})
+        loop = self.loop_order(zl)
+        beat_i = int(math.floor(beats))
         for r, zone in enumerate(zl):
-            side = 0 if r < n / 2.0 else 1                    # front-door half / far half of the room
+            col, row = g[r]
+            side = 0 if row == 'A' else 1                     # south wall (A) / north wall (B)
             lvl, lean, u, hue = 0.6, 0.6, 0.5, self.hue
             if self.mode == 'pulse':
                 lvl = 0.2 + 0.8 * e['kick']
                 lean = 0.85 if (int(math.floor(beats)) + r) % 2 == 0 else 0.45
                 u = 0.5 + 0.12 * (1 if bar % 2 == 0 else -1) * (1 if r % 2 == 0 else -1)
             elif self.mode == 'call':
-                a = r % 2 == 0
+                a = side == 0
                 hit = e['kick'] if a else e['snare']
                 lvl = 0.12 + 0.88 * hit
                 lean = 0.4 + 0.5 * hit
                 u = 0.5 + 0.25 * math.sin(2 * math.pi * beats / (16.0 / sp)) * (1 if a else -1)
                 hue = self.hue if a else self.hue + 0.5
             elif self.mode == 'wave':
-                on = (int(math.floor(beats)) % n) == r
+                on = cols[beat_i % len(cols)] == col
                 lvl = 0.12 + 0.88 * (decay(frac, 0.45 / sp) if on else 0.0) + 0.25 * e['kick'] * (0 if on else 1)
                 lean = 0.85 if on else 0.5
                 u = 0.5 + 0.3 * math.sin(2 * math.pi * beats / (16.0 / sp))
-                hue = self.hue + 0.08 * r
+                hue = self.hue + 0.08 * cols.index(col)
+            elif self.mode == 'loop':
+                if zone['id'] in loop:
+                    on = loop[beat_i % len(loop)] == zone['id']
+                    lvl = 0.1 + 0.9 * (decay(frac, 0.5 / sp) if on else 0.0)
+                    lean = 0.8 if on else 0.45
+                    u = 0.5 + 0.3 * math.sin(2 * math.pi * (beats / (8.0 / sp)) + loop.index(zone['id']) * math.pi / 2)
+                    hue = self.hue + 0.06 * loop.index(zone['id'])
+                else:                                         # outside the loop (the studio): a soft kick glow
+                    lvl = 0.1 + 0.4 * e['kick']
+                    lean, u, hue = 0.5, 0.5, self.hue + 0.5
             elif self.mode == 'split':
-                if side == 0:                                 # bass side: warm, big + slow
+                if side == 0:                                 # south wall: warm, big + slow on the bass
                     lvl = 0.25 + 0.75 * e['kick']
                     lean = 0.6 + 0.3 * math.sin(2 * math.pi * beats / (8.0 / sp))
                     u = 0.5 + 0.3 * math.sin(2 * math.pi * beats / (16.0 / sp) + r)
                     hue = self.hue
-                else:                                         # hi-hat side: cool, small + quick
+                else:                                         # north wall: cool, small + quick on the hats
                     lvl = 0.2 + 0.8 * max(e['hats'], 0.5 * e['snare'])
                     lean = 0.55 + 0.15 * math.sin(2 * math.pi * beats / (2.0 / sp))
                     u = 0.5 + 0.1 * math.sin(2 * math.pi * beats / (2.0 / sp) + r)

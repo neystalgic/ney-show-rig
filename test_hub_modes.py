@@ -224,15 +224,38 @@ check('map: heads numbered like the room (Head 3 -> index 2 in 1A)', zl[0]['head
 check('map: 3A is lamps only', zl[4]['heads'] == [] and sorted(zl[4]['channels']) == [0, 4], zl[4])
 check('map: 2B is a head only', zl[3]['channels'] == [] and zl[3]['heads'] == [0], zl[3])
 seq = []
-for k in range(10):
+for k in range(6):
     z = d.step(50.0 + k, float(k) + 0.01, 'music', HEADS)
-    seq.append(max(z['zones'], key=lambda zo: zo['level'])['id'])
-check('map: the wave travels 1A -> 1B -> 2A -> 2B -> 3A', seq == ZMAP['order'] * 2, seq)
-z = d.step(70.0, 4.01, 'music', HEADS)                       # beat 4 -> zone 3A (lamps only)
-out = d.lamps([(0.5, 0, 1)] * 6, [0, 1, 2, 3, 4, 5], 70.0, 4.01, 'music')
+    top = max(zo['level'] for zo in z['zones'])
+    seq.append(sorted(zo['id'] for zo in z['zones'] if zo['level'] > top - 1e-6))
+check('map: the wave flows down the room by column (1A+1B -> 2A+2B -> 3A)',
+      seq == [['1A', '1B'], ['2A', '2B'], ['3A']] * 2, seq)
+z = d.step(70.0, 2.01, 'music', HEADS)                       # beat 2 -> column 3 (3A, lamps only)
+out = d.lamps([(0.5, 0, 1)] * 6, [0, 1, 2, 3, 4, 5], 70.0, 2.01, 'music')
 bright = {ch for ch, c in enumerate(out) if max(c) > 0.3}
-check('map: on 3A\'s beat its two lamps are the bright ones', bright == {0, 4}, out)
+check('map: on column 3\'s beat the two studio lamps are the bright ones', bright == {0, 4}, out)
 check('map: tandem lamps (Top Lamp + colour lamp 2) always match', all(abs(a - b) < 1e-9 for a, b in zip(out[2], out[5])))
+# loop round the living room
+hub.state['settings']['show_lock'] = 'loop'
+d3 = hm.Director(hub, L2)
+seq = []
+for k in range(8):
+    z = d3.step(90.0 + k, float(k) + 0.01, 'music', HEADS)
+    seq.append(max(z['zones'], key=lambda zo: zo['level'])['id'])
+check('map: loop circles 1A -> 2A -> 2B -> 1B', seq == ['1A', '2A', '2B', '1B'] * 2, seq)
+check('map: default loop order', d3.loop_order(d3.zone_list()) == ['1A', '2A', '2B', '1B'])
+# call & response across the room: south wall (A) on the kick, north wall (B) on the snare
+hub.state['settings']['show_lock'] = 'call'
+d4 = hm.Director(hub, L2)
+hub.audioshow.env = dict(kick=1.0, snare=0.0, hats=0.0)
+z = d4.step(120.0, 0.01, 'music', HEADS)
+lit = sorted(zo['id'] for zo in z['zones'] if zo['level'] > 0.9)
+check('map: kick lights the south wall (row A)', lit == ['1A', '2A', '3A'], lit)
+hub.audioshow.env = dict(kick=0.0, snare=1.0, hats=0.0)
+z = d4.step(121.0, 0.02, 'music', HEADS)
+lit = sorted(zo['id'] for zo in z['zones'] if zo['level'] > 0.9)
+check('map: snare lights the north wall (row B)', lit == ['1B', '2B'], lit)
+hub.audioshow.env = dict(kick=0.0, snare=0.0, hats=0.0)
 hub.state['settings']['show_lock'] = 'relay'
 d2 = hm.Director(hub, L2)
 heads_lit = []
@@ -241,7 +264,7 @@ for b, z in run(hub, d2, 0, 40, 0.25):
         lit = [i for i, cv in z['heads'].items() if cv['level'] > 0.5]
         if lit and (not heads_lit or heads_lit[-1] != lit[0]):
             heads_lit.append(lit[0])
-check('map: relay hands off in zone order (Head 3, 2, 4, 1)', heads_lit[:4] == [2, 1, 3, 0], heads_lit)
+check('map: relay hands off round the loop (Head 3, 4, 1, 2)', heads_lit[:4] == [2, 3, 0, 1], heads_lit)
 
 print('hub_modes tests: %d passed, %d failed' % (PASSES[0], len(FAILS)))
 sys.exit(1 if FAILS else 0)
