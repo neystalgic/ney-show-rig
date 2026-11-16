@@ -152,6 +152,8 @@ J5. [SAFE] ready for Michael (plan + checker + tested Nov 15, see away/shortcut-
    machine and service). away/pi-brain/health.py + a static preview HTML.
 
 --- NEEDS MICHAEL (the loop never does these) -------------------------------------
+- [MICHAEL] Recalibrate Head 3 (moved behind the speaker Nov 15): live-aim UV tapestry + coffee table, sweep for no-go zones (couch, studio seat), then back into zone 1A (it's out of the show until then).
+- [MICHAEL] Recalibrate both Focus Spots (Nov 15): aims, gobo wheel values (show_gobos), UV star aims; then the 'studio seat' no-go zone for content mode.
 - [MICHAEL] Pair the Tap Switch Mini + set up the extra smart plugs (now arriving ~Tue Nov 17), then test buttons 1-4.
 - [LATER, Michael parked Nov 12] Fill control via AbletonOSC (already installed) instead of MIDI mapping: mute fill track for producing, fader 0 dB for shows, +6 dB (fader max) for movies. Needs only a track named "...fill...". Hub owns OSC reply port 11001 -> do the track-name lookup inside hub_liveosc. ~20 min + test with Ableton open.
 - [MICHAEL] Check Head 2 by eye (flag scene, art-wall cap) -- loosen if wall looks empty.
