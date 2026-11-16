@@ -20,7 +20,8 @@ import json, os, re, subprocess, threading, time, urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 SETTINGS = os.path.join(HERE, 'hub_watchdog.json')
 LOG = '/tmp/hub_watchdog.log'
-DEFAULTS = {'enabled': True, 'api_dead_s': 45, 'bridge_lost_s': 90, 'audio_stuck_s': 30,
+DEFAULTS = {'enabled': True, 'api_dead_s': 90,   # Nov 15: was 45; a Hue bridge reconnect can take 60 s+
+            'bridge_lost_s': 90, 'audio_stuck_s': 30,
             'no_sound_s': 60, 'settle_s': 30, 'max_per_hour': 3, 'grace_s': 120,
             'busy_max_s': 150}                     # Nov 12: a look 'busy' longer than this no longer hides a stuck hub
 BAD_BRIDGE = re.compile(r'^(not connected|lost the bridge|rehearsal)', re.I)   # rehearsal = it couldn't reach the bridge at start

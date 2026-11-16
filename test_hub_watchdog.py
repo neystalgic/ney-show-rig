@@ -32,7 +32,7 @@ for _ in range(14):
 if restarts:
     fails.append('restarted during start-up grace: %s' % restarts)
 clock[0] += 200                         # long after the grace, still not answering -> a real freeze
-for _ in range(12):
+for _ in range(25):
     clock[0] += 5
     tick()
 if not restarts or 'frozen' not in restarts[0]:
