@@ -1087,7 +1087,7 @@ if __name__ == '__main__':
                                     'make_missing_shortcuts': _make_missing, 'py_env': _py_env,
                                     'build_jarvis_app': _build_jarvis_app, 'voices': _voices, 'chime_demo': _chime_demo,
                                     'jarvis_restart': lambda: sh('pkill -f "[j]arvis/listen.py" || true'),
-                                    'selftest': _selftest,
+                                    'selftest': _selftest, 'hub_dump': lambda: sh('pkill -USR1 -f hue_hub.py || true') or 'stack dump requested',
                                     'calib_zones': lambda: _calib('zones'), 'calib_stop': _calib_stop,
                                     'calib_sweep1': lambda: _calib('sweep', '1'), 'calib_sweep2': lambda: _calib('sweep', '2'),
                                     'calib_sweep3': lambda: _calib('sweep', '3'), 'calib_sweep4': lambda: _calib('sweep', '4'),

@@ -1844,6 +1844,12 @@ def main():
         signal.signal(signal.SIGINT, signal.default_int_handler)
     except Exception:
         pass
+    try:                                        # Nov 15: `pkill -USR1 -f hue_hub.py` writes every thread's stack to hub_freeze.txt
+        import faulthandler
+        _fh = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hub_freeze.txt'), 'a')
+        faulthandler.register(signal.SIGUSR1, file=_fh, all_threads=True)
+    except Exception:
+        pass
     ap = argparse.ArgumentParser(description='Botanica Hue Hub')
     ap.add_argument('--rehearse', action='store_true', help='no bulbs: run the desk and preview only')
     ap.add_argument('--phone', action='store_true', help='also open the desk to phones on your Wi-Fi')
