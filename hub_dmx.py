@@ -385,6 +385,7 @@ class Heads:
                 cz = ch.step(now, beats, pmode, hs)
             except Exception:
                 cz = None
+        self.act_fx = (cz or {}).get('spots') or {}    # SHOW ACTS (Nov 15): gobos / UV for the spots this frame
         if cz:                                      # the relay owns the heads: no strobe, turns, sweeps or scene rotation
             fire, turn_deg, turning, sweep_e, cue, cue_f = False, 0.0, False, 0.0, None, 0.0
             self.flash_mode, self.auto_cue, self.wall_t = False, None, -10.0
@@ -506,7 +507,7 @@ class Heads:
                     except (KeyError, TypeError, ValueError):
                         cue_p = None
             fast = spot_p is not None and sweep_e > 0.0
-            mfast = (not movie) and sweep_e > 0.0                 # a music sweep is under way
+            mfast = ((not movie) and sweep_e > 0.0) or bool(cv is not None and cv.get('fast'))   # music sweep / HEAD MOMENT
             step = (MUSIC_SWEEP_DEG_S if (mfast or 0.0 <= now - self.wall_t < 2.6) else SWEEP_DEG_S if fast else MAX_DEG_S) * dt
             st['theta'] += clamp(th_t - st['theta'], -step, step)
             pmin, pmax = int(hd.get('pan_min', 0)), int(hd.get('pan_max', 65535))
@@ -545,7 +546,8 @@ class Heads:
             lv = st['lvl'] * cue_lvl
             if cz:                                  # HEAD RELAY: only the head whose turn it is shines, in the turn's colour
                 if cv is None:
-                    lv = lv if s.get('chase_spots') else 0.0
+                    sp_ = self.act_fx.get(i) if isinstance(self.act_fx, dict) else None
+                    lv = (level * clamp(float(sp_.get('level', 0.0)))) if isinstance(sp_, dict) else (lv if s.get('chase_spots') else 0.0)
                 else:
                     lv = level * max(0.3, clamp(cz['v'])) * cv['level']
                     rgb_ = cv.get('rgb') or cz.get('rgb')        # SHOW MODES: each zone its own colour
@@ -611,6 +613,9 @@ class Heads:
         ph = (fx.get('per_head') or {}).get(str(i))                # per-spot look + aim (e.g. Spot 2 over the couches)
         if isinstance(ph, dict):
             fx = dict(fx, **ph)
+        ao = (getattr(self, 'act_fx', None) or {}).get(i)           # SHOW ACTS: gobos / UV reveal for this spot
+        if isinstance(ao, dict) and isinstance(ao.get('fx'), dict):
+            fx = dict(fx, **ao['fx'])
         fs = getattr(self, 'fstate', None)
         if fs is None:
             fs = self.fstate = {}

@@ -32,7 +32,8 @@ class Show:
 
 class Hub:
     def __init__(self, **s):
-        base = dict(dmx_pattern='modes', dmx_on=True, dmx_host='192.168.1.80', beats_per_bar=4, energy=0.6)
+        base = dict(dmx_pattern='modes', dmx_on=True, dmx_host='192.168.1.80', beats_per_bar=4, energy=0.6,
+                    show_acts=False)   # the mode tests below run without the acts layer; section 16 tests the acts
         base.update(s)
         self.state = {'settings': base}
         self.audioshow = Show()
@@ -300,6 +301,69 @@ dl = hm.Director(hb, L2)
 a = [max(dl.step(700 + k, k + 0.01, 'music', HEADS)['zones'], key=lambda zo: zo['level'])['id'] for k in range(4)]
 b = [max(dl.step(800 + k, 32 + k + 0.01, 'music', HEADS)['zones'], key=lambda zo: zo['level'])['id'] for k in range(4)]
 check('loop alternate: ccw one phrase, cw the next', a == ['1A', '2A', '2B', '1B'] and b == ['1A', '1B', '2B', '2A'], (a, b))
+
+# 16. ACTS -- the firework structure: every element gets its moment
+import random as _r
+def acts_over(hub_, phrases, seed, section='groove'):
+    d_ = hm.Director(hub_, L2)
+    d_.rng = _r.Random(seed)
+    hub_.audioshow.section = section
+    out_ = []
+    for k in range(phrases):
+        z = d_.step(2000.0 + k, k * 32 + 1.01, 'music', HEADS)
+        out_.append(z['act'])
+    return out_, d_
+ha = Hub(show_zones=ZMAP, show_acts=True)
+seq1, _ = acts_over(ha, 10, 1)
+seq2, _ = acts_over(Hub(show_zones=ZMAP, show_acts=True), 10, 2)
+check('acts: every groove act gets a turn within 5 phrases', {'hues', 'heads', 'gobos', 'zones'} <= set(seq1[:5]), seq1)
+check('acts: never the same act twice in a row', all(a != b for a, b in zip(seq1, seq1[1:])), seq1)
+check('acts: not a fixed cycle (order changes between runs)', seq1 != seq2, (seq1, seq2))
+check('acts: no UV reveal in a groove', 'uv' not in seq1, seq1)
+seqb, _ = acts_over(Hub(show_zones=ZMAP, show_acts=True), 8, 3, 'breakdown')
+check('acts: breakdowns use the dark acts only', set(seqb) <= {'uv', 'gobos', 'hues'} and 'uv' in seqb, seqb)
+check('acts: no repeat in breakdowns either', all(a != b for a, b in zip(seqb, seqb[1:])), seqb)
+nospots = [h for h in HEADS if h.get('type') != 'focus17']
+hn = Hub(show_zones=ZMAP, show_acts=True)
+dn = hm.Director(hn, L2)
+dn.rng = _r.Random(4)
+an = [dn.step(3000.0 + k, k * 32 + 1.01, 'music', nospots)['act'] for k in range(10)]
+check('acts: no gobos / UV without spots', not ({'gobos', 'uv'} & set(an)), an)
+def act_frame(name, env=None, beats=1.01, t=4000.0):
+    h_ = Hub(show_zones=ZMAP, show_acts=True, show_lock=name)
+    if env:
+        h_.audioshow.env = env
+    d_ = hm.Director(h_, L2)
+    return d_, d_.step(t, beats, 'music', HEADS)
+d_, z = act_frame('heads', dict(kick=1.0, snare=0, hats=0))
+hv = list(z['heads'].values())
+check('head moment: all four heads lit, in unison', len(hv) == 4 and all(v['level'] > 0.9 for v in hv)
+      and len({(v['u'], v['lean']) for v in hv}) == 1, hv)
+check('head moment: sharp (fast) moves', all(v.get('fast') for v in hv))
+check('head moment: lamps down to a glow', all(zo['level'] <= 0.1 for zo in z['zones']))
+check('head moment: spots out', not z['spots'])
+_, z2 = act_frame('heads', beats=3.01, t=4001.0)
+check('head moment: snaps to a new position every 2 beats', list(z2['heads'].values())[0]['u'] != hv[0]['u'])
+d_, z = act_frame('hues')
+check('hue showcase: heads dark', all(v['level'] == 0 for v in z['heads'].values()))
+check('hue showcase: zones in different colours', len({tuple(round(x, 2) for x in zo['rgb']) for zo in z['zones']}) == len(z['zones']))
+check('hue showcase: lamps bright', max(zo['level'] for zo in z['zones']) > 0.9)
+d_, z = act_frame('gobos')
+check('gobos: both spots throw a gobo', sorted(z['spots']) == [4, 5] and all(sp['fx']['gobo'] > 0 for sp in z['spots'].values()), z['spots'])
+check('gobos: heads dark, lamps near dark', all(v['level'] == 0 for v in z['heads'].values()) and all(zo['level'] < 0.1 for zo in z['zones']))
+d_, z = act_frame('uv')
+check('UV reveal: spots on UV only, aimed at the stars', all(sp['fx']['uv_only'] and sp['fx']['hold_when'] == 'always'
+      and sp['fx']['hold_head'] == i for i, sp in z['spots'].items()) and sorted(z['spots']) == [4, 5], z['spots'])
+out = d_.lamps([(0.6, 0.1, 1.0)] * 6, [0, 1, 2, 3, 4, 5], 4000.0, 1.01, 'music')
+check('UV reveal: total dark -- every lamp off', all(max(c) < 1e-9 for c in out), out)
+check('UV reveal: heads dark', all(v['level'] == 0 for v in z['heads'].values()))
+h_ = Hub(show_zones=ZMAP, show_acts=True)
+h_.audioshow.section = 'drop'
+check('drop: the director steps aside for the burst', hm.Director(h_, L2).step(5000.0, 1.0, 'music', HEADS) is None)
+d_, z = act_frame('wave')
+check('locking a mode still works with acts on', z['act'] == 'zones' and z['mode'] == 'wave')
+st = d_.status()
+check('status lists the acts for the control page', st['acts_on'] and len(st['acts']) == 5)
 
 print('hub_modes tests: %d passed, %d failed' % (PASSES[0], len(FAILS)))
 sys.exit(1 if FAILS else 0)

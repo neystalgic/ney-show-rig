@@ -20,6 +20,17 @@
 # Drops are NOT a mode here: in a drop the director steps aside and the normal show dances (+ strobe,
 # sparingly) -- then a new mode starts after it.
 #
+# ACTS (Nov 15, Michael: "a firework show -- every element gets its moment, everything only for the finale"):
+#   hues     Hue showcase: heads dark, each zone its own colour from across the palette, a soft chase round the room
+#   heads    Head moment: lamps down to 8%, all four heads in UNISON -- sharp sweeps that snap on the beat
+#   gobos    Gobos: heads + lamps near dark, the two spots throw slowly turning gobos, focus breathing
+#   zones    the zone MODES below (wave, loop, call & response ...)
+#   uv       UV reveal: total dark, only the spots' UV on the stars -- breakdowns only, so the drop BURSTS
+#   (drop)   the burst / finale: the director steps aside, the full show + strobe take the drop
+# ORDER: a shuffle bag, not a fixed cycle -- every act gets a turn before any repeats, the order changes each
+# round, never the same act twice in a row; breakdowns pick from the dark acts (uv, gobos, hues).
+# show_acts = false -> modes only.  show_lock may also name an act.  show_gobos = list of gobo-wheel values.
+#
 # THE DIRECTOR: on every 8-bar line (setting show_bars) it picks the next mode for the section
 # (groove / breakdown), never the same one twice in a row and never one of the last two.
 # Setting dmx_pattern = 'modes' turns it on ('relay' = relay only, 'normal' = off).
@@ -32,6 +43,7 @@
 # =============================================================================
 import colorsys
 import math
+import random
 
 import hub_chase
 
@@ -41,6 +53,10 @@ POOLS = {'groove': ['pulse', 'call', 'wave', 'loop', 'split', 'relay', 'orbit'],
          'quiet': ['orbit']}
 NAMES = {'pulse': 'Pulse', 'call': 'Call & Response', 'wave': 'Wave', 'loop': 'Loop', 'split': 'Split',
          'orbit': 'Orbit', 'relay': 'Relay'}
+ACTS = ['hues', 'heads', 'gobos', 'zones', 'uv']
+ACT_NAMES = {'hues': 'Hue showcase', 'heads': 'Head moment', 'gobos': 'Gobos', 'zones': 'Zone modes', 'uv': 'UV reveal'}
+GOBOS = [16, 32, 48, 64, 80, 96]  # Focus Spot One gobo-wheel values (check live; setting show_gobos overrides)
+UV_AIMS = {4: {'az': 192, 'lean': 46}, 5: {'az': 180, 'lean': 65}}   # the stars (same as rig_control's UV sky)
 PURPLE = 0.78                     # hue used when the lamps give no colour
 
 
@@ -76,6 +92,12 @@ class Director:
         self.chase = _Relay(hub, lamps)
         self.lamp_xy = self.chase.lamp_xy
         self.heads_i = [0, 1, 2, 3]
+        self.spots_i = []
+        self.rng = random.Random()
+        self.act = None
+        self.act_bag = []
+        self.act_hist = []
+        self.mode_bag = []
         self.mode = None
         self.phrase = None
         self.history = []
@@ -257,21 +279,64 @@ class Director:
             return lock
         pool = self.pool(section)
         avoid = set(self.history[-2:])
-        options = [m for m in pool if m not in avoid] or [m for m in pool if m != self.mode] or pool
-        n = len(self.history)                                 # deterministic rotation through what's allowed
-        return options[(n * 7 + len(options)) % len(options)] if options else 'orbit'
+        self.mode_bag = [m for m in self.mode_bag if m in pool]
+        if not [m for m in self.mode_bag if m not in avoid]:
+            bag = list(pool)                                  # a fresh, shuffled round of every mode
+            self.rng.shuffle(bag)
+            self.mode_bag = bag
+        for m in self.mode_bag:
+            if m not in avoid:
+                self.mode_bag.remove(m)
+                return m
+        options = [m for m in pool if m != self.mode] or pool
+        return self.rng.choice(options) if options else 'orbit'
+
+    def acts_on(self):
+        v = self.settings().get('show_acts', True)
+        return v not in (False, 'false', 'off', 0, '0')
+
+    def pick_act(self, section):
+        lock = str(self.settings().get('show_lock', '') or '').strip().lower()
+        if lock in ACTS:
+            return lock
+        if lock in MODES or not self.acts_on():
+            return 'zones'
+        has_spots = bool(self.spots_i)
+        last = self.act_hist[-1] if self.act_hist else None
+        if section == 'breakdown':                            # the dark acts build the tension before a drop
+            cands = [a for a in (['uv', 'gobos'] if has_spots else []) + ['hues'] if a != last]
+            if last != 'uv' and has_spots and self.rng.random() < 0.6:
+                return 'uv'
+            return self.rng.choice(cands or ['hues'])
+        if section == 'quiet':
+            return 'hues'
+        groove = ['hues', 'heads', 'zones', 'zones'] + (['gobos'] if has_spots else [])
+        self.act_bag = [a for a in self.act_bag if a in groove]
+        if not [a for a in self.act_bag if a != last]:
+            bag = list(groove)                                # every act once (zones twice: it has the most variety)
+            self.rng.shuffle(bag)
+            self.act_bag = bag
+        for a in self.act_bag:
+            if a != last:
+                self.act_bag.remove(a)
+                return a
+        return 'zones'
 
     def tick_phrase(self, beats):
         bpb = int(self.settings().get('beats_per_bar', 4) or 4)
         bar = int(math.floor(beats / bpb))
         phrase = bar // self.bars_per_phrase()
         lock = str(self.settings().get('show_lock', '') or '').strip().lower()
-        if self.mode is None or phrase != self.phrase or (lock in MODES and lock != self.mode):
-            new = self.pick(self.section())
-            if new != self.mode:
+        locked = (lock in MODES and (lock != self.mode or self.act != 'zones')) or (lock in ACTS and lock != self.act)
+        if self.mode is None or phrase != self.phrase or locked:
+            sec = self.section()
+            act = self.pick_act(sec)
+            self.act_hist = (self.act_hist + [act])[-6:]
+            new = self.pick(sec) if act == 'zones' else self.mode
+            if act == 'zones' and new != self.mode:
                 self.history.append(new)
                 self.history = self.history[-6:]
-            self.mode, self.phrase = new, phrase
+            self.act, self.mode, self.phrase = act, (new or 'orbit'), phrase
             self.hue_t = None
         return bar, bpb
 
@@ -281,6 +346,7 @@ class Director:
             return self._cache[1]
         if heads is not None:
             hi = [i for i, h in enumerate(heads) if h.get('type') != 'focus17']
+            self.spots_i = [i for i, h in enumerate(heads) if h.get('type') == 'focus17']
             if hi != self.heads_i:
                 self.heads_i, self._zone_cache = hi, None
         w = self.wanted(pmode)
@@ -293,6 +359,10 @@ class Director:
             self._cache = (now, None)
             return None
         bar, bpb = self.tick_phrase(beats)
+        if self.act != 'zones':
+            out = self.act_frame(beats, bar, bpb)
+            self._cache, self.last, self.active = (now, out), out, True
+            return out
         if self.mode == 'relay':
             self.chase.forced = True                          # the relay runs on its own clock for this phrase
             zl_ = self.zone_list()
@@ -306,7 +376,7 @@ class Director:
             finally:
                 self.chase.forced = False
             if out:
-                out = dict(out, mode='relay', bar=bar, phrase_bar=bar % self.bars_per_phrase())
+                out = dict(out, mode='relay', act='zones', bar=bar, phrase_bar=bar % self.bars_per_phrase())
             self._cache, self.last, self.active = (now, out), out, out is not None
             return out
         # colour: one change per 2 bars at most (Michael: faster colour changes are distracting)
@@ -382,9 +452,60 @@ class Director:
         for h in self.heads_i:                                # a head in no zone stays dark
             hs.setdefault(h, dict(level=0.0, lean=0.5, u=0.5, rgb=hsv(self.hue), zone=None))
         out = dict(heads=hs, zones=zout, rgb=hsv(self.hue), v=self.v, head=None, turn=self.phrase, new=False, p=0.0,
-                   mode=self.mode, bar=bar, phrase_bar=bar % self.bars_per_phrase(), bib=bib)
+                   mode=self.mode, act='zones', bar=bar, phrase_bar=bar % self.bars_per_phrase(), bib=bib)
         self._cache, self.last, self.active = (now, out), out, True
         return out
+
+    # -------------------------------------------------------------------------- the featured acts
+    def act_frame(self, beats, bar, bpb):
+        if self.hue_t is None or bar - self.hue_t >= 2:      # colour holds 2 bars, like the modes
+            if self.hue_t is not None:
+                self.hue = (self.hue + 0.15) % 1.0
+            self.hue_t = bar
+        act = self.act
+        e = self.env()
+        zl = self.zone_list()
+        loop = self.loop_order(zl)
+        seq = loop + [z['id'] for z in zl if z['id'] not in loop]
+        frac = beats - math.floor(beats)
+        beat_i = int(math.floor(beats)) - (self.phrase or 0) * self.bars_per_phrase() * bpb
+        dark = dict(level=0.0, lean=0.5, u=0.5, rgb=hsv(self.hue))
+        hs = {h: dict(dark) for h in self.heads_i}
+        zout, spots, floor = [], {}, 0.0
+        if act == 'hues':                                    # every zone its own colour; a soft chase round the room
+            for r, zone in enumerate(zl):
+                on = seq[beat_i % len(seq)] == zone['id'] if seq else False
+                lvl = 0.35 + 0.65 * (decay(frac, 0.6) if on else 0.25 * e['kick'])
+                zout.append(dict(id=zone['id'], level=clamp(lvl), rgb=hsv(self.hue + 0.17 * r, 0.95), channels=zone['channels']))
+        elif act == 'heads':                                 # lamps low; the four heads together, sharp + on the beat
+            for zone in zl:
+                zout.append(dict(id=zone['id'], level=0.08, rgb=hsv(self.hue), channels=zone['channels']))
+            step = int(math.floor(beats)) // 2                # a new position every 2 beats, all heads at once
+            lvl = 0.35 + 0.65 * max(e['kick'], decay(frac, 0.3))
+            lean = 0.85 if (int(math.floor(beats)) // 4) % 2 == 0 else 0.45
+            u = 0.2 if step % 2 == 0 else 0.8
+            for h in self.heads_i:
+                hs[h] = dict(level=clamp(lvl), lean=lean, u=u, rgb=hsv(self.hue), fast=True)
+        elif act == 'gobos':                                 # the spots throw turning gobos; everything else near dark
+            for zone in zl:
+                zout.append(dict(id=zone['id'], level=0.06, rgb=hsv(self.hue), channels=zone['channels']))
+            gl = self.settings().get('show_gobos') or GOBOS
+            try:
+                g = int(gl[(bar // 2) % len(gl)])
+            except (TypeError, ValueError, IndexError, ZeroDivisionError):
+                g = GOBOS[0]
+            for i in self.spots_i:
+                spots[i] = dict(level=0.9, fx=dict(gobo=g, gobo_rot=140, breathe=50, breathe_s=8.0, uv=0, uv_only=False))
+        elif act == 'uv':                                    # total dark + UV on the stars (the drop bursts after it)
+            for zone in zl:
+                zout.append(dict(id=zone['id'], level=0.0, rgb=hsv(self.hue), channels=zone['channels']))
+            for i in self.spots_i:
+                aim = UV_AIMS.get(i, {'az': 180, 'lean': 50})
+                spots[i] = dict(level=0.85, fx=dict(hold=dict(aim, drift=0), hold_when='always', hold_head=i, uv=1.0,
+                                                    uv_only=True, gobo=0, focus=128))
+        return dict(heads=hs, zones=zout, spots=spots, lamp_floor=floor, rgb=hsv(self.hue), v=self.v, head=None,
+                    turn=self.phrase, new=False, p=0.0, mode=self.mode, act=act, bar=bar,
+                    phrase_bar=bar % self.bars_per_phrase())
 
     # -------------------------------------------------------------------------- aims (hub_dmx caps them)
     def theta(self, cv, lean_max):
@@ -406,7 +527,7 @@ class Director:
         self.chase.v = self.v
         if not z:
             return cols
-        if z.get('mode', 'relay') == 'relay':
+        if z.get('act', 'zones') == 'zones' and z.get('mode', 'relay') == 'relay':
             self.chase.forced = self.pattern() == 'modes'
             try:
                 return self.chase.lamps(cols, channels, now, beats, pmode)
@@ -414,7 +535,7 @@ class Director:
                 self.chase.forced = False
         zmap = {ch: zo for zo in z.get('zones', []) for ch in zo['channels']}
         v = max(self.v, 0.35)
-        dim = 0.15
+        dim = float(z.get('lamp_floor', 0.15))
         out = []
         for ch in channels:
             zo = zmap.get(ch)
@@ -430,11 +551,16 @@ class Director:
         if not z:
             return 'modes off' if self.pattern() == 'modes' else self.chase.describe(None)
         m = z.get('mode', 'relay')
-        return '%s (bar %d of %d)' % (NAMES.get(m, m), z.get('phrase_bar', 0) + 1, self.bars_per_phrase())
+        a = z.get('act', 'zones')
+        label = NAMES.get(m, m) if a == 'zones' else ACT_NAMES.get(a, a)
+        return '%s (bar %d of %d)' % (label, z.get('phrase_bar', 0) + 1, self.bars_per_phrase())
 
     def status(self):
         z = self.last
-        return dict(on=bool(z), pattern=self.pattern(), mode=(z or {}).get('mode'), name=NAMES.get((z or {}).get('mode'), ''),
+        a = (z or {}).get('act', 'zones')
+        return dict(on=bool(z), pattern=self.pattern(), act=a if z else None, act_name=ACT_NAMES.get(a, '') if z else '',
+                    acts=[dict(id=x, name=ACT_NAMES[x]) for x in ACTS], acts_on=self.acts_on(),
+                    mode=(z or {}).get('mode'), name=NAMES.get((z or {}).get('mode'), '') if a == 'zones' else ACT_NAMES.get(a, ''),
                     bar=(z or {}).get('phrase_bar', 0) + 1 if z else 0, bars=self.bars_per_phrase(),
                     lock=str(self.settings().get('show_lock', '') or ''), speed=self.speed(),
                     history=list(self.history[-4:]), section=self.section(),
