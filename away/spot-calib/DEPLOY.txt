@@ -1,0 +1,52 @@
+FOCUS SPOT CALIBRATION (backlog W7) -- built + tested Nov 16 by the away loop. Nothing is live yet.
+==========================================================================================
+
+WHAT IT DOES
+calib.py now writes the right DMX layout for each fixture: the 4 LM70S heads keep their 14-channel bytes
+(byte-for-byte the same as today -- tested), the 2 Focus Spots ('type': 'focus17' in the node config) get the
+17-channel layout hub_dmx.focus_out uses (pan/tilt, colour slot, gobo, gobo rot, focus, shutter 12 = open,
+dimmer, UV shutter, UV, motor speed). Before this, "aim 5" would have sent head bytes to a spot.
+
+New modes (Spot 1 = the 1st focus17 fixture = fixture 5, Spot 2 = fixture 6):
+  python3 calib.py spot 1        Spot 1 alone: open beam, colour slot 97 (deep blue-violet -- never white),
+                                 dimmer 60%, on its saved aim (spot_fx 'hold'; Spot 2 = per_head '5' hold).
+  python3 calib.py aimspot 2     Spot 2 follows bridge/calib_aim.json. Either {"pan": .., "tilt": ..} (16-bit)
+                                 or {"az": .., "lean": ..} (degrees -- the same numbers spot_fx 'hold' stores),
+                                 plus optional "color", "gobo", "gobo_rot", "focus" (0-255), "uv" (0-1).
+                                 The log (bridge/outbox/calib.txt) shows az + lean for every nudge, so Claude can
+                                 copy the final numbers straight into spot_fx hold.
+  python3 calib.py uvaim 2       Same, UV only (beam dark, dimmer 0, UV full unless "uv" says otherwise).
+  touch calib.stop               stops any of them (as before). Head 3: use the existing "aim 3" / "head 3".
+Spot 2 on -> the log says "ceiling fan OFF please" (AGENTS rule). Colour slots 0-14 (open/white) are swapped
+for slot 97. Shutter is only ever 12 (open) or 0 -- calibration never strobes. The node still enforces every
+pan window, lean cap and avoid zone on top.
+
+FILES
+  replaces: calib.py   (with away/spot-calib/calib.py; backup calib.py.bak-<date>)
+  patches:  selftest.py (adds the spot-calib test to SUITES; backup selftest.py.bak-<date>)
+  The installer refuses (STOP, nothing touched) if calib.py changed after Nov 16 -- note calib.py had
+  uncommitted edits when this was built; the copy INCLUDES them.
+
+DEPLOY (one paste in Terminal):
+cd ~/"Touchdesigner Designs/Hue Rig" && python3 away/spot-calib/apply_patches.py && python3 away/spot-calib/test_spot_calib.py | tail -1 && python3 selftest.py --quiet
+
+  No hub restart needed: calib.py is a one-shot script, run only when you calibrate.
+
+UNDO
+cd ~/"Touchdesigner Designs/Hue Rig" && cp calib.py.bak-<date> calib.py && cp selftest.py.bak-<date> selftest.py
+
+TONIGHT'S CALIBRATION (with Claude in the room)
+  1. DMX node up first, then head/spot power. Spots: switch on by hand. Spot 2 on -> ceiling fan OFF.
+  2. python3 calib.py spot 1  -> check it lights alone, purple-blue, on its old curtain aim. touch calib.stop.
+  3. python3 calib.py aimspot 2 --wait 5  -> Claude writes {"az": .., "lean": ..} into bridge/calib_aim.json
+     to walk it to the new spot (Spot 2 was moved this morning). Read the az/lean off the log, save them as
+     spot_fx per_head "5" hold. Same with uvaim 2 for the UV aim.
+  4. Head 3: python3 calib.py aim 3 (unchanged).
+  Note: calib_aim.json still holds a HEAD's pan/tilt (12706 / 12436) -- on a spot those numbers point
+  elsewhere, so write an az/lean (or a new pan/tilt) into it before or right after starting aimspot.
+
+WATCH FOR
+  - Wrong fixture lights: the spot order comes from the node config's 'type': 'focus17' entries.
+  - Colour slot 97 not looking purple-ish on your wheel: send {"color": 82} (pink) in calib_aim.json.
+  - Beams: never at anyone, avoid the mirror + projection screen.
+  - Selftest: 0 FAIL = deployed.

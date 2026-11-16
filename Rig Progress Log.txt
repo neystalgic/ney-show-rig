@@ -1,6 +1,18 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-16 23:07 UTC | Focus Spot calibration (W7) | away/spot-calib/ (NEW): copy of calib.py whose send() picks
+  the layout per fixture -- LM70S heads keep their 14-ch bytes (identical to live, tested), Focus Spots ('focus17') get
+  hub_dmx.focus_out's 17-ch layout. New modes: 'spot N' (Spot N alone, open beam, colour slot 97 deep blue-violet --
+  slots 0-14 white are swapped out, dimmer 60%, on its spot_fx hold), 'aimspot N' (follows bridge/calib_aim.json as
+  pan/tilt OR az/lean + optional color/gobo/gobo_rot/focus/uv, logs az/lean to save into spot_fx), 'uvaim N' (UV
+  only, dimmer 0). Spot N = Nth focus17 fixture (Spot 1 = index 4, Spot 2 = 5). Spot 2 on -> log says ceiling fan
+  OFF. apply_patches.py = guarded install (STOP if calib.py changed after today) + selftest SUITES line | tests:
+  test_spot_calib.py 63/63 passed (fake socket/node/clock, network blocked, bytes per type, nothing sent to other
+  fixtures, UV-only = dimmer 0, live files unchanged); test_apply_patches.py 8/8 passed (temp copies, idempotent,
+  STOP on changed file) | Michael: one Terminal paste in away/spot-calib/DEPLOY.txt before tonight's calibration (no
+  hub restart); note calib_aim.json still holds a HEAD aim -- write az/lean for the spot first | Layer updates for
+  Michael: none (after calibrating, BRAIN could note the new Spot 2 hold az/lean).
 2026-11-15 11:06 UTC | Shortcut trim PLAN (J5) | away/shortcut-trim/ (NEW): PLAN.txt = keep 6 of the factory's 19 shortcuts
   (Jarvis, Goodnight, Morning, Purple, Movie Hub, Rig Health -- Goodnight/Morning because the Sleep Focus + alarm automations
   run them), retire 12 (each has a replacement: a Jarvis phrase that lands on the same look, or a Movie Hub / Rig Health page

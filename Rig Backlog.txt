@@ -28,7 +28,7 @@ H1. [SAFE] ready for Michael (built + tested Nov 15, see away/head-relay/DEPLOY.
    selftest line.
 
 --- QUEUE for Nov 16 (Michael at work 3-8 pm) -- build + test only, nothing changes the room ---------
-W7. [SAFE] todo -- calib.py for the FOCUS SPOTS (needed tonight: Michael recalibrates Head 3, Spot 1 and Spot 2 -- Spot 2
+W7. [SAFE] ready for Michael (built + tested Nov 16, see away/spot-calib/DEPLOY.txt) -- calib.py for the FOCUS SPOTS (needed tonight: Michael recalibrates Head 3, Spot 1 and Spot 2 -- Spot 2
    was moved Nov 16 morning). calib.py's Heads.send() writes the LM70S 14-ch layout; the spots are 17-ch (see
    hub_dmx.focus_out: a+0..3 pan/tilt, a+4 colour slot, a+5 gobo, a+6 gobo rot, a+7 focus, a+8 shutter 12 = open,
    a+9 dimmer, a+10 UV shutter, a+11 UV, a+15 motor speed). Copy calib.py to away/spot-calib/, make send() pick the
@@ -52,7 +52,7 @@ W2. [SAFE] todo -- RIG CONSOLE page v1 (Michael: "voice is cool but sometimes I 
    on/off); a small zone map 1A 1B 2A 2B 3A with heads listed. Uses POST /show/set (already allowlisted) + GET looks.
    Phone-first layout. Offline test: page JS against a fake status JSON in node; route test with a fake handler.
 W6. [SAFE] todo -- PUSH 2 "SHOW" mode + visuals in sync (Michael Nov 16: "bind light modes to buttons on the Push and
-   have them synchronized with our sacred geometry in colour and intensity"). HUB SIDE ONLY (never edit TouchDesigner;
+   have them synchronized with our sacred geometry in colour and intensity"). HUB SIDE ONLY (never edit TouchDesigner, and never touch build_hue_hub_td.py -- TD auto-rebuilds hue_feed when it changes;
    read-only copies of TD's hue_feed code + visual list are in away/push-show-ref/). Build in away/push-show/ (copies of
    hub_push2.py, hue_hub.py as needed):
    (a) a SHOW pad mode on a free Push 2 button (find one unused in hub_push2.py; document it): top row = the acts
