@@ -549,7 +549,7 @@ class Heads:
                     sp_ = self.act_fx.get(i) if isinstance(self.act_fx, dict) else None
                     lv = (level * clamp(float(sp_.get('level', 0.0)))) if isinstance(sp_, dict) else (lv if s.get('chase_spots') else 0.0)
                 else:
-                    lv = level * max(0.3, clamp(cz['v'])) * cv['level']
+                    lv = level * cv['level'] if cz.get('full') else level * max(0.3, clamp(cz['v'])) * cv['level']   # v2: the drums set it, full range
                     rgb_ = cv.get('rgb') or cz.get('rgb')        # SHOW MODES: each zone its own colour
                     if rgb_:
                         hh, ss, _ = colorsys.rgb_to_hsv(*[clamp(x) for x in rgb_])

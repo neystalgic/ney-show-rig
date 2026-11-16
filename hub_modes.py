@@ -26,7 +26,13 @@
 #   gobos    Gobos: heads + lamps near dark, the two spots throw slowly turning gobos, focus breathing
 #   zones    the zone MODES below (wave, loop, call & response ...)
 #   uv       UV reveal: total dark, only the spots' UV on the stars -- breakdowns only, so the drop BURSTS
-#   (drop)   the burst / finale: the director steps aside, the full show + strobe take the drop
+#   burst    DROPS: every zone in a rainbow that steps on the beat, heads big + fast in unison, everything
+#            FLASHING ON THE KICK (no timer strobe) -- the finale
+# show_audio 0..1 (default 0.6): how much the music's hits drive it vs the BUILT-IN DRUMMER on the beat clock
+#   (kick every beat, snare 2 + 4, hats 8ths); 2 s of silence -> the drummer alone. 'Semi audio reactive.'
+# Nov 15 v2 (Michael: low reactivity, not full brightness, no zones, no switches, random strobes, no rainbows):
+#   levels follow the real drum hits, normalised to the track (kick/snare/hats 0..1 relative to recent peaks);
+#   everything reaches full brightness; colours walk the rainbow in sync (a step every 2 bars).
 # ORDER: a shuffle bag, not a fixed cycle -- every act gets a turn before any repeats, the order changes each
 # round, never the same act twice in a row; breakdowns pick from the dark acts (uv, gobos, hues).
 # show_acts = false -> modes only.  show_lock may also name an act.  show_gobos = list of gobo-wheel values.
@@ -53,8 +59,10 @@ POOLS = {'groove': ['pulse', 'call', 'wave', 'loop', 'split', 'relay', 'orbit'],
          'quiet': ['orbit']}
 NAMES = {'pulse': 'Pulse', 'call': 'Call & Response', 'wave': 'Wave', 'loop': 'Loop', 'split': 'Split',
          'orbit': 'Orbit', 'relay': 'Relay'}
-ACTS = ['hues', 'heads', 'gobos', 'zones', 'uv']
-ACT_NAMES = {'hues': 'Hue showcase', 'heads': 'Head moment', 'gobos': 'Gobos', 'zones': 'Zone modes', 'uv': 'UV reveal'}
+ACTS = ['hues', 'heads', 'gobos', 'zones', 'uv', 'burst']
+ACT_NAMES = {'hues': 'Hue showcase', 'heads': 'Head moment', 'gobos': 'Gobos', 'zones': 'Zone modes', 'uv': 'UV reveal',
+             'burst': 'Burst (drop)'}
+RAINBOW_STEP = 1.0 / 7.0          # the colour walks the rainbow: one of 7 steps every 2 bars
 GOBOS = [16, 32, 48, 64, 80, 96]  # Focus Spot One gobo-wheel values (check live; setting show_gobos overrides)
 UV_AIMS = {4: {'az': 192, 'lean': 46}, 5: {'az': 180, 'lean': 65}}   # the stars (same as rig_control's UV sky)
 PURPLE = 0.78                     # hue used when the lamps give no colour
@@ -255,16 +263,56 @@ class Director:
             return None                                       # a scene Michael picked wins
         if pmode not in ('music', None):
             return None
-        if self.section() == 'drop':
-            return None                                       # drops: the normal show dances (strobe only there)
-        return 'modes'
+        return 'modes'                                        # drops too: the BURST act (kick-locked, no timer strobe)
 
     def section(self):
         return getattr(getattr(self.hub, 'audioshow', None), 'section', 'groove') or 'groove'
 
-    def env(self):
+    def audio_mix(self):
+        try:
+            return clamp(float(self.settings().get('show_audio', 0.6)))
+        except (TypeError, ValueError):
+            return 0.6
+
+    def clock_hits(self, beats):
+        """The built-in drummer (Michael, Nov 15: 'semi audio reactive -- not entirely reliant on the audio'):
+        kick every beat, snare on 2 + 4, hats on the 8ths, from the beat clock."""
+        b = beats if beats is not None else 0.0
+        bi = math.floor(b)
+        f = b - bi
+        bpb = int(self.settings().get('beats_per_bar', 4) or 4)
+        f8 = b * 2 - math.floor(b * 2)
+        return dict(kick=decay(f, 0.22), snare=decay(f, 0.18) if bi % bpb in (1, 3) else 0.0, hats=0.6 * decay(f8, 0.1))
+
+    def env(self, beats=None, now=None):
+        """Drum hits 0..1: the music's own hits (normalised to this track's recent peaks) blended with the
+        built-in drummer by show_audio (1 = audio only, 0 = clock only, default 0.6). If the music goes quiet
+        for 2 s the drummer carries the show alone."""
+        a = self.audio_hits()
+        w = self.audio_mix()
+        if beats is None or w >= 1.0:
+            return a
+        c = self.clock_hits(beats)
+        loud = max(a.values())
+        t = now if now is not None else getattr(self, '_t_now', 0.0)
+        if loud > 0.2:
+            self._heard_t = t
+        if t - getattr(self, '_heard_t', -99.0) > 2.0:
+            w = 0.0
+        return {k: clamp(w * a[k] + (1.0 - w) * c[k]) for k in a}
+
+    def audio_hits(self):
+        """Drum hits 0..1, normalised to this track's recent peaks (so every song reaches full range)."""
         e = getattr(getattr(self.hub, 'audioshow', None), 'env', None) or {}
-        return {k: clamp(float(e.get(k, 0.0) or 0.0)) for k in ('kick', 'snare', 'hats')}
+        pk = getattr(self, '_peaks', None)
+        if pk is None:
+            pk = self._peaks = dict(kick=0.3, snare=0.3, hats=0.3)
+        out = {}
+        for k in ('kick', 'snare', 'hats'):
+            v = clamp(float(e.get(k, 0.0) or 0.0))
+            pk[k] = max(v, pk[k] * 0.9985, 0.15)       # a slowly falling peak (~10 s at 60 fps)
+            out[k] = clamp(v / pk[k])
+        return out
 
     def energy(self):
         try:
@@ -303,14 +351,16 @@ class Director:
             return 'zones'
         has_spots = bool(self.spots_i)
         last = self.act_hist[-1] if self.act_hist else None
+        if section == 'drop':
+            return 'burst'
         if section == 'breakdown':                            # the dark acts build the tension before a drop
             cands = [a for a in (['uv', 'gobos'] if has_spots else []) + ['hues'] if a != last]
             if last != 'uv' and has_spots and self.rng.random() < 0.6:
                 return 'uv'
             return self.rng.choice(cands or ['hues'])
-        if section == 'quiet':
+        if section == 'quiet' and self.audio_mix() >= 1.0:
             return 'hues'
-        groove = ['hues', 'heads', 'zones', 'zones'] + (['gobos'] if has_spots else [])
+        groove = ['zones', 'hues', 'zones', 'heads', 'zones'] + (['gobos'] if has_spots else [])   # zones lead
         self.act_bag = [a for a in self.act_bag if a in groove]
         if not [a for a in self.act_bag if a != last]:
             bag = list(groove)                                # every act once (zones twice: it has the most variety)
@@ -328,8 +378,9 @@ class Director:
         phrase = bar // self.bars_per_phrase()
         lock = str(self.settings().get('show_lock', '') or '').strip().lower()
         locked = (lock in MODES and (lock != self.mode or self.act != 'zones')) or (lock in ACTS and lock != self.act)
-        if self.mode is None or phrase != self.phrase or locked:
-            sec = self.section()
+        sec = self.section()
+        flip = (sec == 'drop') != (self.act == 'burst') and not (lock in ACTS or lock in MODES)
+        if self.mode is None or phrase != self.phrase or locked or flip:
             act = self.pick_act(sec)
             self.act_hist = (self.act_hist + [act])[-6:]
             new = self.pick(sec) if act == 'zones' else self.mode
@@ -344,6 +395,7 @@ class Director:
     def step(self, now, beats, pmode, heads=None):
         if self._cache[0] == now:
             return self._cache[1]
+        self._t_now = now
         if heads is not None:
             hi = [i for i, h in enumerate(heads) if h.get('type') != 'focus17']
             self.spots_i = [i for i, h in enumerate(heads) if h.get('type') == 'focus17']
@@ -380,11 +432,11 @@ class Director:
             self._cache, self.last, self.active = (now, out), out, out is not None
             return out
         # colour: one change per 2 bars at most (Michael: faster colour changes are distracting)
-        if self.hue_t is None or bar - self.hue_t >= 2:
+        if self.hue_t is None or bar - self.hue_t >= 2:   # the rainbow walk: one step every 2 bars, in sync
             if self.hue_t is not None:
-                self.hue = (self.hue + (0.12 if self.mode in ('orbit', 'wave') else 0.2)) % 1.0
+                self.hue = (self.hue + RAINBOW_STEP) % 1.0
             self.hue_t = bar
-        e, en = self.env(), self.energy()
+        e, en = self.env(beats, now), self.energy()
         sp = self.speed()
         zl = self.zone_list()
         n = max(1, len(zl))
@@ -400,51 +452,51 @@ class Director:
             side = 0 if row == 'A' else 1                     # south wall (A) / north wall (B)
             lvl, lean, u, hue = 0.6, 0.6, 0.5, self.hue
             if self.mode == 'pulse':
-                lvl = 0.2 + 0.8 * e['kick']
+                lvl = 0.08 + 0.92 * e['kick']
                 lean = 0.85 if (int(math.floor(beats)) + r) % 2 == 0 else 0.45
                 u = 0.5 + 0.12 * (1 if bar % 2 == 0 else -1) * (1 if r % 2 == 0 else -1)
             elif self.mode == 'call':
                 a = side == 0
                 hit = e['kick'] if a else e['snare']
-                lvl = 0.12 + 0.88 * hit
+                lvl = 0.06 + 0.94 * hit
                 lean = 0.4 + 0.5 * hit
                 u = 0.5 + 0.25 * math.sin(2 * math.pi * beats / (16.0 / sp)) * (1 if a else -1)
                 hue = self.hue if a else self.hue + 0.5
             elif self.mode == 'wave':
                 wseq = self.wave_seq(cols)
                 on = wseq[beat_i % len(wseq)] == col
-                lvl = 0.12 + 0.88 * (decay(frac, 0.45 / sp) if on else 0.0) + 0.25 * e['kick'] * (0 if on else 1)
+                lvl = (0.4 + 0.6 * max(e['kick'], decay(frac, 0.3 / sp))) if on else 0.03 + 0.12 * e['kick']
                 lean = 0.85 if on else 0.5
                 u = 0.5 + 0.3 * math.sin(2 * math.pi * beats / (16.0 / sp))
-                hue = self.hue + 0.08 * cols.index(col)
+                hue = self.hue + cols.index(col) / float(max(1, len(cols)))     # a rainbow down the room
             elif self.mode == 'loop':
                 if zone['id'] in loop:
                     on = loop[beat_i % len(loop)] == zone['id']
-                    lvl = 0.1 + 0.9 * (decay(frac, 0.5 / sp) if on else 0.0)
+                    lvl = (0.4 + 0.6 * max(e['kick'], decay(frac, 0.3 / sp))) if on else 0.03 + 0.1 * e['kick']
                     lean = 0.8 if on else 0.45
                     u = 0.5 + 0.3 * math.sin(2 * math.pi * (beats / (8.0 / sp)) + loop.index(zone['id']) * math.pi / 2)
-                    hue = self.hue + 0.06 * loop.index(zone['id'])
-                else:                                         # outside the loop (the studio): a soft kick glow
-                    lvl = 0.1 + 0.4 * e['kick']
+                    hue = self.hue + loop.index(zone['id']) / float(max(1, len(loop)))   # a rainbow round the loop
+                else:                                         # outside the loop (the studio): pulses on the kick
+                    lvl = 0.1 + 0.9 * e['kick']
                     lean, u, hue = 0.5, 0.5, self.hue + 0.5
             elif self.mode == 'split':
                 if side == 0:                                 # south wall: warm, big + slow on the bass
-                    lvl = 0.25 + 0.75 * e['kick']
+                    lvl = 0.06 + 0.94 * e['kick']
                     lean = 0.6 + 0.3 * math.sin(2 * math.pi * beats / (8.0 / sp))
                     u = 0.5 + 0.3 * math.sin(2 * math.pi * beats / (16.0 / sp) + r)
                     hue = self.hue
                 else:                                         # north wall: cool, small + quick on the hats
-                    lvl = 0.2 + 0.8 * max(e['hats'], 0.5 * e['snare'])
+                    lvl = 0.06 + 0.94 * max(e['hats'], e['snare'])
                     lean = 0.55 + 0.15 * math.sin(2 * math.pi * beats / (2.0 / sp))
                     u = 0.5 + 0.1 * math.sin(2 * math.pi * beats / (2.0 / sp) + r)
                     hue = self.hue + 0.33
             elif self.mode == 'orbit':
                 k = (0.6 + 0.8 * en) * sp
                 ph = 2 * math.pi * beats / (16.0 / k) + r * math.pi / 2.0
-                lvl = 0.45 + 0.35 * en + 0.2 * e['kick']
+                lvl = 0.3 + 0.7 * max(e['kick'], 0.5 * e['snare'])
                 lean = 0.55 + 0.3 * math.cos(ph)
                 u = 0.5 + 0.35 * math.sin(ph)
-                hue = self.hue + 0.05 * math.sin(2 * math.pi * beats / 64.0) + 0.04 * r
+                hue = self.hue + r / float(n)                 # the heads circle in rainbow order
             rgb = hsv(hue, 0.9, 1.0)
             zout.append(dict(id=zone['id'], level=clamp(lvl), rgb=rgb, channels=zone['channels']))
             for h in zone['heads']:
@@ -452,18 +504,18 @@ class Director:
         for h in self.heads_i:                                # a head in no zone stays dark
             hs.setdefault(h, dict(level=0.0, lean=0.5, u=0.5, rgb=hsv(self.hue), zone=None))
         out = dict(heads=hs, zones=zout, rgb=hsv(self.hue), v=self.v, head=None, turn=self.phrase, new=False, p=0.0,
-                   mode=self.mode, act='zones', bar=bar, phrase_bar=bar % self.bars_per_phrase(), bib=bib)
+                   full=True, mode=self.mode, act='zones', bar=bar, phrase_bar=bar % self.bars_per_phrase(), bib=bib)
         self._cache, self.last, self.active = (now, out), out, True
         return out
 
     # -------------------------------------------------------------------------- the featured acts
     def act_frame(self, beats, bar, bpb):
-        if self.hue_t is None or bar - self.hue_t >= 2:      # colour holds 2 bars, like the modes
+        if self.hue_t is None or bar - self.hue_t >= 2:      # the rainbow walk, like the modes
             if self.hue_t is not None:
-                self.hue = (self.hue + 0.15) % 1.0
+                self.hue = (self.hue + RAINBOW_STEP) % 1.0
             self.hue_t = bar
         act = self.act
-        e = self.env()
+        e = self.env(beats, getattr(self, '_t_now', None))
         zl = self.zone_list()
         loop = self.loop_order(zl)
         seq = loop + [z['id'] for z in zl if z['id'] not in loop]
@@ -472,16 +524,18 @@ class Director:
         dark = dict(level=0.0, lean=0.5, u=0.5, rgb=hsv(self.hue))
         hs = {h: dict(dark) for h in self.heads_i}
         zout, spots, floor = [], {}, 0.0
-        if act == 'hues':                                    # every zone its own colour; a soft chase round the room
+        if act == 'hues':                                    # a full rainbow across the zones, every lamp hitting on the kick,
+            n_ = max(1, len(zl))                             # the rainbow turning one zone each bar
             for r, zone in enumerate(zl):
                 on = seq[beat_i % len(seq)] == zone['id'] if seq else False
-                lvl = 0.35 + 0.65 * (decay(frac, 0.6) if on else 0.25 * e['kick'])
-                zout.append(dict(id=zone['id'], level=clamp(lvl), rgb=hsv(self.hue + 0.17 * r, 0.95), channels=zone['channels']))
+                lvl = 0.12 + 0.88 * max(e['kick'], decay(frac, 0.35) if on else 0.0)
+                zout.append(dict(id=zone['id'], level=clamp(lvl), rgb=hsv(self.hue + (r + bar) / float(n_), 1.0),
+                                 channels=zone['channels']))
         elif act == 'heads':                                 # lamps low; the four heads together, sharp + on the beat
             for zone in zl:
                 zout.append(dict(id=zone['id'], level=0.08, rgb=hsv(self.hue), channels=zone['channels']))
             step = int(math.floor(beats)) // 2                # a new position every 2 beats, all heads at once
-            lvl = 0.35 + 0.65 * max(e['kick'], decay(frac, 0.3))
+            lvl = 0.15 + 0.85 * max(e['kick'], e['snare'])
             lean = 0.85 if (int(math.floor(beats)) // 4) % 2 == 0 else 0.45
             u = 0.2 if step % 2 == 0 else 0.8
             for h in self.heads_i:
@@ -496,6 +550,19 @@ class Director:
                 g = GOBOS[0]
             for i in self.spots_i:
                 spots[i] = dict(level=0.9, fx=dict(gobo=g, gobo_rot=140, breathe=50, breathe_s=8.0, uv=0, uv_only=False))
+        elif act == 'burst':                                 # DROP: everything, rainbow stepping on the beat, flashing on the kick
+            n_ = max(1, len(zl))
+            step_ = int(math.floor(beats))
+            flash = max(e['kick'], 0.6 * e['snare'])
+            for r, zone in enumerate(zl):
+                zout.append(dict(id=zone['id'], level=clamp(0.1 + 0.9 * flash), rgb=hsv(self.hue + (r + step_) / float(n_), 1.0),
+                                 channels=zone['channels']))
+            hstep = step_ % 2
+            for k_, h in enumerate(self.heads_i):
+                hs[h] = dict(level=clamp(0.1 + 0.9 * flash), lean=0.85 if hstep == 0 else 0.4, u=0.15 if hstep == 0 else 0.85,
+                             rgb=hsv(self.hue + (k_ + step_) / float(max(1, len(self.heads_i))), 1.0), fast=True)
+            for i in self.spots_i:
+                spots[i] = dict(level=clamp(0.1 + 0.9 * e['kick']), fx=dict(gobo=0, uv=0, uv_only=False))
         elif act == 'uv':                                    # total dark + UV on the stars (the drop bursts after it)
             for zone in zl:
                 zout.append(dict(id=zone['id'], level=0.0, rgb=hsv(self.hue), channels=zone['channels']))
@@ -503,7 +570,7 @@ class Director:
                 aim = UV_AIMS.get(i, {'az': 180, 'lean': 50})
                 spots[i] = dict(level=0.85, fx=dict(hold=dict(aim, drift=0), hold_when='always', hold_head=i, uv=1.0,
                                                     uv_only=True, gobo=0, focus=128))
-        return dict(heads=hs, zones=zout, spots=spots, lamp_floor=floor, rgb=hsv(self.hue), v=self.v, head=None,
+        return dict(heads=hs, zones=zout, spots=spots, lamp_floor=floor, full=True, rgb=hsv(self.hue), v=self.v, head=None,
                     turn=self.phrase, new=False, p=0.0, mode=self.mode, act=act, bar=bar,
                     phrase_bar=bar % self.bars_per_phrase())
 
@@ -534,7 +601,7 @@ class Director:
             finally:
                 self.chase.forced = False
         zmap = {ch: zo for zo in z.get('zones', []) for ch in zo['channels']}
-        v = max(self.v, 0.35)
+        v = 1.0 if z.get('full') else max(self.v, 0.35)      # v2: full brightness, the drums set the level
         dim = float(z.get('lamp_floor', 0.15))
         out = []
         for ch in channels:
@@ -557,9 +624,10 @@ class Director:
 
     def status(self):
         z = self.last
+        _audio = self.audio_mix()
         a = (z or {}).get('act', 'zones')
         return dict(on=bool(z), pattern=self.pattern(), act=a if z else None, act_name=ACT_NAMES.get(a, '') if z else '',
-                    acts=[dict(id=x, name=ACT_NAMES[x]) for x in ACTS], acts_on=self.acts_on(),
+                    acts=[dict(id=x, name=ACT_NAMES[x]) for x in ACTS], acts_on=self.acts_on(), audio_mix=_audio,
                     mode=(z or {}).get('mode'), name=NAMES.get((z or {}).get('mode'), '') if a == 'zones' else ACT_NAMES.get(a, ''),
                     bar=(z or {}).get('phrase_bar', 0) + 1 if z else 0, bars=self.bars_per_phrase(),
                     lock=str(self.settings().get('show_lock', '') or ''), speed=self.speed(),

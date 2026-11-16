@@ -33,7 +33,7 @@ class Show:
 class Hub:
     def __init__(self, **s):
         base = dict(dmx_pattern='modes', dmx_on=True, dmx_host='192.168.1.80', beats_per_bar=4, energy=0.6,
-                    show_acts=False)   # the mode tests below run without the acts layer; section 16 tests the acts
+                    show_acts=False, show_audio=1.0)   # mode tests: acts off, audio only; sections 16-18 test those
         base.update(s)
         self.state = {'settings': base}
         self.audioshow = Show()
@@ -104,9 +104,9 @@ check('levels / leans / pan positions in range, saturated colour', not bad, bad[
 hub = Hub()
 d = hm.Director(hub, LAMPS)
 hub.audioshow.section = 'drop'
-check('drop -> director off', d.step(5.0, 10.0, 'music', HEADS) is None)
+check('drop -> still on (burst when acts are on; modes only: keeps going)', d.step(5.0, 10.0, 'music', HEADS) is not None)
 hub.audioshow.section = 'groove'
-check('after the drop -> back on', d.step(5.1, 10.1, 'music', HEADS) is not None)
+check('after the drop -> on', d.step(5.1, 10.1, 'music', HEADS) is not None)
 
 # 5. lock holds a mode; pool limits auto
 hub = Hub(show_lock='wave')
@@ -316,7 +316,7 @@ def acts_over(hub_, phrases, seed, section='groove'):
 ha = Hub(show_zones=ZMAP, show_acts=True)
 seq1, _ = acts_over(ha, 10, 1)
 seq2, _ = acts_over(Hub(show_zones=ZMAP, show_acts=True), 10, 2)
-check('acts: every groove act gets a turn within 5 phrases', {'hues', 'heads', 'gobos', 'zones'} <= set(seq1[:5]), seq1)
+check('acts: every groove act gets a turn within 6 phrases', {'hues', 'heads', 'gobos', 'zones'} <= set(seq1[:6]), seq1)
 check('acts: never the same act twice in a row', all(a != b for a, b in zip(seq1, seq1[1:])), seq1)
 check('acts: not a fixed cycle (order changes between runs)', seq1 != seq2, (seq1, seq2))
 check('acts: no UV reveal in a groove', 'uv' not in seq1, seq1)
@@ -359,11 +359,104 @@ check('UV reveal: total dark -- every lamp off', all(max(c) < 1e-9 for c in out)
 check('UV reveal: heads dark', all(v['level'] == 0 for v in z['heads'].values()))
 h_ = Hub(show_zones=ZMAP, show_acts=True)
 h_.audioshow.section = 'drop'
-check('drop: the director steps aside for the burst', hm.Director(h_, L2).step(5000.0, 1.0, 'music', HEADS) is None)
+zb = hm.Director(h_, L2).step(5000.0, 1.0, 'music', HEADS)
+check('drop: the BURST act (not the timer strobe)', zb is not None and zb['act'] == 'burst', zb and zb['act'])
 d_, z = act_frame('wave')
 check('locking a mode still works with acts on', z['act'] == 'zones' and z['mode'] == 'wave')
 st = d_.status()
-check('status lists the acts for the control page', st['acts_on'] and len(st['acts']) == 5)
+check('status lists the acts for the control page', st['acts_on'] and len(st['acts']) == len(hm.ACTS))
+
+# 17. QUALITY (Nov 15 v2, after Michael: "low reactivity, not full brightness, no zones, no switches, no rainbows")
+#     a synthetic 124 BPM track: kick every beat, snare on 2 + 4, hats on the 8ths; measured like a viewer would
+import colorsys as _cs
+def shape(age, a=0.01, d=0.12):
+    if age < 0: return 0.0
+    return age / a if age < a else math.exp(-(age - a) / d)
+def run_track(hub_, d_, bars, t0=9000.0, fps=60.0, bpm=124.0, section='groove'):
+    hub_.audioshow.section = section
+    spb = 60.0 / bpm
+    frames = []
+    t = 0.0
+    while t < bars * 4 * spb:
+        b = t / spb
+        bi = math.floor(b)
+        age = (b - bi) * spb
+        kick = shape(age) * 0.7                            # a real-ish level (not 1.0): normalisation must lift it
+        snare = shape(age) * 0.6 if bi % 4 in (1, 3) else 0.0
+        hats = shape(((b * 2) - math.floor(b * 2)) * spb / 2) * 0.4
+        hub_.audioshow.env = dict(kick=kick, snare=snare, hats=hats)
+        z = d_.step(t0 + t, b + 0.001, 'music', HEADS)
+        lam = d_.lamps([(0.3, 0.1, 0.5)] * 6, [0, 1, 2, 3, 4, 5], t0 + t, b + 0.001, 'music')
+        frames.append((b, kick, z, lam))
+        t += 1.0 / fps
+    return frames
+def corr(xs, ys):
+    n = len(xs); mx = sum(xs) / n; my = sum(ys) / n
+    sx = math.sqrt(sum((x - mx) ** 2 for x in xs)); sy = math.sqrt(sum((y - my) ** 2 for y in ys))
+    return sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / (sx * sy) if sx and sy else 0.0
+hq = Hub(show_zones=ZMAP, show_acts=True)
+dq = hm.Director(hq, L2)
+dq.rng = _r.Random(7)
+fr = run_track(hq, dq, 64)
+mx_l = max(max(c) for _, _, _, lam in fr for c in lam)
+check('quality: lamps reach FULL brightness', mx_l >= 0.95, mx_l)
+mx_h = max(cv['level'] for _, _, z, _ in fr for cv in z['heads'].values())
+check('quality: heads reach full level', mx_h >= 0.95, mx_h)
+lit = [(k, sum(max(c) for c in lam) / len(lam)) for b, k, z, lam in fr if z['act'] in ('zones', 'hues', 'heads', 'burst')]
+cr = corr([k for k, _ in lit], [v for _, v in lit])
+check('quality: the lamps follow the kick (correlation >= 0.5)', cr >= 0.5, round(cr, 2))
+switches = sum(1 for a, b in zip(fr, fr[1:]) if (a[2]['act'], a[2]['mode']) != (b[2]['act'], b[2]['mode']))
+check('quality: a switch every 8 bars (>= 7 in 64 bars)', switches >= 7, switches)
+acts_seen = {z['act'] for _, _, z, _ in fr}
+check('quality: at least 4 different acts in 64 bars', len(acts_seen) >= 4, acts_seen)
+def spread(z):
+    lv = [zo['level'] for zo in z['zones']]
+    m = sum(lv) / len(lv)
+    return math.sqrt(sum((x - m) ** 2 for x in lv) / len(lv))
+zf = [z for _, _, z, _ in fr if z['act'] == 'zones' and z['mode'] in ('wave', 'loop', 'call', 'split')]
+frac_zoned = sum(1 for z in zf if spread(z) > 0.2) / max(1, len(zf))
+check('quality: zones visibly do different things (>= 30% of frames)', frac_zoned >= 0.3, round(frac_zoned, 2))
+hues = set()
+for _, _, z, lam in fr:
+    for c in lam:
+        h_, s_, v_ = _cs.rgb_to_hsv(*c)
+        if v_ > 0.3 and s_ > 0.5:
+            hues.add(int(h_ * 12) % 12)
+check('quality: rainbows -- at least 9 of 12 colour families used', len(hues) >= 9, sorted(hues))
+hd = Hub(show_zones=ZMAP, show_acts=True)
+dd2 = hm.Director(hd, L2)
+frd = run_track(hd, dd2, 4, t0=20000.0, section='drop')
+check('quality: drops = burst', all(z['act'] == 'burst' for _, _, z, _ in frd))
+crd = corr([k for _, k, _, _ in frd], [sum(max(c) for c in lam) / 6 for _, _, _, lam in frd])
+check('quality: the burst flashes ON THE KICK (correlation >= 0.8)', crd >= 0.8, round(crd, 2))
+check('quality: burst heads move fast in unison', all(all(cv.get('fast') for cv in z['heads'].values()) for _, _, z, _ in frd))
+
+# 18. SEMI AUDIO REACTIVE: the built-in drummer
+hs_ = Hub(show_zones=ZMAP, show_acts=False, show_lock='pulse', show_audio=0.0)
+ds_ = hm.Director(hs_, L2)
+hs_.audioshow.env = dict(kick=0.0, snare=0.0, hats=0.0)        # silence
+on_beat = ds_.step(30000.0, 8.01, 'music', HEADS)
+off_beat = ds_.step(30000.4, 8.6, 'music', HEADS)
+check('drummer: with NO audio the show still hits on every beat', all(cv['level'] > 0.8 for cv in on_beat['heads'].values()), on_beat['heads'])
+check('drummer: and drops between beats', all(cv['level'] < 0.4 for cv in off_beat['heads'].values()))
+hm_ = Hub(show_zones=ZMAP, show_acts=False, show_lock='pulse', show_audio=0.6)
+dm_ = hm.Director(hm_, L2)
+hm_.audioshow.env = dict(kick=0.0, snare=0.0, hats=0.0)
+dm_.step(31000.0, 0.5, 'music', HEADS)
+z_ = dm_.step(31003.0, 12.01, 'music', HEADS)                    # 3 s of silence -> drummer takes over
+check('drummer: 2 s of silence -> the clock carries the show', all(cv['level'] > 0.8 for cv in z_['heads'].values()))
+ha_ = Hub(show_zones=ZMAP, show_acts=False, show_lock='pulse', show_audio=1.0)
+da_ = hm.Director(ha_, L2)
+ha_.audioshow.env = dict(kick=0.0, snare=0.0, hats=0.0)
+z_ = da_.step(32003.0, 12.01, 'music', HEADS)
+check('drummer: audio-only (show_audio 1) ignores the clock', all(cv['level'] < 0.2 for cv in z_['heads'].values()))
+hq2 = Hub(show_zones=ZMAP, show_acts=True, show_audio=0.6)
+dq2 = hm.Director(hq2, L2)
+dq2.rng = _r.Random(9)
+fr2 = run_track(hq2, dq2, 32, t0=40000.0)
+lit2 = [(k, sum(max(c) for c in lam) / len(lam)) for b, k, z, lam in fr2 if z['act'] in ('zones', 'hues', 'heads', 'burst')]
+check('drummer + audio together still follow the kick', corr([k for k, _ in lit2], [v for _, v in lit2]) >= 0.5)
+check('status reports the audio mix', dq2.status()['audio_mix'] == 0.6)
 
 print('hub_modes tests: %d passed, %d failed' % (PASSES[0], len(FAILS)))
 sys.exit(1 if FAILS else 0)
