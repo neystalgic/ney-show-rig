@@ -432,7 +432,8 @@ LOOKS = {
                                                         hub_setting('dmx_strobe', 'always'), hub_setting('dmx_on', True))),
     'showsafe': ('Photosensitive-safe light show: no strobe, no flashes, gentle colour changes, heads still move',
                  lambda: show_safe()),
-    'uvstars': ('UV on the stars: both spots hold the ceiling stars in UV, whatever else is running', lambda: hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always'))),
+    'uvstars': ('UV on the stars: both spots hold the ceiling stars in UV, whatever else is running',
+                lambda: hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always', uv_steady=True))),   # never starts a hub itself
     'uvoff': ('Spots back to the show (UV off the stars)', lambda: hub_setting('spot_fx', {})),
     'relay': ('Head relay: one head at a time sweeps, then hands off round the room (grooves + breakdowns; drops as usual)',
               lambda: hub_setting('dmx_pattern', 'show')),
@@ -463,7 +464,7 @@ LOOKS = {
     'movienight': ('Movie night', lambda: movie_flag()),
     'movieuv': ('Movie night: UV stars from both spots, fill speaker +6 dB', lambda: movie_uv()),
     'moviechill': ('Movie, chill: soft slow colour drift with the film, UV stars on the ceiling', lambda: (
-        movie_lights('movie'), hub_vibe('dreamy', 0.2), hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always')))),   # Nov 15
+        movie_lights('movie'), hub_vibe('dreamy', 0.2), hub_setting('spot_fx', dict(SPOT_FX_UV_SKY, hold_when='always', uv_steady=True)))),   # Nov 15
     'showuv': ('Light show with the UV stars: heads to the music, both spots holding UV on the stars', lambda: show_uv()),
     'purplenight': ('Purple night light: heads park and power off, lamps dim purple', lambda: (
         head_power.request_off(why='purplenight'), stop_all(), hue_lights({'on': {'on': True}, 'dimming': {'brightness': 15.0},

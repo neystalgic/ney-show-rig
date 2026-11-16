@@ -684,6 +684,8 @@ class Heads:
             m = 255
             data[a + 8] = self.flash_shutter if getattr(self, 'flash_strobe', False) else 12   # strobe only in drops
         uvl = clamp(float(fx.get('uv', 0) or 0)) * lvl / 0.8       # UV follows the same loudness (0-1 setting)
+        if fx.get('uv_steady') and not dark:                      # Nov 15: UV stars steady, whatever the film/music does
+            uvl = clamp(float(fx.get('uv', 0) or 0))
         uv = 0 if uvl < 0.004 else int(round(clamp(uvl) * 255))
         if fx.get('uv_only'):
             m = 0
