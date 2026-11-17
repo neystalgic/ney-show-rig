@@ -1,6 +1,20 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-17 00:07 UTC | Spot power (W1) | away/spot-power/ (NEW): spot_power.py modelled on head_power.py -- finds Hue
+  plugs named exactly "Spot 1"/"Spot 2" (dormant until they exist; lamps and any Mac/Scarlett/projector name never
+  switched). ON for the spot looks (uvstars, movieuv, moviechill, showuv), show acts gobos/uv/burst, or when the node
+  already sends light/UV to a spot -- only with the DMX node answering. OFF after spot_idle_min (10) dark min, with
+  off/rest/night/nightlight/purplenight/heads_off (after 6 s), or 30 s after the node goes quiet. Hand-off in the Hue
+  app is respected for 30 min; no re-power within 60 s. Spot 2 on -> Mac (Moira) says once "Spot 2 is on -- ceiling
+  fan off please". apply_patches.py = guarded install: adds spot_power.py, patches rig_control.py (import, start,
+  after_look hook, status x3), rig_health.py ("Spots" row), selftest.py (suite line); STOP + nothing touched if any
+  anchor moved | tests: test_spot_power.py 52/52 passed (fake bridge/node/hub/clock/voice, network blocked, live
+  files unchanged); test_apply_patches.py 18/18 passed (temp copies, compiles, idempotent, STOP case) | Michael: name
+  the plugs Spot 1 / Spot 2 in their own room (power-on behaviour Off), then the one paste in
+  away/spot-power/DEPLOY.txt (reload only, no hub restart) | Layer updates for Michael: AGENTS "Spots have no smart
+  plugs: tell Michael to switch them on/off by hand" -> "Spot plugs (Spot 1/2) are switched only by spot_power.py;
+  Spot 2 on -> fan reminder" once deployed; BRAIN Open "ON HOLD spots ... until the plugs arrive" can close.
 2026-11-16 23:07 UTC | Focus Spot calibration (W7) | away/spot-calib/ (NEW): copy of calib.py whose send() picks
   the layout per fixture -- LM70S heads keep their 14-ch bytes (identical to live, tested), Focus Spots ('focus17') get
   hub_dmx.focus_out's 17-ch layout. New modes: 'spot N' (Spot N alone, open beam, colour slot 97 deep blue-violet --

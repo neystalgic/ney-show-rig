@@ -37,7 +37,7 @@ W7. [SAFE] ready for Michael (built + tested Nov 16, see away/spot-calib/DEPLOY.
    and 'uvaim N' (UV only). Spots are indexes 4 and 5 in the node list ("Spot 1" = 5th fixture). Offline test with a
    fake socket: byte layout per type, nothing sent to other fixtures, UV-only frames have dimmer 0.
 
-W1. [SAFE] todo -- SPOT POWER with the new Hue plugs (arriving today; Michael will name them "Spot 1" / "Spot 2" in the Hue
+W1. [SAFE] ready for Michael (built + tested Nov 17, see away/spot-power/DEPLOY.txt) -- SPOT POWER with the new Hue plugs (arriving today; Michael will name them "Spot 1" / "Spot 2" in the Hue
    app). Build away/spot-power/: spot_power.py modelled on head_power.py (find plugs by name, dormant until they exist):
    spots power ON when a look/act needs them (show modes gobos/uv/burst acts, uvstars, movieuv, moviechill, showuv), OFF
    after spot_idle_min (default 10) dark minutes; Spot 2 ON -> Jarvis says once "Spot 2 is on -- ceiling fan off please"

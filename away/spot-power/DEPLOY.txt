@@ -1,0 +1,58 @@
+SPOT POWER (W1) -- Hue Smart Plugs on the two Focus Spots          built + tested by the away loop, Nov 17
+===========================================================================================================
+WHAT IT DOES
+  spot_power.py (new, modelled on head_power.py) powers the Focus Spots only while something needs them:
+  - ON  when a spot look runs (uvstars, movieuv, moviechill, showuv), when the show director plays a spot act
+        (gobos, uv, burst), or when the DMX node is already sending light/UV to a spot.
+        Only if the DMX node answers (power order: node first, like the heads).
+  - OFF after 10 dark minutes (spot_idle_min), with the off / rest / night / nightlight / purplenight /
+        heads_off looks (6 s later, after the node fades them), or 30 s after the DMX node stops answering.
+  - Switched them off yourself in the Hue app? It leaves them off for 30 min instead of fighting you
+    (a spot look still turns them on). Never re-powers within 60 s of switching them off.
+  - Spot 2 comes on -> the Mac says once (Moira): "Spot 2 is on -- ceiling fan off please."
+  - Only plugs named exactly "Spot 1" / "Spot 2" are ever switched. Dormant until those plugs exist.
+  Rig Health gets a "Spots" row (x of 2 on / dormant), and /status shows spot_power next to head_power.
+
+FILES
+  adds     spot_power.py                     (copy of away/spot-power/spot_power.py)
+  patches  rig_control.py   import, spot_power.start() next to head_power.start(), spot_power.after_look(look)
+                            after every look, spot_power.status() next to head_power.status() (3 places)
+           rig_health.py    "Spots" row under "Moving heads"
+           selftest.py      spot-power test suite line
+  Each patch looks for an exact anchor line; if any file changed since Nov 17 it says STOP and touches nothing.
+
+BEFORE YOU DEPLOY (Hue app, 2 minutes)
+  1. Name the two new plugs exactly:  Spot 1   and   Spot 2
+  2. Put them in the heads' own room (e.g. "Moving heads"), NOT the living room -- so "lights off" never hits them.
+  3. Each plug: Power-on behaviour (after a power cut) = Off.
+  (Deploying before the plugs exist is fine: it just stays dormant.)
+
+DEPLOY -- one paste in Terminal
+cd ~/"Touchdesigner Designs/Hue Rig" && python3 away/spot-power/test_spot_power.py && python3 away/spot-power/test_apply_patches.py && python3 away/spot-power/apply_patches.py && echo '{"do": "reload"}' > bridge/inbox/reload-spots.json && sleep 15 && python3 spot_power.py && python3 selftest.py --quiet
+
+  (reload = rig_control restarts itself via launchd with the new code; no hub restart.)
+  Deployed = "0 FAIL" at the end, and spot_power.py prints "plugs: {1: 'off', 2: 'off'}" (or "none named ..."
+  if the plugs aren't named yet).
+
+TRY IT (2 minutes, you in the room, DMX node running)
+  1. Fan off.  "Jarvis, UV stars"  -> both spots power up, Mac says the fan line once, ~20 s later the UV stars.
+  2. "Jarvis, UV off" -> spots go back to the show; with nothing lit they power off 10 min later.
+  3. "Jarvis, goodnight" (or lights off) -> spots off ~6 s after the look.
+  Rig Health page: "Spots" row shows 2 of 2 on / off.
+
+SETTINGS (optional)  spot_power.json next to rig_control.py, e.g.
+  {"spot_idle_min": 10, "warmup_s": 20, "manual_hold_min": 30, "fan_reminder": true, "voice": "Moira",
+   "wake_acts": ["gobos", "uv", "burst"], "enabled": true}
+
+UNDO
+cd ~/"Touchdesigner Designs/Hue Rig" && for f in rig_control.py rig_health.py selftest.py; do cp "$(ls -t $f.bak-2026* | head -1)" "$f"; done && echo '{"do": "reload"}' > bridge/inbox/reload-undo.json
+  (spot_power.py can stay -- nothing imports it after the undo. Or: echo '{"enabled": false}' > spot_power.json
+   to switch it off without undoing.)
+
+WATCH FOR
+  - Spot acts start before the spots have warmed up the first time in a show (~20 s). After that they stay
+    powered between acts unless the show has no spot act for 10 minutes. If that bothers you, raise spot_idle_min.
+  - The director picks UV/gobo acts because the spots are in its fixture list, not because they're powered --
+    so the first UV/gobo act of a night powers them; that's by design.
+  - Spots lit = node output. While a spot is uncalibrated the node keeps it dark, so only looks/acts power it on.
+  - Log: /tmp/spot_power.log
