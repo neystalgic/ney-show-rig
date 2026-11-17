@@ -1,0 +1,38 @@
+W6 (c) -- PLAN for the TouchDesigner half (Claude does this LIVE with Michael; the away loop never edits TD)
+==========================================================================================================
+
+WHAT ALREADY WORKS WITHOUT TOUCHING TD
+- The visual SWITCH: the hub now sends vis = flower / metatron / yantra / tesseract / kaleido / golden /
+  chladni / mandala / voronoi / quasicrystal / harmonograph / attractor. hue_feed's VIS_FOR already maps
+  every one of these to a visual TD has (checked by the test against away/push-show-ref). So once the
+  hub patch is deployed, the visual follows the act / mode with no TD change.
+
+WHAT THE TD HALF ADDS (colour + intensity in sync)
+The hub message now also carries: act, mode (strings, '' = director off), hue (0-1), level (0-1, already
+smoothed: quick up, slower down), kick (0-1, decaying).
+
+1. hue_feed custom parameters (page "Show"), added in build_hue_hub_td.py -- NOT by hand, TD rebuilds
+   hue_feed from that file:
+     Dact  (Str)   Dmode (Str)   Dhue (Float 0-1)   Dlevel (Float 0-1)   Dkick (Float 0-1)
+     Dtint (Float 0-1, default 0.7)  -- how strongly the director's colour tints the visual
+     Dfloor (Float 0-1, default 0.35) -- the visual never goes darker than this
+2. In hue_feed _apply (inside build_hue_hub_td.py), after the existing keys:
+     if 'act' in m:  _set(c, 'Dact', str(m['act'])); _set(c, 'Dmode', str(m.get('mode', '')))
+     for key, name in (('hue', 'Dhue'), ('level', 'Dlevel'), ('kick', 'Dkick')):
+         if key in m: _set(c, name, round(float(m[key]), 4))
+   (when the director is off the hub sends act='' and no hue/level/kick -> keep the last values but
+   gate everything below on Dact != '').
+3. Tint = the director's hue: when Dact != '', Geocola / Geocolb (and each vcols pair) become
+     mix(room colour, hsv(Dhue, 0.85, 1.0), Dtint)      and colour b = hsv(Dhue + 0.08, 0.85, 1.0)
+   (stay in the purple family when the director sits on purple; no white -- saturation never below 0.6).
+4. Brightness = the zone level: the visual's final Level TOP brightness (or the existing Master)
+     x (Dfloor + (1 - Dfloor) * Dlevel)       -- only when Dact != ''
+   Kick: + 0.15 * Dkick on Glow (not on brightness), so the pump is felt without flashing.
+5. Flicker safety: level and kick are already smoothed in the hub (level tau 0.05 s up / 0.25 s down,
+   kick 0.2 s release, at most one kick per beat). Keep a Lag CHOP (0.05 / 0.25) in TD anyway, and keep
+   Flicker Guard in charge of how often the visual switches (TD cross-fades it).
+6. Test live together: Director on, lock each act from the Push SHOW pads, check the visual, its tint
+   and that it breathes with the zones. Then AUTO for a few phrases.
+
+Files involved (TD side): build_hue_hub_td.py (hue_feed builder) -- Claude edits it live with Michael,
+since TD auto-rebuilds hue_feed when it changes.

@@ -51,7 +51,7 @@ W2. [SAFE] ready for Michael (built + tested Nov 17, see away/console/DEPLOY.txt
    (show_audio), speed (show_speed), acts on/off; quick looks (purple, cozy, moviechill, night, heads on/off, guest
    on/off); a small zone map 1A 1B 2A 2B 3A with heads listed. Uses POST /show/set (already allowlisted) + GET looks.
    Phone-first layout. Offline test: page JS against a fake status JSON in node; route test with a fake handler.
-W6. [SAFE] todo -- PUSH 2 "SHOW" mode + visuals in sync (Michael Nov 16: "bind light modes to buttons on the Push and
+W6. [SAFE] ready for Michael (built + tested Nov 17, see away/push-show/DEPLOY.txt; TD half = PLAN.txt, live with Claude) -- PUSH 2 "SHOW" mode + visuals in sync (Michael Nov 16: "bind light modes to buttons on the Push and
    have them synchronized with our sacred geometry in colour and intensity"). HUB SIDE ONLY (never edit TouchDesigner, and never touch build_hue_hub_td.py -- TD auto-rebuilds hue_feed when it changes;
    read-only copies of TD's hue_feed code + visual list are in away/push-show-ref/). Build in away/push-show/ (copies of
    hub_push2.py, hue_hub.py as needed):

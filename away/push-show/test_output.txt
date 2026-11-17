@@ -1,0 +1,75 @@
+ok    apply_patches on temp copies
+ok    second run is a no-op (already patched)
+ok    backups written
+ok    STOP when an anchor moved
+ok    STOP touches nothing
+ok    Push opens on the fake User port
+ok    SHOW button is free in the live file
+ok    MIX (CC 112) -> SHOW mode
+ok    SHOW button lit
+ok    other mode buttons dim
+ok    status shows act + bar x of 8
+ok    palette: playing = bright purple
+ok    palette: locked = medium purple
+ok    palette: rest = dim purple
+ok    playing act (Burst) pad bright
+ok    other acts dim
+ok    AUTO lit (no lock)
+ok    acts on/off lit (acts on)
+ok    modes dim while an act plays
+ok    wave bounce + loop alternate lit
+ok    audio 60% lit
+ok    bottom four rows + spare pads dark
+ok    Gobos pad -> show_lock gobos
+ok    locked act pad = medium, AUTO now dim
+ok    status shows the lock
+ok    tap the locked act again -> AUTO
+ok    Wave mode pad -> show_lock wave
+ok    AUTO pad -> show_lock ""
+ok    acts pad toggles show_acts off
+ok    ...and on again
+ok    forward pad -> show_wave forward
+ok    forward lit, bounce dim
+ok    ccw pad -> show_loop_dir ccw
+ok    100% pad -> show_audio 1.0
+ok    0% pad -> show_audio 0.0
+ok    dark pads, releases and pressure send nothing
+ok    all values are in rig_control /show/set allowlist
+ok    zones act: playing mode (Loop) bright, Zones act bright
+ok    director off: status says so, no pad bright
+ok    NOTE -> back to PLAY mode, SHOW button dim
+ok    no director: SHOW mode still safe
+ok    TD_FORMS = TD hue_feed VIS_FOR keys
+ok    hues -> flower_of_life (TD has it)
+ok    heads -> metatrons_cube (TD has it)
+ok    gobos -> sri_yantra (TD has it)
+ok    uv -> tesseract (TD has it)
+ok    burst -> kaleidoscope (TD has it)
+ok    pulse -> golden_angle (TD has it)
+ok    wave -> chladni (TD has it)
+ok    loop -> proc_mandala (TD has it)
+ok    call -> proc_voronoi (TD has it)
+ok    split -> proc_quasicrystal (TD has it)
+ok    orbit -> proc_harmonograph (TD has it)
+ok    relay -> proc_attractor (TD has it)
+ok    unknown mode name is skipped
+ok    form TD does not have is skipped
+ok    director off -> no form
+ok    relay frame from hub_chase (no act) -> attractor
+ok    a pad touched recently wins
+ok    fields: act + mode
+ok    fields: hue from the director colour (purple ~0.75)
+ok    fields: level glides to the zones mean (0.4)
+ok    fields: level falls slower than it rises (one frame: -12%, a rise moves ~48%)
+ok    fields: kick from drummer on the beat (beat 16.0)
+ok    fields: kick decays between beats
+ok    fields: everything 0-1
+ok    fields: act frame, heads levels, hue from director.hue
+ok    fields: director off -> act/mode empty only
+ok    Visuals has a Sync
+ok    message gets the director fields
+ok    visual pick defers to a touched pad
+ok    live hub_push2.py / hub_visuals.py unchanged
+ok    no hub_showsync.py in the repo root yet
+
+73 passed, 0 failed

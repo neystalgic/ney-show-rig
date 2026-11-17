@@ -1,0 +1,62 @@
+W6 -- PUSH 2 "SHOW" MODE + VISUALS IN SYNC   (built + tested by the away loop, Nov 17)
+=====================================================================================
+
+WHAT IT DOES
+1. Push 2 SHOW mode on the MIX button (CC 112 -- not used anywhere in hub_push2.py). Press User on Push,
+   then MIX. Pads (top to bottom):
+     row 1  Hue showcase | Head moment | Gobos | Zones | UV | Burst | AUTO | acts on/off
+     row 2  Pulse | Call | Wave | Loop | Split | Orbit | Relay
+     row 3  wave: bounce | forward | back | alternate   ||  loop: alternate | ccw | cw
+     row 4  audio mix 0 | 25 | 50 | 60 | 75 | 100 %
+     rows 5-8 dark
+   Purple only: playing = bright, locked (waits for the next 8-bar line) = medium, the rest dim.
+   Tap a locked act/mode again = AUTO. Each tap goes through the hub's own 'setting' path
+   (show_lock / show_acts / show_wave / show_loop_dir / show_audio) -- the same settings as the console.
+   The hub status line (desk / health) reads e.g. "SHOW mode -- Gobos (bar 3 of 8) -- lock: auto".
+   NOTE/SESSION/SCALE/LAYOUT leave SHOW mode exactly as before. Knobs and the buttons around the display
+   keep working on the playing look as in the other modes.
+2. Visuals follow the lights: while the director runs, the visual is picked per act / mode
+     hues flower_of_life, heads metatrons_cube, gobos sri_yantra, uv tesseract, burst kaleidoscope,
+     pulse golden_angle, wave chladni, loop proc_mandala, call proc_voronoi, split proc_quasicrystal,
+     orbit proc_harmonograph, relay proc_attractor
+   (a pad you touched in the last 20 s still wins), and the TD message gains act, mode, hue, level, kick.
+   The visual switch works right away (TD's VIS_FOR already knows every name). Tint + brightness need the
+   TD half -- see PLAN.txt (done live with Claude).
+
+FILES
+  ADDS     hub_showsync.py                      (from away/push-show/)
+  PATCHES  hub_push2.py   (11 small insertions)  backup: hub_push2.py.bak-2026-11-17-pushshow
+           hub_visuals.py (5 small insertions)   backup: hub_visuals.py.bak-2026-11-17-pushshow
+  away/push-show/hub_push2.py + hub_visuals.py are the patched copies, for reading only -- the install
+  patches the LIVE files with apply_patches.py (it STOPs and touches nothing if a live file moved).
+
+DEPLOY (one paste in Terminal)
+  cd "$HOME/Touchdesigner Designs/Hue Rig" && python3 away/push-show/apply_patches.py
+
+  The hub watches its own code files and restarts itself ONCE when hub_push2.py / hub_visuals.py change
+  (both are written in the same second). Don't stop/start it by hand -- just wait ~30 s.
+  No rig_control change, no Pi change, no TouchDesigner change.
+
+CHECK
+  - Push: User -> MIX. Row 1 should glow purple with one bright pad (or AUTO bright). Tap Gobos: medium
+    purple until the next 8-bar line, then bright. Tap it again: AUTO.
+  - Console / health page should show the same lock + wave + audio you set on the pads.
+  - TD: with the Director on, the visual should change on each new act/mode.
+  - If MIX does nothing: run "MIDI Check.command", press MIX, and change SHOW = 112 near the top of
+    hub_push2.py to the number it shows.
+
+UNDO
+  cd "$HOME/Touchdesigner Designs/Hue Rig" && cp hub_push2.py.bak-2026-11-17-pushshow hub_push2.py && cp hub_visuals.py.bak-2026-11-17-pushshow hub_visuals.py
+  (hub_showsync.py can stay -- nothing imports it after the undo; or move it to _to_delete/.) The hub
+  restarts itself once again.
+
+WATCH FOR
+  - hub_log.txt after the restart: any "lost Push 2" or a Traceback mentioning hub_showsync.
+  - Pads only change settings; the director still decides when (next 8-bar line), and hub_dmx keeps every
+    head's lean cap / pan window / speed limit. Nothing here strobes.
+  - hub_showsync.py is not in hue_hub.py's CODE_FILES, so a later edit to it alone won't auto-restart
+    the hub (optional: add 'hub_showsync.py' to CODE_FILES next time hue_hub.py is touched).
+
+TESTS
+  python3 -I away/push-show/test_push_show.py   -> 73 passed, 0 failed (test_output.txt)
+  fake Push MIDI in/out, fake hub + director, network blocked, temp copies; live files checked unchanged.

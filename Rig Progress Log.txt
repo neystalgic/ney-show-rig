@@ -1,6 +1,18 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-17 02:09 UTC | Push 2 SHOW mode + visuals in sync (W6) | away/push-show/ (NEW): hub_showsync.py = SHOW pad
+  mode on the MIX button (CC 112, unused): row 1 acts + AUTO + acts on/off, row 2 the 7 zone modes, row 3 wave +
+  loop direction, row 4 audio mix 0/25/50/60/75/100%; purple only (playing bright, locked medium, rest dim); taps go
+  through the hub's own 'setting' op (show_lock/acts/wave/loop_dir/audio); status reads "SHOW mode -- Gobos (bar 3
+  of 8) -- lock: auto". Visuals: director picks the TD form per act/mode (12 names, all in TD's VIS_FOR -- the
+  switch works with no TD change; a touched pad still wins 20 s) + message fields act, mode, hue, level (smoothed),
+  kick. apply_patches.py = guarded install (hub_push2.py 11 inserts, hub_visuals.py 5; backups
+  .bak-2026-11-17-pushshow; STOP + nothing touched if an anchor moved). PLAN.txt = TD half (tint = hue, brightness =
+  level) for a live session | tests: test_push_show.py 73/73 passed (fake Push MIDI in/out, fake hub + director,
+  network blocked, temp copies, TD names checked against away/push-show-ref, live files unchanged) | Michael: the
+  one paste in away/push-show/DEPLOY.txt (hub auto-restarts once -- don't restart by hand), then User -> MIX on the
+  Push | Layer updates for Michael: none.
 2026-11-17 01:09 UTC | Rig Console page v1 (W2) | away/console/ (NEW): console.html = phone-first
   lighting-console page (dark stage background, one purple accent, no gradients/glass/emoji, 44 px keys): live every 1 s
   -- act or zone mode, bar x/8 strip, section, tempo, audio level meter, look, guest; buttons: Director on/off
