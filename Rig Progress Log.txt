@@ -1,6 +1,19 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-17 03:08 UTC | Jarvis show phrases (W3) | away/jarvis-show/ (NEW): show_words.py = word rules
+  (model can't pick them) for the show director: "lock wave / lock the heads / hold gobos / lock call and response",
+  "auto / unlock", "more audio / audio only" (1.0), "clock only / just the drummer" (0.0), "normal audio" (0.6),
+  "less audio" (0.3), "audio at N percent", "wave backwards/forwards/bounce/alternate", "loop clockwise/counter
+  clockwise/alternate", "acts off / modes only / acts on", "what's playing" (act or mode + bar x of 8 + section +
+  locked/auto). "lock burst" refused by voice (flashes on the kick). rig side = the /show/set allowlist narrowed to
+  5 keys; hub off -> saved in hub_state.json for the next show. apply_patches.py = guarded install (jarvis.py 4
+  inserts, rig_control.py 3 lines in ask_jarvis rig(), selftest suite; backups .bak-nov17-show; STOP if an anchor
+  moved; works before/after the craving + workout installs) | tests: test_show_words.py 180/180 passed (fake rig/hub/
+  live, network blocked, temp copies; existing phrases understood exactly as before; jarvis/test_jarvis.py passes on
+  the patched copy; live files unchanged) | Michael: the one paste in away/jarvis-show/DEPLOY.txt (reload only, no hub
+  restart), then the 2-min live test there. Note: backlog said "audio only" = 0.6, but the hub's meaning is 1 =
+  audio only, so I used 1.0 and made 0.6 "normal audio" -- say if you want it swapped | Layer updates for Michael: none.
 2026-11-17 02:09 UTC | Push 2 SHOW mode + visuals in sync (W6) | away/push-show/ (NEW): hub_showsync.py = SHOW pad
   mode on the MIX button (CC 112, unused): row 1 acts + AUTO + acts on/off, row 2 the 7 zone modes, row 3 wave +
   loop direction, row 4 audio mix 0/25/50/60/75/100%; purple only (playing bright, locked medium, rest dim); taps go

@@ -1,0 +1,49 @@
+JARVIS SHOW PHRASES (away loop W3, Nov 17) -- built + tested offline, NOT live yet
+==================================================================================
+
+WHAT IT DOES
+  Talk to the show director by voice (Siri "Jarvis" or typed). Word rules only -- the local model can't
+  pick these, and nothing here strobes.
+    "lock wave" / "lock the heads" / "hold gobos" / "lock call and response"   -> holds that act or mode
+    "auto" / "unlock" / "back to auto"                                        -> director picks again
+    "more audio" or "audio only" = 100% music   "clock only" / "just the drummer" = 0% (built-in drummer)
+    "normal audio" / "half and half" = 60% (default)   "less audio" = 30%   "audio at 75 percent"
+    "wave backwards / forwards / bounce / alternating wave"
+    "loop clockwise / counter clockwise / alternate the loop"
+    "acts off" / "modes only"   and   "acts on"
+    "what's playing"  -> "Playing Gobos, bar 3 of 8, groove. Auto picks the next one."
+  Two in one works: "acts off and loop clockwise".
+  "lock burst" is refused by voice (the drop flashes on the kick) -- it still plays in drops, or use the console.
+  Hub off? The setting is saved for the next show (same as the console / POST /show/set does).
+  NOTE: the backlog listed "audio only" as 0.6; the hub's own meaning is 1 = audio only, so "audio only" = 1.0
+  and 0.6 is "normal audio". Say if you want it the other way.
+
+FILES
+  NEW      jarvis/show_words.py          (copy of away/jarvis-show/show_words.py)
+  PATCHED  jarvis/jarvis.py              4 small inserts (import, word rule after reminders, do(), help line)
+  PATCHED  rig_control.py                3 lines inside ask_jarvis's rig(): 'show_status' + 'show:{...}'
+                                         -> show_words.rig_side() (allowlist: show_lock/wave/loop_dir/acts/audio)
+  PATCHED  selftest.py                   + suite "Jarvis show phrases"
+  Backups: <file>.bak-nov17-show. Works before or after the craving / workout installs (tested both orders).
+  If an anchor moved it STOPS and writes nothing.
+
+DEPLOY (one paste in Terminal on the Mac)
+  cd ~/"Touchdesigner Designs/Hue Rig" && python3 away/jarvis-show/test_show_words.py > /tmp/show_words_test.txt; tail -1 /tmp/show_words_test.txt; grep -q "^ALL" /tmp/show_words_test.txt && python3 away/jarvis-show/apply_patches.py && echo '{"do": "reload"}' > bridge/inbox/reload-show-words.json && sleep 15 && python3 selftest.py --quiet
+
+  -> 0 FAIL = deployed (new line: "Jarvis show phrases"). rig_control reloads itself; NO hub restart needed.
+
+QUICK LIVE TEST (2 min, with the show running: "Jarvis, show modes")
+  1. "Jarvis, what's playing"         -> act/mode + bar x of 8
+  2. "Jarvis, lock gobos"             -> "Locked on Gobos." -- gobos hold past the next 8-bar line
+  3. "Jarvis, wave backwards"  then "lock wave"  -> the wave runs the other way round the zones
+  4. "Jarvis, clock only"             -> lights keep the beat from the drummer even with the music quiet
+  5. "Jarvis, auto" + "normal audio"  -> back to normal
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && for f in jarvis/jarvis.py rig_control.py selftest.py; do cp "$f.bak-nov17-show" "$f"; done && echo '{"do": "reload"}' > bridge/inbox/reload-undo-show.json
+  (jarvis/show_words.py can stay -- nothing imports it after the undo.)
+
+WATCH FOR
+  * "The rig doesn't know show settings yet" = jarvis.py got patched but rig_control didn't reload -> reload it.
+  * Siri mishearing "lock" as "look": "look gobos" isn't understood (falls to the model) -- say "hold gobos".
+  * Locking only shows once show modes are on (dmx_pattern 'modes'); "what's playing" tells you if they're off.

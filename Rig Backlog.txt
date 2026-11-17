@@ -71,7 +71,7 @@ W6. [SAFE] ready for Michael (built + tested Nov 17, see away/push-show/DEPLOY.t
        tint = the director's hue and its brightness = the zone level.
    Offline tests: fake Push MIDI in/out (pad -> setting, LED colours), message fields, unknown visual names skipped.
 
-W3. [SAFE] todo -- Jarvis phrases for the new show: "lock wave / lock the heads / gobos", "auto" / "unlock",
+W3. [SAFE] ready for Michael (built + tested Nov 17, see away/jarvis-show/DEPLOY.txt) -- Jarvis phrases for the new show: "lock wave / lock the heads / gobos", "auto" / "unlock",
    "more audio / clock only / audio only" (show_audio 1.0 / 0.0 / 0.6), "wave backwards / bounce", "loop clockwise /
    counter clockwise", "acts off / acts on", "what's playing" (reads act + mode + bar). All through /show/set's
    allowlist. Extend jarvis tests; no model-allowlist changes for anything that strobes.
