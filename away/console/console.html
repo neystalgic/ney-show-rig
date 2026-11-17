@@ -1,0 +1,290 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#0b0a0e">
+<title>Rig Console</title>
+<!-- Rig Console v1 (Nov 17, away loop W2). Served by rig_control at /console (same login as /health).
+     Reads /console.json every second; buttons use POST /show/set and the existing looks. Real data only. -->
+<style>
+:root{--bg:#0b0a0e;--panel:#131118;--key:#1a1721;--line:#26222e;--text:#e9e5ef;--muted:#878193;--dim:#4c4756;
+--accent:#9b5cff;--accent-dim:#3b2a5e;--ink:#0b0a0e;--down:#ff4d5e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font:14px/1.3 -apple-system,system-ui,sans-serif;max-width:560px;margin:0 auto;
+padding:max(10px,env(safe-area-inset-top)) 12px max(28px,env(safe-area-inset-bottom))}
+.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding:4px 0 8px}
+h1{font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin:0;font-weight:700}
+#conn{font-size:11px;color:var(--muted);text-align:right}#conn.down{color:var(--down)}
+.sec{border-bottom:1px solid var(--line);padding:10px 0 12px}
+.lab{display:flex;justify-content:space-between;align-items:baseline;font-size:10px;letter-spacing:.16em;
+text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.lab span{letter-spacing:.04em;text-transform:none;font-size:11px}
+#title{font-size:22px;font-weight:650;margin:2px 0 1px}
+#sub{color:var(--muted);font-size:13px;min-height:17px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:10px}
+.stat{background:var(--panel);border:1px solid var(--line);padding:6px 7px}
+.stat small{display:block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stat b{font-size:15px;font-weight:600}
+.bars{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-top:8px}
+.bars i{height:9px;background:var(--key);border:1px solid var(--line)}
+.bars i.past{background:var(--accent-dim);border-color:var(--accent-dim)}
+.bars i.on{background:var(--accent);border-color:var(--accent)}
+.meter{height:5px;background:var(--key);border:1px solid var(--line);margin-top:4px}
+.meter b{display:block;height:100%;width:0;background:var(--text)}
+.grid{display:grid;gap:4px}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+button{appearance:none;-webkit-appearance:none;font:inherit;font-size:13px;color:var(--text);background:var(--key);
+border:1px solid var(--line);border-radius:3px;min-height:44px;padding:6px 4px;cursor:pointer;touch-action:manipulation}
+button:active{border-color:var(--muted)}
+button.play{border-color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent)}
+button.on{background:var(--accent);border-color:var(--accent);color:var(--ink);font-weight:650}
+button.arm{border-color:var(--down);color:var(--down)}
+button.wait{opacity:.5}
+.wide{margin-bottom:4px;width:100%}
+input[type=range]{width:100%;accent-color:var(--accent);margin:6px 0 0;height:32px}
+.ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.zones{display:grid;gap:4px}
+.zone{background:var(--panel);border:1px solid var(--line);padding:7px;min-height:56px}
+.zone b{font-size:15px}.zone small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.zone.lit{border-color:var(--accent)}
+.note{font-size:11px;color:var(--muted);margin-top:6px}
+#msg{font-size:12px;color:var(--muted);min-height:16px;padding-top:10px}#msg.bad{color:var(--down)}
+</style></head><body>
+<header><h1>Rig Console</h1><div id="conn" class="num">connecting</div></header>
+
+<div class="sec">
+ <div class="lab">Now<span id="look"></span></div>
+ <div id="title">-</div><div id="sub"></div>
+ <div class="bars" id="bars"></div>
+ <div class="stats">
+  <div class="stat"><small>Bar</small><b class="num" id="bar">-</b></div>
+  <div class="stat"><small>Section</small><b id="section">-</b></div>
+  <div class="stat"><small>Tempo</small><b class="num" id="tempo">-</b></div>
+  <div class="stat"><small>Audio</small><b class="num" id="level">-</b><div class="meter"><b id="meter"></b></div></div>
+ </div>
+</div>
+
+<div class="sec"><div class="lab">Director<span id="pattern"></span></div><div class="grid g2" id="director"></div></div>
+<div class="sec"><div class="lab">Acts<span id="lockinfo"></span></div><div id="autobox"></div><div class="grid g3" id="acts"></div></div>
+<div class="sec"><div class="lab">Zone modes<span>tap = lock</span></div><div class="grid g4" id="modes"></div></div>
+<div class="sec"><div class="lab">Wave</div><div class="grid g4" id="wave"></div></div>
+<div class="sec"><div class="lab">Loop</div><div class="grid g3" id="loop"></div></div>
+<div class="sec"><div class="lab">Audio mix<span class="num" id="audioval"></span></div>
+ <input type="range" id="audio" min="0" max="100" step="5" value="60" aria-label="Audio mix">
+ <div class="ends"><span>Clock only</span><span>Audio only</span></div></div>
+<div class="sec"><div class="lab">Head speed</div><div class="grid g5" id="speed"></div></div>
+<div class="sec"><div class="lab">Acts in the show</div><div class="grid g2" id="actson"></div></div>
+<div class="sec"><div class="lab">Quick looks<span id="guest"></span></div><div class="grid g4" id="quick"></div></div>
+<div class="sec"><div class="lab">Zones<span>1 = front door</span></div><div class="zones" id="zones"></div></div>
+<div id="msg"></div>
+
+<script id="logic">
+// Pure logic (no page access): turns /console.json into what the page shows, and a tap into a /show/set body.
+// Tested in node by test_console_page.js.
+var ACTS0 = [['hues', 'Hue showcase'], ['heads', 'Head moment'], ['gobos', 'Gobos'], ['zones', 'Zone modes'],
+             ['uv', 'UV reveal'], ['burst', 'Burst (drop)']];
+var MODES0 = [['pulse', 'Pulse'], ['call', 'Call & Response'], ['wave', 'Wave'], ['loop', 'Loop'], ['split', 'Split'],
+              ['orbit', 'Orbit'], ['relay', 'Relay']];
+var WAVES = [['bounce', 'Bounce'], ['forward', 'Forward'], ['back', 'Back'], ['alternate', 'Alternate']];
+var LOOPS = [['alternate', 'Alternate'], ['ccw', 'CCW'], ['cw', 'CW']];
+var SPEEDS = [0.5, 0.75, 1, 1.5, 2];
+var QUICK = [['purple', 'Purple'], ['cozy', 'Cozy'], ['moviechill', 'Movie chill'], ['night', 'Night'],
+             ['heads_on', 'Heads on'], ['heads_off', 'Heads off'], ['guest_on', 'Guest on'], ['guest_off', 'Guest off']];
+var CONFIRM = {heads_off: 1, guest_off: 1};          // second tap within 3 s needed
+
+function num(x, d) { x = parseFloat(x); return isFinite(x) ? x : d; }
+function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+function ids(list) { return list.map(function (p) { return p[0]; }); }
+function nameOf(list, id) { for (var i = 0; i < list.length; i++) if (list[i][0] === id) return list[i][1]; return id || ''; }
+function falsy(v) { return v === false || v === 'false' || v === 'off' || v === 0 || v === '0'; }
+
+function view(d) {
+  d = (d && typeof d === 'object') ? d : {};
+  var s = (d.show && typeof d.show === 'object') ? d.show : null;
+  var sv = (d.saved && typeof d.saved === 'object') ? d.saved : {};
+  var running = !!(s && s.on);
+  var lock = String((s && s.lock != null ? s.lock : sv.show_lock) || '').trim().toLowerCase();
+  var lockKind = !lock ? 'auto' : ids(ACTS0).indexOf(lock) >= 0 ? 'act' : ids(MODES0).indexOf(lock) >= 0 ? 'mode' : 'other';
+  var bars = Math.round(clamp(num(s && s.bars, 8), 1, 32));
+  var bar = running ? Math.round(clamp(num(s.bar, 0), 0, bars)) : 0;
+  var heads = (s && s.head_out && typeof s.head_out === 'object') ? s.head_out : {};
+  var zones;
+  if (s && Array.isArray(s.zones) && s.zones.length) {
+    zones = s.zones.map(function (z) {
+      var hs = Array.isArray(z.heads) ? z.heads : [];
+      var lv = 0;
+      hs.forEach(function (h) { var o = heads[String(h)]; if (Array.isArray(o)) lv = Math.max(lv, clamp(num(o[0], 0), 0, 1)); });
+      return {id: String(z.id), heads: hs, lamps: num(z.lamps, 0), lvl: lv};
+    });
+  } else {
+    zones = (Array.isArray(sv.zone_order) ? sv.zone_order : []).map(function (id) {
+      return {id: String(id), heads: null, lamps: null, lvl: 0};
+    });
+  }
+  var pattern = String((s && s.pattern) || sv.dmx_pattern || '');
+  var title, sub = '';
+  if (!d.hub) { title = 'Hub off'; sub = 'Settings save for the next show'; }
+  else if (running) {
+    title = s.act === 'zones' ? nameOf(MODES0, s.mode) : (s.act_name || nameOf(ACTS0, s.act));
+    sub = s.act === 'zones' ? 'Zone modes' : 'Act';
+  } else if (pattern && pattern !== 'modes') { title = 'Director off'; sub = 'Heads in ' + pattern + ' pattern'; }
+  else { title = 'Waiting for the show'; }
+  var acts = s ? s.acts_on !== false : !falsy(sv.show_acts);
+  return {
+    hub: !!d.hub, running: running, title: title, sub: sub, pattern: pattern, director: pattern === 'modes',
+    act: running ? s.act : null, mode: running && s.act === 'zones' ? s.mode : null,
+    bar: bar, bars: bars, section: running || d.hub ? (d.section || (s && s.section) || '') : '',
+    level: d.level == null ? null : clamp(num(d.level, 0), 0, 1),
+    tempo: d.tempo == null ? null : Math.round(num(d.tempo, 0)),
+    lock: lock, lockKind: lockKind,
+    wave: ids(WAVES).indexOf(sv.show_wave) >= 0 ? sv.show_wave : 'bounce',
+    loop: ids(LOOPS).indexOf(sv.show_loop_dir) >= 0 ? sv.show_loop_dir : 'alternate',
+    audio: Math.round(clamp(num(s ? s.audio_mix : sv.show_audio, 0.6), 0, 1) * 100),
+    speed: clamp(num(s ? s.speed : sv.show_speed, 1), 0.5, 2),
+    actsOn: acts, zones: zones, look: d.look || '', since: d.since || '', guest: !!d.guest,
+    busy: !!d.busy, error: d.last_error || ''
+  };
+}
+
+function body(kind, v) {                              // a tap -> the JSON for POST /show/set (null = ignore)
+  switch (kind) {
+    case 'lock': return (ids(ACTS0).indexOf(v) >= 0 || ids(MODES0).indexOf(v) >= 0) ? {show_lock: v} : null;
+    case 'auto': return {show_lock: ''};
+    case 'wave': return ids(WAVES).indexOf(v) >= 0 ? {show_wave: v} : null;
+    case 'loop': return ids(LOOPS).indexOf(v) >= 0 ? {show_loop_dir: v} : null;
+    case 'audio': return {show_audio: Math.round(clamp(num(v, 60), 0, 100)) / 100};
+    case 'speed': return {show_speed: clamp(num(v, 1), 0.5, 2)};
+    case 'acts': return {show_acts: !!v};
+    case 'director': return {dmx_pattern: v ? 'modes' : 'normal'};
+  }
+  return null;
+}
+</script>
+
+<script id="ui">
+// The page: builds the buttons once, then repaints from /console.json every second.
+var B = {}, busyKeys = {}, inflight = false, armed = null, dragging = false, lastView = null, zoneSig = '';
+function $(id) { return document.getElementById(id); }
+function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+function btn(parent, label, key, fn) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.textContent = label; b.addEventListener('click', fn);
+  parent.appendChild(b); B[key] = b; return b;
+}
+function say(text, bad) { var m = $('msg'); m.textContent = text || ''; m.className = bad ? 'bad' : ''; }
+function req(path, opts) {
+  opts = opts || {}; opts.credentials = 'same-origin'; opts.cache = 'no-store';
+  return fetch(path, opts).then(function (r) {
+    if (r.status === 403) throw new Error('Not signed in: open /console?token=... once on this phone');
+    if (!r.ok) return r.text().then(function (t) { throw new Error(t || ('HTTP ' + r.status)); });
+    return r;
+  });
+}
+function done(key) { delete busyKeys[key]; if (B[key]) B[key].classList.toggle('wait', false); poll(); }
+function send(kind, v, key) {
+  var b = body(kind, v);
+  if (!b) return;
+  busyKeys[key] = 1; if (B[key]) B[key].classList.toggle('wait', true);
+  return req('show/set', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(b)})
+    .then(function (r) { return r.text(); }).then(function (t) { say(t); }, function (e) { say(e.message, true); })
+    .then(function () { done(key); });
+}
+function look(name) {
+  var key = 'look:' + name;
+  if (CONFIRM[name] && armed !== name) {
+    armed = name; B[key].classList.toggle('arm', true); say('Tap again to confirm: ' + B[key].textContent);
+    setTimeout(function () { if (armed === name) { armed = null; B[key].classList.toggle('arm', false); } }, 3000);
+    return;
+  }
+  armed = null; B[key].classList.toggle('arm', false);
+  busyKeys[key] = 1; B[key].classList.toggle('wait', true);
+  return req(name, {method: 'POST'}).then(function (r) { return r.text(); })
+    .then(function (t) { say(t); }, function (e) { say(e.message, true); }).then(function () { done(key); });
+}
+function build() {
+  var bars = $('bars');
+  for (var i = 0; i < 8; i++) bars.appendChild(document.createElement('i'));
+  btn($('director'), 'Show modes on', 'dir:on', function () { send('director', true, 'dir:on'); });
+  btn($('director'), 'Heads together', 'dir:off', function () { send('director', false, 'dir:off'); });
+  btn($('autobox'), 'Auto', 'auto', function () { send('auto', '', 'auto'); }).className = 'wide';
+  ACTS0.forEach(function (a) { btn($('acts'), a[1], 'act:' + a[0], function () { send('lock', a[0], 'act:' + a[0]); }); });
+  MODES0.forEach(function (m) { btn($('modes'), m[1], 'mode:' + m[0], function () { send('lock', m[0], 'mode:' + m[0]); }); });
+  WAVES.forEach(function (w) { btn($('wave'), w[1], 'wave:' + w[0], function () { send('wave', w[0], 'wave:' + w[0]); }); });
+  LOOPS.forEach(function (l) { btn($('loop'), l[1], 'loop:' + l[0], function () { send('loop', l[0], 'loop:' + l[0]); }); });
+  SPEEDS.forEach(function (x) { btn($('speed'), x + '×', 'speed:' + x, function () { send('speed', x, 'speed:' + x); }); });
+  btn($('actson'), 'Acts on', 'acts:on', function () { send('acts', true, 'acts:on'); });
+  btn($('actson'), 'Modes only', 'acts:off', function () { send('acts', false, 'acts:off'); });
+  QUICK.forEach(function (q) { btn($('quick'), q[1], 'look:' + q[0], function () { look(q[0]); }); });
+  var a = $('audio');
+  a.addEventListener('input', function () { dragging = true; $('audioval').textContent = a.value + '%'; });
+  a.addEventListener('change', function () { dragging = false; send('audio', a.value, 'audio'); });
+}
+function on(key, yes) { if (B[key]) B[key].classList.toggle('on', !!yes); }
+function play(key, yes) { if (B[key]) B[key].classList.toggle('play', !!yes); }
+function zonesPaint(zs) {
+  var box = $('zones'), cols = 1, sig = zs.map(function (z) { return z.id; }).join(',');
+  zs.forEach(function (z) { var m = /^(\d+)/.exec(z.id); if (m) cols = Math.max(cols, +m[1]); });
+  if (sig !== zoneSig) {
+    zoneSig = sig; clear(box); box.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+    zs.forEach(function (z) {
+      var el = document.createElement('div'), m = /^(\d+)\s*([A-Za-z])?$/.exec(z.id);
+      el.className = 'zone'; el.setAttribute('data-z', z.id);
+      if (m) { el.style.gridColumn = m[1]; el.style.gridRow = (m[2] || 'A').toUpperCase() === 'B' ? '2' : '1'; }
+      var b = document.createElement('b'); b.textContent = z.id; el.appendChild(b);
+      el.appendChild(document.createElement('small')); box.appendChild(el);
+    });
+  }
+  for (var i = 0; i < box.children.length; i++) {
+    var el = box.children[i], z = zs[i];
+    if (!z) continue;
+    el.children[1].textContent = z.heads == null ? '' : (z.heads.length ? 'Head ' + z.heads.join(', ') : 'lamps only');
+    el.style.background = z.lvl > 0.02 ? 'rgba(155,92,255,' + (0.12 + 0.5 * z.lvl).toFixed(2) + ')' : '';
+    el.classList.toggle('lit', z.lvl > 0.5);
+  }
+  if (!zs.length) { clear(box); zoneSig = ''; var n = document.createElement('div'); n.className = 'note';
+    n.textContent = 'No zone map yet'; box.appendChild(n); }
+}
+function render(d) {
+  var v = view(d); lastView = v;
+  $('look').textContent = v.look ? ('Look: ' + v.look + (v.since ? ' since ' + v.since : '') + (v.busy ? ' (changing)' : '')) : '';
+  $('title').textContent = v.title; $('sub').textContent = v.sub + (v.error ? '  Last error: ' + v.error : '');
+  var segs = $('bars').children;
+  for (var i = 0; i < segs.length; i++) {
+    var n = Math.round((i + 1) * v.bars / segs.length);
+    segs[i].className = v.running && n === Math.max(1, v.bar) ? 'on' : v.running && n < v.bar ? 'past' : '';
+  }
+  $('bar').textContent = v.running ? v.bar + '/' + v.bars : '-';
+  $('section').textContent = v.section || '-';
+  $('tempo').textContent = v.tempo ? String(v.tempo) : '-';
+  $('level').textContent = v.level == null ? '-' : Math.round(v.level * 100) + '%';
+  $('meter').style.width = v.level == null ? '0' : Math.round(v.level * 100) + '%';
+  $('pattern').textContent = v.pattern ? 'pattern: ' + v.pattern : '';
+  on('dir:on', v.director); on('dir:off', v.pattern && !v.director);
+  $('lockinfo').textContent = v.lockKind === 'auto' ? 'auto' : 'locked: ' + v.lock;
+  on('auto', v.lockKind === 'auto');
+  ACTS0.forEach(function (a) { on('act:' + a[0], v.lock === a[0]); play('act:' + a[0], v.act === a[0]); });
+  MODES0.forEach(function (m) { on('mode:' + m[0], v.lock === m[0]); play('mode:' + m[0], v.mode === m[0]); });
+  WAVES.forEach(function (w) { on('wave:' + w[0], v.wave === w[0]); });
+  LOOPS.forEach(function (l) { on('loop:' + l[0], v.loop === l[0]); });
+  SPEEDS.forEach(function (x) { on('speed:' + x, Math.abs(v.speed - x) < 0.01); });
+  on('acts:on', v.actsOn); on('acts:off', !v.actsOn);
+  QUICK.forEach(function (q) { on('look:' + q[0], v.look === q[0]); });
+  on('look:guest_on', v.guest); on('look:guest_off', false);
+  $('guest').textContent = v.guest ? 'guest mode ON' : '';
+  if (!dragging && !busyKeys.audio) { $('audio').value = String(v.audio); $('audioval').textContent = v.audio + '%'; }
+  zonesPaint(v.zones);
+}
+function conn(ok, why) {
+  var c = $('conn'); c.className = ok ? 'num' : 'num down';
+  c.textContent = ok ? 'live ' + new Date().toTimeString().slice(0, 8) : (why || 'no answer');
+}
+function poll() {
+  if (inflight) return;
+  inflight = true;
+  return req('console.json').then(function (r) { return r.json(); })
+    .then(function (d) { render(d); conn(true); }, function (e) { conn(false, e.message); })
+    .then(function () { inflight = false; });
+}
+build(); poll(); setInterval(poll, 1000);
+</script>
+</body></html>

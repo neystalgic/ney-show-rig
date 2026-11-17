@@ -43,7 +43,7 @@ W1. [SAFE] ready for Michael (built + tested Nov 17, see away/spot-power/DEPLOY.
    after spot_idle_min (default 10) dark minutes; Spot 2 ON -> Jarvis says once "Spot 2 is on -- ceiling fan off please"
    (AGENTS rule). Never a plug on the Mac / Scarlett / projector. Offline tests with a fake bridge + clock; DEPLOY.txt
    = one paste + reload + selftest line. Rig Health row "Spots".
-W2. [SAFE] todo -- RIG CONSOLE page v1 (Michael: "voice is cool but sometimes I want to do things manually"; design
+W2. [SAFE] ready for Michael (built + tested Nov 17, see away/console/DEPLOY.txt) -- RIG CONSOLE page v1 (Michael: "voice is cool but sometimes I want to do things manually"; design
    rules: NO AI-slop -- no gradients/glass/emoji, dark stage-like background, ONE accent = purple, real data only,
    tight type, controls that feel like a lighting console). away/console/console.html served by rig_control at
    /console (same login as /health). Shows hub_live.show (act, mode, bar x/8, section, audio level) live every 1 s;

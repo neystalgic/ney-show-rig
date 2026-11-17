@@ -1,0 +1,54 @@
+RIG CONSOLE v1 -- DEPLOY  (away loop, Nov 17 -- backlog W2)
+=========================================================
+
+WHAT IT DOES
+A phone page for doing the show by hand: http://<Mac>:7040/console  (same login as /health -- open it once with
+?token=... and the phone remembers the key in a cookie, exactly like /health and /hub).
+- Top: what's playing right now, every 1 s -- act or zone mode, bar x of 8 (an 8-step strip), section, tempo, audio
+  level meter, current look, guest mode.  Real data only (the hub's /api/live show status); "Hub off" when it's off.
+- Director: "Show modes on" (dmx_pattern modes) / "Heads together" (normal).
+- Acts: Auto (unlock) + the 6 acts -- tap = lock.  Zone modes: the 7 modes -- tap = lock.
+  Purple fill = locked, purple underline = what's playing now.
+- Wave direction (bounce/forward/back/alternate), loop direction (alternate/CCW/CW), audio mix slider
+  (clock only <-> audio only, sends on release), head speed 0.5x-2x, acts on / modes only.
+- Quick looks: purple, cozy, movie chill, night, heads on/off, guest on/off.  Heads off + Guest off need a 2nd tap
+  within 3 s.
+- Zone map 1A 1B 2A 2B 3A (1 = front door) with the heads in each zone; a zone glows purple with its heads' level.
+Design: dark stage background, one purple accent, no gradients/glass/emoji, 44 px buttons, phone-first.
+It only uses routes that already exist: POST /show/set (its allowlist is unchanged -- strobe/safety keys are not
+reachable) and the looks.  When the hub is off, /show/set saves the settings for the next show (as before).
+
+FILES
+  away/console/console.html       -> copied to  console.html        (NEW, next to health.html)
+  away/console/console_route.py   -> copied to  console_route.py    (NEW: /console + /console.json, read-only data)
+  rig_control.py                  -> 3 lines added in Handler, right before the /show/set route, after the token check
+  apply_patches.py does all three; backs up rig_control.py as rig_control.py.bak-2026-11-17-console first;
+  STOPs and touches nothing if the /show/set line moved; safe to run twice.
+
+DEPLOY (one paste in Terminal; tests first, reload only -- no hub restart, lights untouched)
+cd ~/"Touchdesigner Designs/Hue Rig" && python3 away/console/test_console_route.py && python3 away/console/apply_patches.py && echo '{"do": "reload"}' > bridge/inbox/reload-console.json && sleep 15 && python3 selftest.py --quiet
+
+Then on the phone: http://<Mac>:7040/console?token=<your token>  (once; afterwards just /console).
+Add to Home Screen if you like -- it runs full-screen.
+
+UNDO
+cd ~/"Touchdesigner Designs/Hue Rig" && cp rig_control.py.bak-2026-11-17-console rig_control.py && echo '{"do": "reload"}' > bridge/inbox/reload-undo.json
+(console.html / console_route.py can stay -- nothing loads them without the 3 lines.)
+
+WATCH FOR
+- The header says "live hh:mm:ss" and ticks each second.  "Not signed in" = open the ?token= link once on that phone.
+- Tap a mode with the show running: it should go solid purple, and within a phrase the underline moves to it.
+  Auto = back to the director's choice.
+- Hub off: the top says "Hub off"; taps still answer "Saved for the next show".
+- Wave/loop direction lights come from hub_state.json (the hub saves settings there), so after a tap they can lag a
+  second or two until the hub writes it.
+- The page polls /console.json every second while it's open (one tiny local request to the hub each time).  Close
+  the tab if you ever see the hub struggle.
+- Spot power (W1) and spot-calib (W7) are separate and unchanged by this.
+
+TESTS (offline, fakes only, no network)
+  away/console/test_console_route.py  30/30 -- snapshot (only named fields, no token), page + cookie, fetch timeout,
+      apply_patches on TEMP copies (route once, after the token check, idempotent, STOP case), every key/look the page
+      sends checked against the LIVE rig_control allowlist + LOOKS (read only), and runs:
+  away/console/test_console_page.js   66/66 (node) -- view logic on fake show/hub-off/junk snapshots, taps -> /show/set
+      bodies, the page painted on a fake page with fake fetch, 2-tap confirm, 403 hint, design rules.

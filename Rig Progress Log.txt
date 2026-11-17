@@ -1,6 +1,20 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-17 01:09 UTC | Rig Console page v1 (W2) | away/console/ (NEW): console.html = phone-first
+  lighting-console page (dark stage background, one purple accent, no gradients/glass/emoji, 44 px keys): live every 1 s
+  -- act or zone mode, bar x/8 strip, section, tempo, audio level meter, look, guest; buttons: Director on/off
+  (dmx_pattern), Auto + 6 acts + 7 modes (tap = show_lock; solid = locked, underline = playing), wave + loop direction,
+  audio mix slider (show_audio, sends on release), head speed 0.5-2x, acts on / modes only, quick looks (purple, cozy,
+  moviechill, night, heads on/off, guest on/off; heads off + guest off need a 2nd tap), zone map 1A 1B 2A 2B 3A with
+  heads, glowing with their level. console_route.py = /console (page + rig_key cookie, like /health) and /console.json
+  (named fields only from STATE + hub /api/live show status + saved show settings; 1.5 s timeout). apply_patches.py =
+  guarded install: copies both files, adds 3 lines to rig_control's Handler before /show/set (after the token check),
+  backup rig_control.py.bak-2026-11-17-console, STOP if the anchor moved | tests: test_console_route.py 30/30 passed
+  (fake handler/live, network blocked, temp copies, page keys + looks checked against the live allowlist read-only);
+  test_console_page.js 66/66 passed (node, fake page + fetch) | Michael: the one paste in away/console/DEPLOY.txt
+  (reload only, no hub restart), then open /console?token=... once on the phone | Layer updates for Michael: none.
+  Note: .page_keys.txt in away/console is a test by-product (not committed).
 2026-11-17 00:07 UTC | Spot power (W1) | away/spot-power/ (NEW): spot_power.py modelled on head_power.py -- finds Hue
   plugs named exactly "Spot 1"/"Spot 2" (dormant until they exist; lamps and any Mac/Scarlett/projector name never
   switched). ON for the spot looks (uvstars, movieuv, moviechill, showuv), show acts gobos/uv/burst, or when the node
