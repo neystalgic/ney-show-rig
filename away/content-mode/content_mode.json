@@ -1,0 +1,9 @@
+{
+  "minutes": 5,
+  "rearm_grace_minutes": 10,
+  "strobe": "always",
+  "flash_beats": 1,
+  "white": true,
+  "studio_seat": null,
+  "_note": "Content mode (AGENTS.md, Nov 15). minutes can't go above 5. rearm_grace_minutes: after the timer ends it, 'content mode again' works without 'confirmed' for this long (0 = always say confirmed). strobe: always | flash | phrase | drop | beat. studio_seat: placeholder, filled when Michael calibrates the studio-seat no-go zone; the zone itself is enforced at the Pi node (NODE-PLAN.txt), never lifted from the Mac."
+}

@@ -83,7 +83,7 @@ W4. [SAFE] ready for Michael (built + tested Nov 17, see away/camera-colour/DEPL
    samples the projected image's border every 200 ms, sends the same feed the hub's movie_in expects (read
    hue_hub feed_listener / movie code first). Offline test with saved frames. DEPLOY.txt notes the one-time macOS
    camera permission prompt.
-W5. [SAFE] todo -- CONTENT MODE (approved in AGENTS.md Nov 15): Mac side only -- look 'content' (needs Jarvis
+W5. [SAFE] ready for Michael (Mac side built + tested Nov 17, see away/content-mode/DEPLOY.txt; node half = NODE-PLAN.txt) -- CONTENT MODE (approved in AGENTS.md Nov 15): Mac side only -- look 'content' (needs Jarvis
    "confirmed"), auto-off after 5 min (re-armable "content mode again"), blocked by guest mode, strobe + white anytime,
    skips the director's 2-bar colour rule; a 'studio_seat' no-go setting placeholder (filled when Michael calibrates).
    The node's eye-level limits are on the Pi -- write away/content-mode/NODE-PLAN.txt for how to lift them except the

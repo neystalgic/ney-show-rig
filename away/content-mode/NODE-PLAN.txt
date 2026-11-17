@@ -1,0 +1,45 @@
+CONTENT MODE -- NODE PLAN (the Pi DMX node half). PLAN ONLY: nothing here touches the Pi, the node or its config.
+Away loop W5, Nov 17. Rules from AGENTS.md (Michael, Nov 15): in Content mode the eye-level limits lift everywhere
+EXCEPT the "studio seat" no-go zone, which always stays on. Fan off with Spot 2 and each head's physical movement
+window always apply. Mirror + projection screen avoid zones are a separate rule and also stay on.
+
+WHAT THE NODE DOES TODAY (read from dmx/app/dmx_node.py, the copy in this repo)
+  * tilt_max_deg per head (35 by default): how far from straight up a beam may lean -> keeps it above heads.
+  * walls: directions where the head's own wall is behind it, allowed to lean further (lean_limit()).
+  * avoid zones [{az, width, lean}]: directions the beam may never lean toward (inside one, at most AVOID_LEAN = 4 deg,
+    or the zone's own small 'lean'). safety/safety_zones.csv shows they come in kinds: "eye level, <couch>",
+    "Screen", mirror... but the node stores them WITHOUT a kind, so it can't tell an eye-level zone from the mirror.
+  * /unlock: node-wide strobe / white / wheels / flash_hz (guest mode uses this: strobe off, 2 flashes/s).
+
+THE PLAN (small, fail-safe, the node has the last word)
+ 1. Tag every avoid zone with a kind: 'eyes' | 'mirror' | 'screen' | 'seat' (anything untagged counts as NOT
+    liftable). safety/make_payloads.py can fill it from safety_zones.csv's reason column ("eye level" -> eyes,
+    "Screen" -> screen, "mirror" -> mirror). The node keeps the field when it saves a head (/heads POST already
+    copies az/width/lean -- add 'kind' to that list).
+ 2. Studio seat: Michael aims each head at the studio-desk chair once (node page, low level, Michael directs) and
+    saves a zone with kind 'seat'. Its placeholder on the Mac is content_mode.json "studio_seat" (null today).
+ 3. New node endpoint POST /content {"on": true, "seconds": 300}:
+      - refused (409) if guest mode is on at the node (unlock.strobe false + flash_hz <= 2), or if ANY head that is
+        powered has no 'seat' zone yet ("studio seat not calibrated") -- no seat zone = no lift, ever;
+      - seconds is capped at 300 ON THE NODE and the node ends it by itself (monotonic clock), so a Mac that
+        crashes or loses Wi-Fi can't leave the room unlocked; "on": false ends it at once;
+      - the node never saves content mode to node_config.json (a node restart = content mode off).
+ 4. While the node's content timer runs:
+      - lean_limit(): the head's limit becomes max(tilt_max_deg, content_lean) where content_lean is a node
+        setting (suggest 60, capped at 85 like the walls) -- this is the "eye-level limit lifted";
+      - avoid zones of kind 'eyes' are skipped; 'seat', 'mirror', 'screen' and untagged zones still clamp exactly
+        as today (AVOID_LEAN 4);
+      - tilt_window() / pan window (the physical movement window) unchanged;
+      - the flash guard (flash_hz) is unchanged: strobe speed is still Michael's /unlock setting.
+ 5. GET /status gains content=<seconds left> so the Mac's /health page and the console can show it.
+
+MAC SIDE LATER (one small follow-up once the node has /content)
+  content_mode.start() posts /content on (seconds = what's left), restore() posts /content off, rig_side 'extend'
+  re-posts. A refused /content means the Mac still runs content mode (strobe + white) with the eye-level limits
+  ON, and Jarvis says "the studio seat isn't calibrated, so the heads stay above eye level".
+
+TESTS FOR THE NODE CHANGE (offline first, then with Michael)
+  * offline: lean_limit()/in_avoid() with content on/off for each zone kind; untagged zone never lifts; timer ends
+    itself at 300 s with a fake clock; guest refuses; missing seat zone refuses; node restart = off.
+  * in the room (Michael only, heads at low level, nobody but Michael, he directs every move): one head at a time,
+    confirm the beam can't enter the studio seat with content on, and that eye-level is back at 35 deg after 5 min.

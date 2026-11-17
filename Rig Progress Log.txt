@@ -1,6 +1,20 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-17 09:09 UTC | Content mode, Mac side (W5) | away/content-mode/ (NEW): content_mode.py = on/off + 5-min timer
+  (fake-clock tested): "content mode confirmed" starts the light show with strobe any time (dmx_strobe always), colour
+  every beat (flash_beats 1) and white (new hub setting content_white: the 2 "never white" floors + strobe hit go
+  white); auto-off at 5:00 (strobe off first, 2-bar colours, heads keep dancing); "content mode again" = 5 min from
+  now, no 'confirmed' needed while on or within 10 min of the timer ending it; guest mode always refuses; any other
+  look or a rig_control restart ends it; never speaks on its own. content_words.py = Jarvis word rules (model can't
+  pick it). content_mode.json: minutes (max 5), grace, strobe style, white, studio_seat placeholder (null).
+  apply_patches.py = guarded install (jarvis.py 3 inserts, rig_control.py 3 hooks, hub_dmx.py 3 lines, hue_hub.py 1
+  key; --check; backups .bak-nov17-content; coexists with jarvis-show). NODE-PLAN.txt: zone kinds, studio-seat zone,
+  node-side /content with its own 300 s timer, eyes zones lifted only, refuses if seat uncalibrated or guest |
+  tests: test_content_mode.py 99/99 passed (fake clock/rig/hub, network blocked, temp copies; patched jarvis +
+  jarvis/test_jarvis.py pass; live files unchanged) | Michael: the one paste in away/content-mode/DEPLOY.txt, reload
+  rig_control, restart the hub (10-30 s gap); try it alone at the desk | Layer updates for Michael: BRAIN.md Open:
+  + "Content mode Mac side ready (away/content-mode); node lift needs studio-seat zone calibration (NODE-PLAN.txt)".
 2026-11-17 07:07 UTC | MacBook camera colour reader without TD (W4) | away/camera-colour/ (NEW): cam_colour.py does
   movie_in's job with TD closed: camera (ffmpeg AVFoundation, else OpenCV) -> crop -> 32x20 -> the hub's feed port
   7011, same message as TD's hue_feed, 5/s. Camera runs only while the hub's /api/live says Movie mode on + source

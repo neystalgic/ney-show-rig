@@ -1,0 +1,39 @@
+CONTENT MODE (W5) -- Mac side. Built + tested by the away loop, Nov 17. Nothing is live until you run this.
+
+WHAT IT DOES
+  "Jarvis, content mode confirmed"  -> the light show starts (heads, music hub) with strobe ANY time (not just drops),
+                                       colour changes every beat (skips the 2-bar rule), and white allowed (strobe
+                                       hits flash pure white). Auto-off after 5 minutes.
+  "Jarvis, content mode again"      -> 5 more minutes from now (no stacking). No 'confirmed' needed while it's on,
+                                       or within 10 minutes after the timer ended it; otherwise say 'confirmed'.
+  "Jarvis, content mode off" / any other look / a rig_control restart -> off at once.
+  "Jarvis, content mode status"     -> minutes left.
+  Without 'confirmed' it doesn't start (Jarvis tells you to say it). Guest mode on = always refused.
+  When it ends: no white, strobe off, one colour every 2 bars again; the heads keep dancing (look = music).
+  It never speaks on its own, never touches the spots, plugs, fan or the Pi node. The eye-level limits at the
+  node stay ON for now -- NODE-PLAN.txt is the plan for lifting them except the studio seat (needs you + the Pi).
+  Settings: content_mode.json (minutes max 5, grace, strobe style, white on/off, studio_seat placeholder).
+
+FILES
+  adds:     content_mode.py, content_mode.json (rig folder), jarvis/content_words.py
+  patches:  jarvis/jarvis.py (word rule + do), rig_control.py (3 small hooks), hub_dmx.py (white only when the new
+            hub setting content_white is true), hue_hub.py (content_white allowed). Backups: *.bak-nov17-content
+  The installer checks every anchor first and writes nothing if a file changed. Works before or after jarvis-show.
+
+DEPLOY (one paste, from Terminal)
+  cd ~/"Touchdesigner Designs/Hue Rig" && python3 away/content-mode/test_content_mode.py && python3 away/content-mode/apply_patches.py --check && python3 away/content-mode/apply_patches.py
+  Then reload rig_control the way you normally do, and restart the hub (stop, wait 10-30 s, start) so it learns
+  content_white. Try it with the room empty except you at the desk: "Jarvis, content mode confirmed".
+
+UNDO
+  cd ~/"Touchdesigner Designs/Hue Rig" && for f in jarvis/jarvis.py rig_control.py hub_dmx.py hue_hub.py; do cp "$f.bak-nov17-content" "$f"; done
+  then reload rig_control + restart the hub (10-30 s gap). content_mode.py / content_words.py / content_mode.json
+  can stay (nothing imports them after the undo) -- or list them for _to_delete/.
+
+WATCH FOR
+  * The strobe-hit colour: with content_white the hit is the heads' white LED only (r,g,b = 0, w = 1). If it looks
+    too cold or too dim, set "white": false in content_mode.json (strobe any time stays, colour hits instead).
+  * "strobe": "always" fires on every beat outside quiet parts (node flash guard still caps the rate). For drops-only
+    flashing with per-beat colour, set "strobe": "flash".
+  * After 5 minutes the strobe should stop by itself -- if it doesn't, say "content mode off" or any look.
+  * If the hub wasn't restarted, content_white is ignored by the hub (no white) -- everything else still works.
