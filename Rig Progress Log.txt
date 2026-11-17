@@ -1,6 +1,22 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-17 07:07 UTC | MacBook camera colour reader without TD (W4) | away/camera-colour/ (NEW): cam_colour.py does
+  movie_in's job with TD closed: camera (ffmpeg AVFoundation, else OpenCV) -> crop -> 32x20 -> the hub's feed port
+  7011, same message as TD's hue_feed, 5/s. Camera runs only while the hub's /api/live says Movie mode on + source
+  camera; quiet while TouchDesigner is open; off 3 s after; retries a lost camera every 5 s; no hub change.
+  cam_colour.json = device / crop / mirror. --check = backend + camera list + one test frame | tests:
+  test_cam_colour.py 75/75 passed (saved frames, hub's real movie_cols on the grid, real ffmpeg filter on a saved
+  frame, fake camera/clock/socket/hub, network blocked) | Michael: the one paste in away/camera-colour/DEPLOY.txt
+  (--check; allow the camera for Terminal once; 'brew install ffmpeg' if it says neither is installed), then run it
+  and set Movie mode source = camera; trim 'crop' if the wall shows | Layer updates for Michael: none.
+2026-11-17 04:25 UTC | Tap Dial layout + spot power (live, with Michael) | tap_switch.py v2 (bridge event stream, double
+  taps from bridge timestamps): 1 Hue looks / x2 purple; 2 heads glow-dance-relay / x2 heads off; 3 spots UV-gobo-wash on
+  the CEILING only (lean 22) / x2 spots off + held 30 min; 4 show auto then lock wave..relay / x2 regular purple (heads +
+  spots off, dial full); dial = hub master / ambient dial.json / lamp brightness, resets on a look from elsewhere.
+  ambient_fade.py reads dial.json. W1 spot_power deployed. Old layout was live and fired old looks on Michael's first
+  presses (paused, rig reloaded) | tests: test_tap_dial.py 64/64, spot power 52/52, selftest 43 ok 0 FAIL | next:
+  Michael tries each button; tune 'settle' in tap_switch.json if double taps misfire.
 2026-11-17 03:08 UTC | Jarvis show phrases (W3) | away/jarvis-show/ (NEW): show_words.py = word rules
   (model can't pick them) for the show director: "lock wave / lock the heads / hold gobos / lock call and response",
   "auto / unlock", "more audio / audio only" (1.0), "clock only / just the drummer" (0.0), "normal audio" (0.6),

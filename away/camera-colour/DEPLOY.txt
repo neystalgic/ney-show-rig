@@ -1,0 +1,59 @@
+CAMERA COLOUR READER WITHOUT TOUCHDESIGNER (backlog W4) -- built + tested by the away loop, Nov 17
+==================================================================================================
+
+WHAT IT DOES
+Movie mode with source "camera" used to get its picture from TouchDesigner's movie_in, so the
+border-colour tracking stopped whenever TD was closed. cam_colour.py does movie_in's job on its own:
+  MacBook camera -> crop to the projection -> shrink to 32 x 20 -> the hub's feed port 127.0.0.1:7011
+in exactly the message TD's hue_feed sends, 5 times a second. The hub then does what it always did
+(each lamp takes the colour of the picture around where it sits). No hub change needed.
+  - Camera runs ONLY while the hub says Movie mode is on AND source = camera (checks /api/live every
+    2 s). The rest of the time the camera (and its green light) is off.
+  - Stays quiet while TouchDesigner is open, so TD and this never fight over the feed.
+  - Camera stops 3 s after Movie mode goes off; camera lost -> retries every 5 s.
+  - Nothing blocks: camera read in its own thread, hub check in another.
+  - It never touches the lights; the hub decides everything.
+Camera reader: ffmpeg (AVFoundation) if installed, otherwise OpenCV (cv2). The away loop's shell
+cannot see what's installed on your Mac, so "--check" (step 2) tells you. If neither is there it
+prints the one line to run yourself:  brew install ffmpeg
+
+FILES IT ADDS (nothing replaced)
+  Hue Rig/cam_colour.py      the reader
+  Hue Rig/cam_colour.json    settings (not secret): device, crop, every_s, mirror, size
+
+DEPLOY (one paste in Terminal)
+  cd ~/"Touchdesigner Designs/Hue Rig" && cp away/camera-colour/cam_colour.py . && [ -e cam_colour.json ] || cp away/camera-colour/cam_colour.json . ; python3 cam_colour.py --check
+
+  --check prints the camera reader, the list of cameras (number = "device" in cam_colour.json) and the
+  edge colours of one test frame. The FIRST time macOS asks to allow the camera for Terminal: Allow.
+  (No ffmpeg/OpenCV? run  brew install ffmpeg  yourself, then the --check again.)
+
+THEN RUN IT (leave this Terminal window open; Ctrl+C stops)
+  cd ~/"Touchdesigner Designs/Hue Rig" && python3 cam_colour.py
+  Desk: Setup > Movie mode ON, source "camera". Its line should change to
+  "sending the camera picture to the hub (32x20, 5 per second)" and the desk's movie status to
+  "following the picture (32x20)".
+
+AIM / CROP
+  If the camera sees wall around the projection, the edge lamps take the wall's colour. Trim it in
+  cam_colour.json: "crop": [left, top, right, bottom] as 0-1 fractions of the camera view, e.g.
+  [0.12, 0.10, 0.88, 0.85]. Picture mirrored (left lamps follow the right side)? "mirror": true.
+  Restart cam_colour.py after editing.
+
+UNDO
+  Ctrl+C in its Terminal window. To remove: move cam_colour.py and cam_colour.json to _to_delete/.
+  Nothing else was changed.
+
+WATCH FOR
+  - Lamps lagging / twitching: that's the hub's movie_speed / movie_sat / movie_bri, same as with TD.
+  - "camera lost ... retrying": another app (FaceTime, Zoom, TD) has the camera.
+  - "idle -- TouchDesigner is open": expected; TD's movie_in is feeding the hub then.
+  - With TD closed the hub gets no beat from the feed (same as TD closed today) -- unchanged.
+  - Later (optional, your call): start it from rig_control / a LaunchAgent so it's always ready. Not
+    done here -- it would go live.
+
+TESTS (offline, no camera, no hub, network blocked)
+  cd ~/"Touchdesigner Designs/Hue Rig/away/camera-colour" && python3 test_cam_colour.py   -> 75 passed
+  Uses saved frames (frames/*.ppm: a projection in a dark room) and runs the hub's REAL movie_cols
+  (lifted out of hue_hub.py) on the grid: left lamp purple, right blue, bottom green, top red band.
+  Also runs the exact ffmpeg crop+scale filter on the saved frame when ffmpeg exists.

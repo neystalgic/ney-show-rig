@@ -6,6 +6,8 @@ inside the away/ folder (one subfolder per task). Nothing goes live until Michae
 says so: he deploys from away/<task>/DEPLOY.txt.
 
 Status words: todo | in progress | ready for Michael | done | blocked (reason)
+NO VOICE ON BUTTONS (Michael, Nov 16: "I never want to hear the Jarvis voice when hitting a button"): buttons,
+pads and plugs never speak (spot_power.json fan_reminder = false). Jarvis talks only when spoken to.
 TESTING RULE (Michael, Nov 14: "I want everything tested... I don't want to waste time with broken loops"):
 every task ships an offline test_*.py, and every DEPLOY.txt ends with `python3 selftest.py --quiet` (0 FAIL =
 deployed). New live features also add a read-only check to selftest.py (in the task folder's copy).
@@ -75,7 +77,7 @@ W3. [SAFE] ready for Michael (built + tested Nov 17, see away/jarvis-show/DEPLOY
    "more audio / clock only / audio only" (show_audio 1.0 / 0.0 / 0.6), "wave backwards / bounce", "loop clockwise /
    counter clockwise", "acts off / acts on", "what's playing" (reads act + mode + bar). All through /show/set's
    allowlist. Extend jarvis tests; no model-allowlist changes for anything that strobes.
-W4. [SAFE] todo -- MacBook CAMERA colour reader without TouchDesigner (Michael asked why the border-colour tracking
+W4. [SAFE] ready for Michael (built + tested Nov 17, see away/camera-colour/DEPLOY.txt) -- MacBook CAMERA colour reader without TouchDesigner (Michael asked why the border-colour tracking
    stopped: it needed TD's movie_in). Build away/camera-colour/: cam_colour.py using AVFoundation via ffmpeg OR
    OpenCV (check what's installed; no installs -- if neither exists, write the plan + install line for Michael),
    samples the projected image's border every 200 ms, sends the same feed the hub's movie_in expects (read
