@@ -1,0 +1,6 @@
+{
+ "fan_reminder": false,
+ "spot_idle_min": 10,
+ "spot_idle_min_normal": 10,
+ "auto_on": false
+}

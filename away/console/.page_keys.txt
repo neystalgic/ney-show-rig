@@ -1,0 +1,15 @@
+dmx_pattern
+show_acts
+show_audio
+show_lock
+show_loop_dir
+show_speed
+show_wave
+look:purple
+look:cozy
+look:moviechill
+look:night
+look:heads_on
+look:heads_off
+look:guest_on
+look:guest_off

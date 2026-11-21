@@ -19,6 +19,12 @@
 #   /ney/section   quiet / groove / breakdown / drop           (string)
 #   /ney/colour    the lamps' average colour                   (r, g, b)
 #   /ney/blackout  1 when the hub is blacked out               (int)
+#   Nov 18 -- the four bands + the GLITCHES (hub_glitch.py):
+#   /ney/band/sub /ney/band/low /ney/band/mid /ney/band/high   each band's level (<=120 Hz, 120-500, 500-2k, 2k-22k)
+#   /ney/gap       1 while the music has dropped out           (int)
+#   /ney/stutter   1 while a stutter / beat repeat plays       (int)
+#   /ney/glitch    sent ONCE per glitch: kind (gap / stutter / crush / jump) + strength 0..1 + seconds
+#   /ney/lamp      every lamp zone, one message each: index, r, g, b   (for a digital twin of the Hue lamps)
 # Run:   python3 beat_sender.py            (Ctrl-C to stop)   Log: /tmp/beat_sender.log
 # =============================================================================
 import json, os, socket, struct, sys, time, urllib.request
@@ -26,6 +32,7 @@ import json, os, socket, struct, sys, time, urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 SETTINGS = os.path.join(HERE, 'beat_sender.json')
 STREAM = 'http://127.0.0.1:7020/api/stream'
+MTIME = os.path.getmtime(os.path.abspath(__file__))
 DEFAULTS = {'targets': [{'name': 'listener on this Mac', 'host': '127.0.0.1', 'port': 7701}]}
 
 
@@ -79,6 +86,7 @@ def _avg_colour(cols):
 class Framer:
     def __init__(self):
         self.last_beat = None
+        self.seen = set()
 
     def messages(self, snap):
         clock = snap.get('clock') or {}
@@ -101,7 +109,35 @@ class Framer:
             osc('/ney/section', str(audio.get('section') or 'quiet')),
             osc('/ney/colour', *[float(c) for c in _avg_colour(snap.get('cols'))]),
             osc('/ney/blackout', int(bool(snap.get('blackout')))),
-        ]
+        ] + self.extras(snap, audio, f)
+
+    def extras(self, snap, audio, f):
+        out = []
+        bands = audio.get('bands') or {}
+        for k in ('sub', 'low', 'mid', 'high'):
+            out.append(osc('/ney/band/' + k, f(bands.get(k))))
+        g = audio.get('glitch') or {}
+        out.append(osc('/ney/gap', int(bool(g.get('gap')))))
+        out.append(osc('/ney/stutter', int(bool(g.get('stutter')))))
+        primed = getattr(self, 'primed', False)
+        for ev in g.get('events') or []:
+            try:
+                key = (float(ev[0]), str(ev[1]))
+            except (TypeError, ValueError, IndexError):
+                continue
+            if key in self.seen:
+                continue
+            self.seen.add(key)
+            if primed:                                       # (the first frame only learns what's old news)
+                out.append(osc('/ney/glitch', str(ev[1]), float(ev[2]), float(ev[3])))
+        self.primed = True
+        if len(self.seen) > 100:
+            self.seen = set(list(self.seen)[-20:])
+        for i, (ch, h) in enumerate(sorted((snap.get('cols') or {}).items())):
+            h = str(h).lstrip('#')
+            if len(h) == 6:
+                out.append(osc('/ney/lamp', i, *[round(int(h[k:k + 2], 16) / 255.0, 4) for k in (0, 2, 4)]))
+        return out
 
 
 def log(msg):
@@ -168,6 +204,9 @@ def run():
                 if sent % 600 == 0:                          # about every 30 s
                     log('%d frames sent' % sent)
                     targets = resolve(settings()['targets'])
+                    if os.path.getmtime(os.path.abspath(__file__)) != MTIME:   # Nov 18: new code -> restart into it
+                        log('new beat_sender.py -- restarting with it')
+                        os.execv(sys.executable, [sys.executable, '-u', os.path.abspath(__file__)])
             log('hub stream ended')
         except Exception as e:
             log('hub not reachable (%s); retrying in %d s' % (e.__class__.__name__, wait))

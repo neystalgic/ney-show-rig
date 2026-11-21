@@ -154,6 +154,14 @@ class Visuals:
         cols = [c for c in cols if c is not None] or [self.ca, self.cb]
         return [cols[i % len(cols)] for i in range(len(VIS_ORDER))]
 
+    def _fixtures(self, h):
+        """Nov 19: the room for the screen -- the 10 wave fixtures in Michael's order: [r, g, b, level] each."""
+        try:
+            ch = h.dmx.chase
+            return [[round(float(x), 3) for x in f['rgb'][:3]] + [f['level']] for f in ch.fixture_states()]
+        except Exception:
+            return []
+
     def step(self, now):
         """The message for TouchDesigner (call with the hub's lock held)."""
         h = self.hub
@@ -232,10 +240,13 @@ class Visuals:
         abr = _clamp(f['bright'] if f else 0.5)
         adr = _clamp(au.drop * ag * _clamp(h.live.get('a_drop', 0.7)))     # the drop: a burst that rings out
         lines += [(ak, ak, ak), (asn, asn, asn), (ah, ah, ah), (alv, abr, 0.0), (adr, adr, adr)]
+        lvl_ = (f.get('level') or {}) if isinstance(f, dict) else {}      # Nov 18: the four bands (sub / low / mid / high)
+        bands_ = [_clamp(float(lvl_.get(k, 0.0) or 0.0) * ag) for k in ('sub', 'low', 'mid', 'high')]
+        lines += [tuple(bands_[:3]), (bands_[3], 0.0, 0.0)]
         res = self.lim.step(lines, now)
         sig, ca, cb, mst, lz = res[:5]
         vc = res[5:5 + 2 * len(VIS_ORDER)]
-        akl, asl, ahl, alb, adl = res[5 + 2 * len(VIS_ORDER):]
+        akl, asl, ahl, alb, adl, bnd, bnh = res[5 + 2 * len(VIS_ORDER):]
         vcols = [list(vc[2 * i]) + list(vc[2 * i + 1]) for i in range(len(VIS_ORDER))]
 
         # every lamp zone's colour as the bulb shows it right now (Shape Mapper: shapes lit like a lamp)
@@ -260,6 +271,8 @@ class Visuals:
                     lamps=lamps,
                     akick=round(akl[0], 4), asnare=round(asl[0], 4), ahats=round(ahl[0], 4),
                     alevel=round(alb[0], 4), abright=round(alb[1], 4), adrop=round(adl[0], 4),
+                    asub=round(bnd[0], 4), alow=round(bnd[1], 4), amid=round(bnd[2], 4), ahigh=round(bnh[0], 4),
                     section=au.section,
+                    fix=self._fixtures(h),
                     guard=guard, master=mst[0],
                     movie=bool(h.state['settings'].get('movie')), moviesrc=h.state['settings'].get('movie_src', 'capture'))

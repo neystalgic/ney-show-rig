@@ -1802,7 +1802,7 @@ def lan_ip():
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
               'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py',
               'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py', 'hub_dmx.py', 'hub_vibes.py', 'hub_chase.py',
-              'hub_modes.py']
+              'hub_modes.py', 'hub_glitch.py']
 
 
 class Reload(Exception):
@@ -1860,6 +1860,21 @@ def main():
     ap.add_argument('--feed-port', type=int, default=FEED_PORT)
     args = ap.parse_args()
 
+    # Nov 18: ONE hub at a time, even mid-start. A code reload's fresh process and a launch from rig_control
+    # (watchdog / a Tap Dial scene) used to start together -> both grabbed the Hue stream, one died on the desk
+    # port and the other never answered. The first to take this lock runs; any other waits 10 s, then stands down.
+    import fcntl
+    global _HUB_LOCK
+    _HUB_LOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.hub.lock'), 'w')
+    for _ in range(20):
+        try:
+            fcntl.flock(_HUB_LOCK, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except OSError:
+            time.sleep(0.5)
+    else:
+        say('Another Hue Hub is starting or running -- this one stands down (no second hub).')
+        sys.exit(0)
     host = '0.0.0.0'                           # other devices need the desk key (rig_control.token) -- see _allowed
     running = False
     for _ in range(5):                         # is another hub answering? (a just-stopped one may need a moment)
@@ -1911,7 +1926,15 @@ def main():
     except ImportError as e:
         say('Zephyrus relay: off (%s)' % e)
     threading.Thread(target=feed_listener, args=(hub, args.feed_port), daemon=True).start()
-    httpd = ThreadingHTTPServer((host, args.desk_port), make_handler(hub))
+    try:
+        httpd = ThreadingHTTPServer((host, args.desk_port), make_handler(hub))
+    except OSError as e:                       # Nov 18: never linger as a hub nobody can reach (a 'zombie')
+        say('The desk port %d is taken (%s) -- this hub stops instead of running unreachable.' % (args.desk_port, e))
+        try:
+            hub.disconnect()
+        except Exception:
+            pass
+        os._exit(1)
     httpd.daemon_threads = True
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     say('Light Desk:  http://localhost:%d' % args.desk_port)

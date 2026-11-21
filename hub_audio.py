@@ -33,6 +33,13 @@ except ImportError:                        # the hub still runs; the audio show 
 
 VOICES = ['kick', 'snare', 'hats', 'synth']
 BANDS = dict(kick=(30.0, 150.0), snare=(150.0, 5000.0), hats=(6000.0, 16000.0), synth=(200.0, 4000.0))
+# Nov 18 (Michael): BAND DETECTION -- four plain bands of the whole mix, each its own auto-gained 0-1 level
+#   sub 120 Hz and below (808s), low 120-500, mids 500-2k, highs 2k-22k
+EQ = ['sub', 'low', 'mid', 'high']
+# Nov 18: Ableton drum notes (General MIDI / Drum Rack: C1 = 36 kick, D1 = 38 snare, D#1 = 39 clap, F#1 = 42 hat)
+TRIG_NOTES = {'35': 'kick', '36': 'kick', '37': 'snare', '38': 'snare', '39': 'snare', '40': 'snare',
+              '42': 'hats', '44': 'hats', '46': 'hats'}
+BANDS.update(sub=(20.0, 120.0), low=(120.0, 500.0), mid=(500.0, 2000.0), high=(2000.0, 22000.0))
 MIN_GAP = dict(kick=0.09, snare=0.10, hats=0.05)          # seconds between two hits of one instrument
 RISE = dict(kick=4.0, snare=2.2, hats=1.8)                # how far a band's energy must jump to count as a hit
 LOUD = dict(kick=0.72, snare=0.55, hats=0.45)              # ...and how loud (0-1 of its recent range) it must get
@@ -57,12 +64,12 @@ class Analyzer:
         self.last_hit = {k: -10.0 for k in MIN_GAP}
         self.fluxmax = {k: 1e-6 for k in MIN_GAP}
         self.prev_flux = {k: 0.0 for k in MIN_GAP}
-        self.peak_db = {k: -30.0 for k in VOICES + ['level']}
-        self.floor_db = {k: -70.0 for k in VOICES + ['level']}
-        self.level = {k: 0.0 for k in VOICES + ['level']}
-        self.inst = {k: 0.0 for k in VOICES + ['level']}
-        self.bdb = {k: -120.0 for k in VOICES + ['level']}
-        self.prev_inst = {k: 0.0 for k in VOICES + ['level']}
+        self.peak_db = {k: -30.0 for k in VOICES + EQ + ['level']}
+        self.floor_db = {k: -70.0 for k in VOICES + EQ + ['level']}
+        self.level = {k: 0.0 for k in VOICES + EQ + ['level']}
+        self.inst = {k: 0.0 for k in VOICES + EQ + ['level']}
+        self.bdb = {k: -120.0 for k in VOICES + EQ + ['level']}
+        self.prev_inst = {k: 0.0 for k in VOICES + EQ + ['level']}
         self.bright = 0.5
         self.hits = []                                 # (time, voice, strength 0-1)
         self.sensitivity = 1.0
@@ -71,6 +78,8 @@ class Analyzer:
         self.epk = {k: 1e-9 for k in MIN_GAP}
         self.onset_s = collections.deque(maxlen=int(10.0 * self.sr / self.hop))  # snare-band jumps (minus the kick's)
         self.frames = 0
+        import hub_glitch                              # Nov 18: the glitch detector rides on the same frames
+        self.glitch = hub_glitch.Glitch()
 
     def feed(self, x):
         x = np.asarray(x, dtype=np.float32).reshape(-1)
@@ -88,7 +97,7 @@ class Analyzer:
         total_db = 10.0 * math.log10(float(power.sum()) / (self.n * self.n) + 1e-12)
         self.silent = total_db < -72.0
         # loudness per band, with automatic gain (peaks jump up, sink slowly; the floor creeps)
-        for k in VOICES + ['level']:
+        for k in VOICES + EQ + ['level']:
             e = float(power[self.mask[k]].sum()) if k != 'level' else float(power.sum())
             db = 10.0 * math.log10(e / (self.n * self.n) + 1e-12)
             pk, fl = self.peak_db[k], self.floor_db[k]
@@ -101,6 +110,13 @@ class Analyzer:
             self.bdb[k] = db
             a = 1.0 - math.exp(-dt / (0.02 if v > self.level[k] else 0.22))
             self.level[k] += (v - self.level[k]) * a
+        # GLITCHES (Nov 18): dropouts, stutters, noise bursts, hard cuts -- see hub_glitch.py
+        try:
+            band = power[(self.freqs >= 200.0) & (self.freqs < 16000.0)]
+            flat = float(np.exp(np.mean(np.log(band + 1e-20))) / (np.mean(band) + 1e-20)) if len(band) else 0.0
+            self.glitch.frame(self.t, total_db, {k: self.bdb[k] for k in EQ}, flat)
+        except Exception:
+            pass
         # brightness: spectral centroid, on a log scale between 150 Hz and 8 kHz
         c = float((self.freqs * power).sum() / power.sum())
         b = (math.log(max(150.0, min(8000.0, c))) - math.log(150.0)) / (math.log(8000.0) - math.log(150.0))
@@ -143,6 +159,11 @@ class Analyzer:
         self.frames += 1
         self.prev_inst = dict(self.inst)
         self.prev = logm
+
+    def glitch_state(self):
+        """For the lights + Unreal: is a gap / a stutter happening right now, and the recent glitch events."""
+        g = getattr(self, 'glitch', None)
+        return dict(gap=bool(g and g.gap), stutter=bool(g and g.stutter))
 
     def take_hits(self):
         h, self.hits = self.hits, []
@@ -310,6 +331,9 @@ class AudioIn:
         self.blocks = 0
         self.midi = None
         self.midi_name = None
+        self.amidi = None           # Nov 18: ABLETON'S OWN DRUM NOTES (IAC, channel 10) -- the lights 'time coded'
+        self.amidi_last_try = 0.0
+        self.amidi_seen = 0
         self.midi_last_try = 0.0
         self.midi_recent = {}       # voice -> wall time of the last MIDI trigger
         self.seen = {}              # MIDI channel (1-16) -> [notes seen, wall time of the last]
@@ -335,6 +359,12 @@ class AudioIn:
         self.grid_on = False
         self.kick_str = collections.deque(maxlen=8)
         self.heard = {}                                       # everything that sounded like a hit
+        # Nov 18 POCKET: every hit heard (or played over MIDI), BEFORE the lamp governor / beat-grid filters --
+        # the DMX heads + spots can snap on all of them (the Hue lamps keep the governed, flicker-safe hits)
+        self.pocket_hits = dict(kick=0, snare=0, hats=0)
+        self.glitch_events = collections.deque(maxlen=20)    # (wall time, kind, strength, seconds)
+        self.glitch_counts = {}
+        self.pocket_last = dict(kick=(-100.0, 0.0), snare=(-100.0, 0.0), hats=(-100.0, 0.0))
         self.cands = {}
         self.lit_t = {}
         self.open()
@@ -400,6 +430,9 @@ class AudioIn:
                     self.wall_newest = now - (self.an.n / 2.0) / self.an.sr     # the newest frame's centre
                     for t, k, s, sc in self.an.take_hits():
                         self.pending.append((now, k, s, 'audio', sc))
+                    for t, k, s, d in self.an.glitch.take():     # Nov 18: glitches, stamped in wall time
+                        self.glitch_events.append((now, k, s, d))
+                        self.glitch_counts[k] = self.glitch_counts.get(k, 0) + 1
                     self.blocks += 1
             except Exception:
                 pass
@@ -450,8 +483,51 @@ class AudioIn:
         except Exception:
             self.midi = None
 
+    def open_amidi(self):
+        """Nov 18 (Michael: "so in sync it looks time coded"): Ableton's drum MIDI on the IAC bus, channel 10."""
+        self.amidi_last_try = time.time()
+        if not self.settings().get('trig_ableton', True):
+            return
+        want = str(self.settings().get('iac_port', 'IAC') or 'IAC').lower()
+        try:
+            import mido
+            names = [n for n in midi_call(mido.get_input_names) if want in n.lower()]
+            if names:
+                self.amidi = midi_call(mido.open_input, names[0])
+        except TimeoutError:
+            self.amidi = None
+            self.amidi_last_try = time.time() + 55.0
+        except Exception:
+            self.amidi = None
+
+    def ableton_hit(self, msg, now):
+        """One MIDI message from Ableton's LIGHTS track -> a hit (note number = the drum, velocity = how hard)."""
+        if msg.type != 'note_on' or msg.velocity <= 0:
+            return None
+        if getattr(msg, 'channel', 0) + 1 != int(self.settings().get('trig_ableton_ch', 10) or 10):
+            return None
+        notes = self.settings().get('trig_notes') or TRIG_NOTES
+        v = notes.get(str(msg.note)) if isinstance(notes, dict) else None
+        if v not in MIN_GAP:
+            return None
+        self.amidi_seen += 1
+        if self.amidi_seen == 1:
+            print('Ableton drums: hits arriving on IAC channel %d -- the lights follow the notes' %
+                  int(self.settings().get('trig_ableton_ch', 10) or 10), flush=True)
+        hit = (now, v, (msg.velocity / 127.0) ** 0.7, 'midi', 99.0)
+        self.pending.append(hit)
+        return hit
+
     def poll(self, now):
         """Called by the hub every frame: (re)open things, and hand over this frame's hits."""
+        if self.amidi is None and now - self.amidi_last_try > 5.0:
+            self.open_amidi()
+        if self.amidi is not None:
+            try:
+                for msg in self.amidi.iter_pending():
+                    self.ableton_hit(msg, now)
+            except Exception:
+                self.amidi = None
         if self.stream is None and now - self.last_try > 5.0 and self.settings().get('audio_on', True):
             self.open()
         if self.midi is None and now - self.midi_last_try > 5.0:
@@ -495,6 +571,9 @@ class AudioIn:
         out = []
         out += self._grid(now, hits)
         for t, k, s, src, sc in hits:
+            if k in self.pocket_hits and (src == 'midi' or t - self.midi_recent.get(k, -10.0) > 2.0):
+                self.pocket_hits[k] += 1
+                self.pocket_last[k] = (t, float(s))
             if src == 'midi':
                 self.midi_recent[k] = t
                 self.lit_t[k] = t
@@ -653,4 +732,6 @@ class AudioIn:
         if self.an is None:
             return None
         with self.lock:
-            return dict(level=dict(self.an.level), bright=self.an.bright, silent=self.an.silent)
+            return dict(level=dict(self.an.level), bright=self.an.bright, silent=self.an.silent,
+                        glitch=self.an.glitch_state(),
+                        db=float(self.an.bdb['level']))   # raw loudness (no auto-gain) -> the light show keeps the song's dynamics

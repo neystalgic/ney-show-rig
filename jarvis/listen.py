@@ -171,7 +171,8 @@ def main():
                 reply = "I can't reach the rig right now."
                 log('ask failed: %s' % e)
             log('reply: %r' % reply)
-            threading.Thread(target=say, args=(reply,), daemon=True).start()
+            if reply and reply.strip():                  # Nov 20: noise / a false wake -> say nothing
+                threading.Thread(target=say, args=(reply,), daemon=True).start()
 
 
 if __name__ == '__main__':

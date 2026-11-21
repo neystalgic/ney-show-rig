@@ -228,3 +228,25 @@ PART 4 -- G. nDISPLAY NOTES (when to bother, and the one-projector shortcut)
  - Performance: the beat (part 1) and the flower (part 2) are light; the DMX fixtures'
    volumetric beams are the heavy part. If the projector stutters, lower beam quality
    on the BP_MovingHead actors first.
+
+H. NEW SIGNALS (Nov 18): THE FOUR BANDS, THE GLITCHES, EVERY LAMP
+   Same listener as part B (port 7700). New addresses from beat_sender.py:
+     /ney/band/sub  /ney/band/low  /ney/band/mid  /ney/band/high   float 0..1 each
+         sub = 120 Hz and below (the 808), low 120-500, mid 500-2k, high 2k-22k
+     /ney/gap       int 1 while the music has dropped out, 0 otherwise
+     /ney/stutter   int 1 while a stutter / beat repeat is playing
+     /ney/glitch    sent ONCE per glitch: string kind (gap, stutter, crush, jump), float strength 0..1,
+                    float seconds (how long a gap lasted)
+     /ney/lamp      one message per Hue lamp zone: int index, float r, float g, float b
+ 1. In the On OSC Message Received event, add a Switch on String on the address for each one you use
+    ("Get OSC Message Address" -> "Convert OSC Address To String").
+ 2. Floats: "Get OSC Message Floats" -> the first element. Strings: "Get OSC Message Strings".
+ IDEAS that match the room (the room already does the first column):
+     glitch      the room                          Unreal (suggestion)
+     gap         everything goes dark              freeze the camera + drain the colour (post-process saturation 0)
+     stutter     every fixture freezes             time dilation 0.05 ("Set Global Time Dilation") until stutter = 0
+     crush       one lamp flares white             a chromatic-aberration / glitch material spike for 0.3 s
+     jump        the rainbow skips 3 colours       cut the camera to a new angle; hue-shift the scene 3/7 of the wheel
+     sub band    the lit lamps swell               scale the Flower of Life (part E) with it
+ Tip: if nothing arrives, check the Zephyrus's Ethernet address (Windows: ipconfig) and put it in
+ beat_sender.json as the Unreal target host instead of zephyrus.local (the wired path, no Wi-Fi hop).

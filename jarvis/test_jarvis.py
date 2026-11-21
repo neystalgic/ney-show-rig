@@ -19,7 +19,8 @@ fake = lambda content: (lambda url, body, t: {'message': {'content': json.dumps(
 assert j.by_model('vibes for chilling', s, fake({'action': 'breathe'}))['action'] == 'breathe'
 assert j.by_model('delete files', s, fake({'action': 'rm -rf'})) is None
 assert j.by_model('x', s, lambda *a: (_ for _ in ()).throw(OSError('down'))) is None
-assert j.understand('qwerty', s, fake({'action': 'unknown'}))['action'] == 'unknown'
+assert j.understand('qwerty', s, fake({'action': 'unknown'}))['action'] == 'noise'   # Nov 20: gibberish = silent
+assert j.understand('qwerty asdf zxcv', s, fake({'action': 'unknown'}))['action'] == 'unknown'
 # doing: rig calls + confirmation + weight
 calls = []
 rig = lambda p: (calls.append(p), json.dumps({'look': 'purple'}))[1]
@@ -77,6 +78,21 @@ for t, w in {"I'm producing": 'producing', 'studio mode': 'producing', 'working 
              'fill speaker off': 'producing', 'fill back on': 'fillon'}.items():
     assert j.by_rules(t)['action'] == w, t
 print('producing ok')
+for t, w in {'pocket tight': 'pockettight', 'make the show tighter': 'pockettight', 'lights every hit': 'pockettight',
+             'pocket loose': 'pocketloose', 'loose pocket': 'pocketloose', 'show big hits only': 'pocketloose'}.items():
+    assert (j.by_rules(t) or {}).get('action') == w, (t, j.by_rules(t))
+print('pocket feel ok')
+# Nov 20: the false wake that turned the lights off
+fake_off = lambda url, body, t: {'message': {'content': json.dumps({'action': 'off'})}}
+for t in ("Shh, chh, chh, chh, chh, chh.", 'hmm', 'uh huh', 'chh chh chh', 'la la la la'):
+    assert j.looks_like_noise(t), t
+    assert j.understand(t, j.settings(), fake_off)['action'] == 'noise', t
+assert j.do({'action': 'noise', 'value': None}, j.settings(), None) == ''
+for t in ('lights off', 'turn off the lights', 'purple', 'movie night', 'blue at 50 percent'):
+    assert j.understand(t, j.settings(), fake_off)['action'] != 'noise', t
+assert j.understand('the guitar sounds great tonight', j.settings(), fake_off)['action'] == 'unknown'   # model can't kill the lights
+assert j.understand('can you kill the vibe in here with darkness please', j.settings(), fake_off)['action'] == 'off'
+print('noise guard ok')
 
 # --- Nov 12: comprehension upgrade ---
 assert j.by_rules('Jarvis')['action'] == 'nothing' and j.by_rules('')['action'] == 'nothing'

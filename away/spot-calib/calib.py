@@ -353,6 +353,40 @@ def main(argv):
         elif argv[0] in ('aimspot', 'uvaim'):        # live aiming of a Focus Spot (uvaim = UV only)
             follow_spot(heads, int(argv[1]), uv_only=argv[0] == 'uvaim')
             return 0
+        elif argv[0] == 'nodeaim':                   # Nov 17: precision aiming through the NODE's own calibration mode
+            n = int(argv[1])                         # (dim blue, exact pan/tilt, the node holds it) -- re-sent every 10 s
+            log('NODEAIM fixture %d: node calibration mode, follows calib_aim.json' % n)
+            end, last, sent = time.time() + 3 * 3600, None, 0.0     # a whole session; calib.stop ends it
+            try:
+                while time.time() < end and not os.path.exists(STOP):
+                    try:
+                        a = json.load(open(AIM))
+                        want = dict(head=n - 1, pan=int(a['pan']), tilt=int(a['tilt']))
+                        for k in ('focus', 'uv', 'gobo'):
+                            if a.get(k) is not None:
+                                want[k] = a[k]
+                    except Exception:
+                        want = last
+                    if want and (want != last or time.time() - sent > 10):
+                        if want != last:
+                            log('  fixture %d -> pan %d, tilt %d' % (n, want['pan'], want['tilt']))
+                        rq = urllib.request.Request('http://%s:%d/calib' % (heads.ip, hd.NODE_PORT), data=json.dumps(want).encode(),
+                                                    headers={'Content-Type': 'application/json'})
+                        try:
+                            urllib.request.urlopen(rq, timeout=3).read()
+                            last, sent = want, time.time()
+                        except Exception as e:
+                            log('  node: %s' % e.__class__.__name__)
+                    time.sleep(0.2)
+            finally:
+                try:
+                    rq = urllib.request.Request('http://%s:%d/calib' % (heads.ip, hd.NODE_PORT),
+                                                data=json.dumps(dict(head=n - 1, stop=True)).encode(),
+                                                headers={'Content-Type': 'application/json'})
+                    urllib.request.urlopen(rq, timeout=3).read()
+                except Exception:
+                    pass
+            return 0
         elif argv[0] == 'aim':                       # live aiming: head N follows bridge/calib_aim.json {pan, tilt} (Claude nudges it)
             n = int(argv[1])
             ap = AIM
