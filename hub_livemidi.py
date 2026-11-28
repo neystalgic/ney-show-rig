@@ -228,6 +228,8 @@ class LiveMidi:
             return self.handle_vj(msg)
         # (otherwise the VJ track's notes colour the room by their step in the key, like any other notes)
         ch_ = getattr(msg, 'channel', 0)
+        if ch_ + 1 == int(self.settings().get('trig_ableton_ch', 10) or 10) and self.settings().get('trig_ableton', True):
+            return                                       # Nov 18: channel 10 = the LIGHTS track's drum hits (hub_audio)
         if t == 'note_on' and msg.velocity > 0:
             if ch_ == HEARD_CH:
                 if time.time() - self.last_played < HEARD_HOLD:

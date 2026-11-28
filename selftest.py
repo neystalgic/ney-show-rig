@@ -65,6 +65,32 @@ SUITES = [  # (name, test file, [(live file, the copy that test exercises)])
      [('jarvis/brief.py', 'away/jarvis-brief/brief.py')]),   # jarvis.py moved on (reminders patch): test_jarvis covers it
     ('Jarvis reminders + timers', 'away/jarvis-reminders/test_reminders.py',   # Nov 15: reminders + timers
      [('jarvis/reminders.py', 'away/jarvis-reminders/reminders.py')]),
+    ('Focus Spot calibration (spot / aimspot / uvaim)', 'away/spot-calib/test_spot_calib.py',   # Nov 16
+     [('calib.py', 'away/spot-calib/calib.py')]),
+    ('Tap Dial (buttons, double taps, dial)', 'away/tap-dial/test_tap_dial.py',   # Nov 17
+     [('tap_switch.py', 'away/tap-dial/tap_switch.py'), ('ambient_fade.py', 'away/tap-dial/ambient_fade.py'),
+      ('head_power.py', 'away/tap-dial/head_power.py')]),
+    ('Spot power (Hue plugs on the Focus Spots)', 'away/spot-power/test_spot_power.py',   # Nov 17
+     [('spot_power.py', 'away/spot-power/spot_power.py')]),
+    ('Glitches + Unreal feed (hub_glitch, bands, /ney OSC)', 'away/glitch/test_glitch.py',   # Nov 18
+     [('hub_glitch.py', 'away/glitch/hub_glitch.py'),
+      ('beat_sender.py', 'away/glitch/beat_sender.py'), ('hub_modes.py', 'away/glitch/hub_modes.py')]),
+    ('AR app feed (/ney/fix)', 'away/ar-feed/test_ar_feed.py',   # Nov 21
+     [('beat_sender.py', 'away/ar-feed/beat_sender.py'), ('hue_hub.py', 'away/ar-feed/hue_hub.py')]),
+    ('Spots at full brightness (spot_level)', 'away/spot-level/test_spot_level.py',   # Nov 19
+     [('hub_dmx.py', 'away/spot-level/hub_dmx.py')]),
+    ('Hub start lock (one hub at a time)', 'away/hub-start/test_hub_lock.py',   # Nov 18 night
+     [('hue_hub.py', 'away/hub-start/hue_hub.py')]),
+    ('Max show (cascades, palettes, strobes on builds + drops)', 'away/max-show/test_max_show.py',   # Nov 25
+     [('hub_max.py', 'away/max-show/hub_max.py'), ('hub_modes.py', 'away/max-show/hub_modes.py'),
+      ('tap_switch.py', 'away/max-show/tap_switch.py'), ('max_show.json', 'away/max-show/max_show.json')]),
+    ('Christmas show + twinkle (separate from the other shows)', 'away/xmas-show/test_xmas_show.py',   # Nov 28
+     [('hub_max.py', 'away/xmas-show/hub_max.py'), ('xmas_show.json', 'away/xmas-show/xmas_show.json'),
+      ('xmas_calm.json', 'away/xmas-show/xmas_calm.json')]),
+    ('Max show strobe guards (cone, rate, guest, movie)', 'away/max-show/test_max_dmx.py',   # Nov 25
+     [('hub_dmx.py', 'away/max-show/hub_dmx.py'), ('hue_hub.py', 'away/max-show/hue_hub.py')]),
+    ('Ableton drums -> lights (IAC ch 10, time coded)', 'away/timecode/test_timecode.py',   # Nov 18 evening
+     [('hub_audio.py', 'away/timecode/hub_audio.py'), ('hub_livemidi.py', 'away/timecode/hub_livemidi.py')]),
 ]
 
 

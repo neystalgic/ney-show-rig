@@ -6,6 +6,27 @@ inside the away/ folder (one subfolder per task). Nothing goes live until Michae
 says so: he deploys from away/<task>/DEPLOY.txt.
 
 Status words: todo | in progress | ready for Michael | done | blocked (reason)
+SETUP MODE ENDED Nov 17 (auto-off back to 10 min). Was: idle auto-off OFF for heads + spots (head_power.json idle_min / spot_power.json
+  spot_idle_min = 100000). When he says setup is done, set both back to 10 (the *_normal keys).
+TOMORROW (Michael, Nov 16 night -- with him, not the away loop):
+  - Node page (192.168.1.80:7060): split "Heads (tap one to calibrate)" into two sections, MOVING HEADS 1-4 and FOCUS
+    SPOTS 1-2 -- heads and spots must read and act as independent groups. Then let him remove Head 3's 4 old zones.
+  - Find why Heads 3 + 4 strobed at 23:37 (calib "aim 4" right after power-up while Head 3 had node-page steering +
+    new avoid zones). Check node frames before anything moves again.
+  - Calibration: Head 3 (sweet tilt 7168 saved, chair + mirror zones added), Head 4, Spot 1, Spot 2 (UV tapestry aim).
+  - Tap Dial v4 is live (exact layout in tap_switch.py header). Dial = fill volume via CC 104 ch16: Michael maps it
+    once in Ableton (Cmd+M, click the fill track's volume, turn the dial, Cmd+M).
+  - Light show modes for button 4 -- design with Michael.
+TOMORROW BEFORE WORK (Michael, Nov 17 night):
+  - Re-aim Head 1 at the UV tapestry (Tap Dial aim mode, fixture 1) -- it can sit better on it.
+LATER (Michael, Nov 17 after calibration):
+  - Spots: calibrate more targets than the UV tapestry (gobo spots on walls/clouds) -- Tap Dial aim mode
+    (bridge/tap_aim.json {"fixture": 5|6} + calib nodeaim) is the way: Michael steers, button 3 saves.
+  - Chair zones: Head 1 "Above studio desk" and Head 3 "Mountain tapestry" sit inside the studio-chair no-go zones,
+    so shows land higher. Only narrow those zones if Michael confirms the beam is clear of the chair.
+  - Head 2 "Mountain tapestry" (lean 72) is capped by its old az-92 zone (lean 64) -- relax only if he says so.
+LIGHT SHOW PRINCIPLE (Michael, Nov 17): each GROUP in sync (all lamps together, all heads together, all spots
+  together), groups independent, each adding to the show in its own way. Zone rainbows (wave/loop...) are the exception.
 NO VOICE ON BUTTONS (Michael, Nov 16: "I never want to hear the Jarvis voice when hitting a button"): buttons,
 pads and plugs never speak (spot_power.json fan_reminder = false). Jarvis talks only when spoken to.
 TESTING RULE (Michael, Nov 14: "I want everything tested... I don't want to waste time with broken loops"):
@@ -222,3 +243,33 @@ J5. [SAFE] ready for Michael (plan + checker + tested Nov 15, see away/shortcut-
 - [MICHAEL] Turn on "allow all domains" so Claude can SSH to the Pi directly.
 - [MICHAEL] Review + deploy anything marked "ready for Michael".
 - [MICHAEL] Sacred line visual: watch it, say which forms/colours/timing to keep.
+
+DONE Nov 18 (tune live with his songs): GLITCH REACTION (Michael, Nov 18: react to the glitches in my music -> sentience). Detect stutters / repeats,
+  dropouts (sudden silence < 0.3 s), bitcrush / noise bursts, spectral jumps across every band at once -> a rare,
+  deliberate response (freeze, one fixture 'notices', an off-palette flicker). Offline tests with synthetic glitches.
+LASER BAR: cheap Amazon one from college, on the counter aimed at the big RED VELVET BLACKOUT CURTAIN (not the
+  tapestry). Model / DMX unknown -- Michael will look. Beams above seated eye level, nothing shiny in the path.
+LATER (Michael, Nov 18): UNREAL visuals on the projector -- build on the rainbow show (same colours, the bands +
+  hits feed), "improve upon it with Unreal". Projector not on yet. [MICHAEL]
+LATER: chase v2 -- snares light a head somewhere else while kicks walk the zones (asked, not confirmed).
+TONIGHT (Nov 18): first live glitch test with his song -- watch for false triggers (thresholds tuned on synthetic
+  audio only); pkill -f beat_sender.py once so Unreal gets the new /ney addresses; Zephyrus Ethernet IP (ipconfig)
+  -> beat_sender.json target instead of zephyrus.local.
+DONE Nov 18 21:05 (hub lock + zombie exit + show check): hub start race -- 'New code' self-restart + rig_control launch at the same time ->
+  'Address already in use' and a hub that runs but never answers. Also scene rshow once returned without launching
+  the hub (20:33). Make launch_hub refuse when a hue_hub.py is already running/starting; rshow verifies the hub
+  answers within 20 s, else hub_restart. Then: Ableton LIGHTS track (IAC ch 10) live test + track-delay calibration,
+  DMX delay so heads land with the lamps, and record the video.
+
+WHEN THE NEW HEAD ARRIVES (ORDERED Nov 27, Betopper LM0740D MKII 7x40W pixel-mapping head, $249 all-in):
+  - Spot 2 moves to the white shelf with Head 2 (fits, they don't hit -- checked by Michael). Non-slip pads / strap it.
+    Recalibrate Spot 2 + ADD THE STUDIO-CHAIR NO-GO ZONE + re-aim its UV on the tapestry (UV_AIMS / SCAN_CENTRE 5).
+  - The new head goes on the totem where Spot 2 was; it takes Spot 2's slot in the wave order (chase_seq).
+  - Need its DMX chart (pixel mode: 7 cells + halo ring); new fixture type in hub_dmx + node; own lean caps / no-go
+    zones (bright -- start dim); 5th smart plug for hold 2; next free DMX address after the spots.
+  - Max show: cascades inside its 7 cells, neon pairs across its face.
+  Nov 28: compared vs LM1915P + LM3715R (full Betopper specs) -- KEEPING the LM0740D MKII (7 lenses = big sibling of
+  the LM70S heads, balanced 3000 lm, tight 10-30 deg zoom, rotating kaleidoscope lens plate; pixel version 32/114 CH,
+  350 W, 6.5 kg).
+NEXT (Nov 28, Michael): Unreal, very simple -- run twin/ney_sculpture.py once, sc.demo(True), send any red Output Log
+  lines. Small steps between GTA + music.

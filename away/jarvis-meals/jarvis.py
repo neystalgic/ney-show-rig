@@ -57,6 +57,8 @@ ACTIONS = {
     'couch':       'Couch mode. Heads off, dim purple, and bedtime is on hold until you say goodnight.',
     'desk':        'Back at the desk. Normal schedule again.',
     'fillon':      'Fill speaker back on.',
+    'pockettight': 'Pocket tight. Every hit.',
+    'pocketloose': 'Pocket loose. Big hits only.',
     'off':         'Lights off.',
     'wake':        'Waking the Zephyrus.',
     'later':       None,                      # tonight only: no dimming until <time>
@@ -339,6 +341,8 @@ RULES = [
     (r'\bback (at|to) (my |the )?desk\b|\bdesk mode\b|\bdocked\b', 'desk'),
     (r"\b(i.?m producing|producing|production mode|studio mode|making (music|beats?)|working on (a |the )?(track|song|beat))\b|\bfill (speaker )?(off|out)\b", 'producing'),
     (r'\bfill (speaker )?(on|back)\b', 'fillon'),
+    (r'\b(pocket|lights?|show) (tight|tighter|every hit)\b|\btight pocket\b', 'pockettight'),
+    (r'\b(pocket|lights?|show) (loose|looser|big hits( only)?)\b|\bloose pocket\b', 'pocketloose'),
     (r'\bnight ?light\b', 'nightlight'),
     (r'\bguest mode (off|done|over)\b|\b(guests?|company) (are |is )?(gone|left)\b', 'guest_off'),
     (r'\bguest mode\b|\b(guests?|company|friends?) (are |is )?(over|here|coming)\b', 'guest_on'),
@@ -482,8 +486,35 @@ def warm(s=None, post=None):
         return False
 
 
+# Nov 20 (Michael: "Jarvis just spewed nonsense and turned off all the lights"): a false wake heard noise
+# ('Shh, chh, chh, chh...') and the model guessed 'lights off'. Now: noise never reaches the model (Jarvis stays
+# silent), and the model may only make the big room changes when the words actually talk about the lights.
+NOISE_WORDS = {'shh', 'sh', 'shhh', 'chh', 'ch', 'hmm', 'hm', 'mm', 'mmm', 'uh', 'um', 'ah', 'oh', 'huh', 'psst', 'tsk',
+               'ha', 'haha', 'la', 'na', 'mhm', 'uhh', 'umm', 'ooh', 'whoa', 'yeah', 'the', 'and', 'you'}
+MODEL_GUARDED = {'off', 'night', 'purplenight', 'nightlight', 'rest', 'heads_off', 'couch'}
+GUARD_RE = re.compile(r"\b(lights?|lamps?|off|dark|darkness|night|bed|bedtime|sleep|heads?|couch|rest|kill)\b")
+
+
+def looks_like_noise(text):
+    """Too few real words to be a command (onomatopoeia, music, TV chatter fragments)."""
+    words = re.findall(r"[a-z']+", str(text).lower())
+    real = [w for w in words if w not in NOISE_WORDS and len(w) >= 3 and re.search('[aeiouy]', w)]
+    return len(real) < 2 or (len(words) >= 4 and len(set(words)) <= len(words) // 3)
+
+
 def understand(text, s, post=None):
-    return by_rules(text) or by_model(text, s, post) or {'action': 'unknown', 'value': None}
+    r = by_rules(text)
+    if r:
+        return r
+    if looks_like_noise(text):
+        return {'action': 'noise', 'value': None}
+    m = by_model(text, s, post)
+    if m and m['action'] in MODEL_GUARDED and not GUARD_RE.search(str(text).lower()):
+        log('model wanted %s from %r -- not about the lights, ignored' % (m['action'], text))
+        return {'action': 'unknown', 'value': None}
+    return m or {'action': 'unknown', 'value': None}
+
+
 
 
 def understand_all(text, s, post=None):
@@ -702,6 +733,8 @@ def do(intent, s, rig=None, weight_path=WEIGHT_LOG):
             return "Nothing logged today yet. Tell me what you ate, like 'log a banana with peanut butter'."
         extra = (' %d of them without numbers.' % t['unknown']) if t['unknown'] else ''
         return 'Today so far: %d calories and %d grams of protein across %d meals.%s' % (t['calories'], t['protein'], t['meals'], extra)
+    if a == 'noise':
+        return ''                                     # Nov 20: noise / a false wake -> silent, nothing changes
     if a == 'nothing':
         return "I'm listening. Say what you want after the beep, like 'blue at 50 percent' or 'movie night'."
     if a == 'unknown':
@@ -775,7 +808,7 @@ def handle(text, s, dry=False, ask=input, rig=None, confirm=True, voice_yes=Fals
                 out.append('Okay, skipped the light show.')
                 continue
         said = do(intent, s, rig)
-        if intent.get('model') and intent['action'] not in ('status', 'help'):
+        if intent.get('model') and intent['action'] not in ('status', 'help') and said:
             said = "Heard '%s'. %s" % (intent.get('heard', text), said)
         out.append(said)
     return ' '.join(out)

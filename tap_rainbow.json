@@ -1,0 +1,46 @@
+{
+ "scores": {
+  "rconst": 0,
+  "rtunnel": 2.5,
+  "rmirror": 4,
+  "rkaleido": 2,
+  "rripple": 8,
+  "rsplit": 6,
+  "rchase": 9,
+  "rsparkle": 7,
+  "rbreath": 8.5,
+  "rainbow": 8,
+  "rwave": 4,
+  "rbounce": 4,
+  "rloop": 0,
+  "rsteps": 10
+ },
+ "notes": {
+  "rconst": "orange heads against purple lamps look atrocious together; the purple part is cool",
+  "rtunnel": "cool idea, not very rainbow-y -- the fades are too slow",
+  "rmirror": "orange hot air balloon keeps blocking Spot 1 -- Michael may move it",
+  "rkaleido": "spots look like they are shaking -- gobo_rot 60/190 is probably the Focus Spot gobo SHAKE range, not rotation; check the channel chart",
+  "rripple": "favourite so far: cohesive, gobos exploring the room look great, everything moving in harmony -- \"good, but we can do better\"",
+  "rsplit": "confusing: heads take their side-of-room colour but point anywhere -- colour should follow where the beam lands; could be cool with adjustments",
+  "rchase": "sick -- contrast, reminds him of fireworks; with adjustments could be a 10",
+  "rsparkle": "nothing wrong with it, just clearly better ones",
+  "rbreath": "very relaxing",
+  "rainbow": "love it, but can be much better / professional quality",
+  "rwave": "nothing special"
+ },
+ "updated": "2026-11-18 07:29",
+ "after_review": "scrap every mode scoring below 4 (Michael)",
+ "themes": [
+  "Nov 17 review: not enough SNAPPY movement -- wants lights snapping on/off as whole groups (punches, contrast like the chase), quick position jumps; many effects feel generic (slow glides + slow fades)"
+ ],
+ "scrapped": [
+  "rbounce",
+  "rconst",
+  "rkaleido",
+  "rloop",
+  "rmirror",
+  "rtunnel",
+  "rwave"
+ ],
+ "rule": "Michael Nov 17: only modes scoring 6+ stay"
+}

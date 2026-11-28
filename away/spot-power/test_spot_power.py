@@ -77,6 +77,7 @@ def setup(lights, settings=None):
     sp._now = clk
     said = []
     sp.SAY = lambda text, voice: said.append((text, voice))
+    sp.calibrating = lambda st: any((h or {}).get('calibrating') for h in (st or {}).get('heads', []) or [])  # no pgrep in tests
     env = {'node': node(), 'show': {}}
     sp.node_status = lambda: env['node']
     sp.hub_show = lambda: env['show']

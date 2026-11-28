@@ -1,6 +1,13 @@
 RIG PROGRESS LOG -- newest entry at the top. Written by the "Rig away loop" each run.
 Format: date time | task | what changed | tests | what's next / needs Michael
 ====================================================================================
+2026-11-18 02:20 UTC | Calibration day with Michael (live) | Head 3 tilt_up 31700; full range of motion on all
+  fixtures (lean 85, Spot 2 pan window opened, show dmx_lean_cap 85 + dmx_move 1); designated no-go zones only (chair,
+  mirror, screen, projector lens, studio desk/chair per head); 30+ named aims checked/saved for Heads 1-4; both spots'
+  UV tapestry centre + 4 corners (Tap Dial AIM MODE -- Michael steers, works far better than guessing); new button 3
+  mode "uvscan"; cloud aims list (8) for night sky mode in zones_calibration.json | tests: tap 110/110, spot power
+  52/52, spot calib 63/63, hub_modes 87/87, selftest 0 FAIL | next: spot targets beyond the tapestry; night sky mode
+  with the clouds; button 4 show modes; node page split (heads vs spots).
 2026-11-17 09:09 UTC | Content mode, Mac side (W5) | away/content-mode/ (NEW): content_mode.py = on/off + 5-min timer
   (fake-clock tested): "content mode confirmed" starts the light show with strobe any time (dmx_strobe always), colour
   every beat (flash_beats 1) and white (new hub setting content_white: the 2 "never white" floors + strobe hit go
@@ -308,3 +315,97 @@ Format: date time | task | what changed | tests | what's next / needs Michael
   for Michael: none (if Health Sync lacks Resting Energy, BRAIN could note 'deficit uses est. resting kcal').
 2026-11-11 | setup | Backlog + this log + away/ folder created; loop scheduled every
   3 h (11:48, 14:48, 17:48, 20:48, 23:48), build + test only, Michael deploys.
+
+Nov 18 (late morning) -- POCKET for the rainbow music show (hub_modes.py + hub_audio.py, backups *.bak-*-pocket):
+  snaps follow Michael's actual hits, not the beat grid: every 2nd kick = colour, each kick = chase step,
+  each snare = heads jump, snares + hats = spot gobos. Dynamics kept: raw loudness (new feat 'db') vs the loudest
+  moment of the last ~30 s scales everything (20 dB under = floor). 2 s silence -> beat clock. Tests 119/119.
+  Known limit: hub_audio LIGHT_GAP/LIGHT_RATE (kick >= 0.2 s apart, ~3/s) also gates the DMX snaps.
+  Scarlett 4i4: Monitor knob is analogue on outputs 1-2 only (Focusrite); the fill on 3-4 can't follow it.
+  Tap Dial user manual written (Claude Doc "Tap Dial User Manual").
+
+Nov 18 (midday, with Michael) -- the improvements day:
+  Head 1 UV tapestry re-aimed (pan 5908 tilt 16016). Live pocket test with his track: found the hub stuck in MOVIE
+  mode (settings.movie left on by a Movie scene) -> Rainbow show / Show now switch it off. Tap Dial: VJ entry blink +
+  Behind Desk breathes white in VJ, hold-on blip, dial = brightness while frozen, tap 4 leaves aim mode, fill speaker
+  follows the scene. Hub: pocket hits (heard vs lit), bands sub/low/mid/high (+ TD asub/alow/amid/ahigh), chase every
+  other groove phrase, heads CALM by default (pocket_moves), pivots off, drop never deals the relay (flaky test fixed).
+  Jarvis: "pocket tight" / "pocket loose". Selftest 0 FAIL. Tests: hub_modes 130, tap dial 232, jarvis all.
+
+Nov 18 (afternoon, Michael at work) -- GLITCHES + the Unreal feed:
+  hub_glitch.py (new): gap / stutter / crush / jump from the analyser's frames (dB per band, spectral flatness).
+  Room: gap = holds its breath (dark), stutter = time stops (freeze), crush = one zone flares white 0.35 s,
+  jump = the rainbow skips 3 colours. Setting glitch_on (default on). beat_sender: /ney/band/*, /ney/gap,
+  /ney/stutter, /ney/glitch (once per event), /ney/lamp (every zone) + restarts itself on new code from now on
+  (the running copy is old: pkill -f beat_sender.py once; the keeper restarts it). Unreal deck part H written.
+  Tests: glitch 24 (synthetic + real FFT path), hub_modes 138. Selftest 45 ok, 0 FAIL. Hub picks it up on start.
+  Mac confirmed on Ethernet (USB LAN above Wi-Fi). VPN active on the Mac -- first suspect if local traffic drops.
+
+Nov 18 night -- hub start race FIXED: hue_hub takes an exclusive lock (.hub.lock) before starting (a second hub
+  stands down, proven live during a reload), a hub whose desk port is taken exits instead of lingering, and the
+  Tap Dial's Rainbow show re-starts the engine if it isn't answering 20 s later. Ableton drum MIDI (IAC ch 10)
+  drives exact hits. ROY G BIV order kept on every hit (no skips). Visualizer layer reverted at Michael's ask.
+
+Nov 19 11:47 -- daily check: the 11:36 self-test FAIL 'Music engine running but not answering' was a false alarm made by
+  the new hub-lock test (its probe process was named hue_hub.py, so the self-test's pgrep saw a 'hub'). Renamed
+  to lock_probe.py; self-test re-run 47 ok, 0 FAIL. Overnight away loop: hourly runs ok, backlog empty.
+
+Nov 20 19:05 -- Jarvis false wake at 18:57 (wake 0.98, probably game/TV audio) heard 'Shh, chh, chh...' and the model
+  guessed 'lights off'. Fixed: noise (fewer than 2 real words) never reaches the model and Jarvis stays silent; the
+  model may only pick off/night/heads-off/couch when the words mention lights/off/night/bed/etc. Tests updated
+  (test_jarvis + the old away suites). New bridge task jarvis_logs copies /tmp Jarvis logs to bridge/outbox.
+
+Nov 22 11:47 -- Jarvis noise guard was NOT live until now: rig_control answers Jarvis in-process (import jarvis) and
+  hadn't been reloaded since the Nov 20 fix (the 22:27 'Big, big, big, big' false wake ran the old code). Reloaded;
+  verified live: ask 'Big, big, big, big.' -> silent, nothing changed. Test case added. Self-test 49 ok, 0 FAIL.
+  RULE: after editing jarvis/jarvis.py, reload rig_control too (not only jarvis_restart).
+
+Nov 22 21:20 -- HUB FROZE AT START (hold 4 'did nothing', hues stuck): the Mac's MIDI system (CoreMIDI) wedged after
+  the Scarlett dropped out (21:04 'no input called Scarlett'); opening a MIDI port then blocked inside rtmidi WITHOUT
+  releasing Python's lock, so the whole hub froze (midi_call's timeout can't help) and the Tap Dial queue backed up
+  behind 20x hub retries. Fixes: settings trig_on=false, trig_ableton=false, relay_on=false (no MIDI opens beyond
+  Live's IAC pads); hub_relay skips the Scarlett port when trig_on is off; tap_switch's Rainbow show never sits on
+  the button queue when the engine isn't answering (the 20 s show check re-applies). A Mac restart (or
+  'killall MIDIServer') clears the wedged MIDI system; turn relay_on back on for the Zephyrus MIDI relay after.
+
+Nov 25 13:10 -- THE MAX SHOW (Michael: "cascading effects ... more than just rainbows. I want strobes, max colour, max bang
+  for our buck"). His picks: strobes on drops + builds, palettes neon pairs / fire-ice / mono + white / UV + purple, a
+  SEPARATE show (hold 4 + the rainbow show untouched). New hub_max.py (dmx_pattern 'max'): grooves = cascade / domino /
+  neon fight / waterfall (a new piece + palette every phrase), builds = riser (strobes beat -> 8th -> 16th, white at the
+  end, heads gather up; drummer-only: a black inhale on the last beat), drops = impact (2 s burst on the heads' own
+  strobe + spot shutters, then kick hits 4 bars, snare hits after; fire <-> ice), breakdowns = deep UV. No music: the
+  built-in drummer plays a whole 6-phrase song on a loop. hub_dmx: the director's strobe hits go through the existing
+  guards (cone, strobe_max_hz per head, hub cap 8/s, guest mode file + the node, movie, blackout); the rainbow show still
+  never strobes. Start: bridge/tap_cmd.json {"mode": "maxshow"} (powers lamps/heads/spots like hold 4 ON; preset =
+  show_default.json + max_show.json, heads dmx_level 0.75). Hold 4 = off. Not on the dial yet.
+  Tests: max show 42, strobe guards 16, hub_modes 163, tap dial 261. Self-test 51 ok, 0 FAIL. Backups *.bak-nov25-max.
+  FOUND: with NO music the hub's section is 'quiet' -> the RAINBOW show only plays Rainbow breath (not the drummer
+  pieces I told Michael on Nov 24). Not changed (his loved show) -- ask first. Also: the saved show's extra keys
+  (chase_seq, spot_scan, rb_favourite, pocket_*) aren't hub setting keys, so the hub silently ignores them; the show
+  works because the code defaults match. strobe_max_hz is 8 in hub_state (set earlier).
+
+Nov 28 -- UNREAL VISUALS v1: "abstract colour sculpture" (Michael's pick; Unreal + the room-twin project already on the
+  Zephyrus). twin/ney_sculpture.py (build + tests in away/unreal-sculpture/, 32 passed with a fake Unreal + beat_sender's
+  real packets): its own level /Game/Ney/NeySculpture, pauses the twin live link, listens on UDP 7700 (the beat feed),
+  40 additive fresnel shards in 10 groups = the 10 wave fixtures (/ney/fix), a core breathing with the sub, 5 lights in
+  virtual haze; drop lands = fracture (shards fly out, pull back in ~4 s), breakdown = melt (sink, stretch, purple),
+  blackout = dark. sc.demo(True) previews without the rig. NOT YET RUN IN UNREAL -- first run may need API fixes.
+  Rough preview render (maths only): scratchpad sculpture_preview.png / .gif.
+
+Nov 28 -- THE CHRISTMAS SHOW + TWINKLE (Michael: "separate from our current shows ... just for content and showing
+  friends/family"). The Max show engine with max_theme 'xmas' (hub_max THEMES): palettes red + green, candy cane,
+  gold, frost; grooves cascade / SNOWFALL (white flakes settle on the fixtures, beams drift down over 2 bars) / domino /
+  red-vs-green fight; breakdowns TWINKLE; drops gold <-> candy cane (white strobe hits on candy cane). Real white
+  allowed for this theme only (lamps: zone 'white'; heads: wbody = white LED; spots: open wheel). CALM twinkle
+  (max_calm): no song shape, no strobes, 60% brightness, beams still, spots never scan, colour every 2 phrases.
+  Start: bridge/tap_cmd.json {"mode": "xmasshow"} (powers heads + spots like the Max show) or {"mode": "xmascalm"}
+  (lamps only -- no fan noise). Hold 4 = off. The plain Max show always sends max_theme '' + max_calm off, so it never
+  comes back Christmassy; rainbow show + hold 4 untouched; not on the dial. Presets xmas_show.json / xmas_calm.json.
+  Tests: christmas 26, max 42, strobe guards 16, hub_modes 163, tap dial 268. Self-test 52 ok, 0 FAIL.
+  Backups *.bak-nov28-xmas.
+Nov 28 (live with carols) -- Christmas show tuned: red/green palettes only + candy cane (gold/frost out: "less yellow"),
+  'evergreen' palette added; strobes LOW (riser hits once a beat in its last 40%, a 1 s landing burst, then one hit a
+  bar for 4 bars); OPEN BEAMS (no gobos -- he liked it; the 4-dot gobo is still unidentified for the Max show,
+  bridge/gobo_test.json {"gobo": N} holds the spots on one to find it); every piece moves on the music's ONSETS
+  (bells, voices, hats -- carols have no kick), never a clock while music plays; loudness sets the level.
+  Christmas tests 36. Backups hub_max.py.bak-nov28-xmas2/3.

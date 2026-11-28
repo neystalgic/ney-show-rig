@@ -36,6 +36,21 @@ def breath_level(t):
     k = ph / 0.4 if ph < 0.4 else 1.0 - (ph - 0.4) / 0.6
     return 0.5 - 0.5 * math.cos(math.pi * k)
 STOP = os.path.join(HERE, 'ambient.stop')
+DIAL = os.path.join(HERE, 'dial.json')               # Nov 17: the Tap Dial's brightness (0-1), read every step
+_BORN = time.time()
+
+
+def dial():
+    """The Tap Dial's intensity -- only if it was turned (or re-sent) after this look started, so a look from
+    Jarvis / the schedule starts at its own full brightness."""
+    try:
+        if os.path.getmtime(DIAL) < _BORN - 2.0:
+            return 1.0
+        import json as _j
+        with open(DIAL) as f:
+            return max(0.03, min(1.0, float(_j.load(f).get('intensity', 1.0))))
+    except Exception:
+        return 1.0
 
 cfg = hs.load_config()
 area = [a for a in hs.v2(cfg, 'entertainment_configuration').get('data', [])
@@ -111,7 +126,7 @@ def heads_loop():
             tilt = int(tt['tilt'])
             data[a], data[a + 1], data[a + 2], data[a + 3] = pan >> 8, pan & 255, tilt >> 8, tilt & 255
             data[a + 4] = int(h.get('motor_speed', 0))
-            data[a + 5] = int(round(hd.MASTER_MIN + HEAD_LVL * (hd.MASTER_MAX - hd.MASTER_MIN)))
+            data[a + 5] = int(round(hd.MASTER_MIN + HEAD_LVL * dial() * (hd.MASTER_MAX - hd.MASTER_MIN)))
             data[a + 6], data[a + 7], data[a + 8] = rgb
         try:
             sock.sendto(hd.artdmx(seq, uni, data), (ip, hd.ARTNET_PORT))
@@ -130,6 +145,7 @@ while not os.path.exists(STOP):
         import math
         base = HUE_LO + (HUE_HI - HUE_LO) * (0.5 - 0.5 * math.cos(2 * math.pi * (time.time() - t0 + STEP) / TURN))
     bri = BRI_LO + (BRI - BRI_LO) * breath_level(time.time() - t0 + STEP) if BREATH else BRI
+    bri = max(1.0, bri * dial())                          # the Tap Dial (Nov 17)
     for i, rid in enumerate(order):
         h = base + SPREAD * (i / max(1, n - 1) - 0.5)
         xy = lambda hh: hs.rgb_to_xyb(*vivid(hh % 360.0))[:2]

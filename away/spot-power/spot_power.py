@@ -36,11 +36,12 @@ SETTINGS = os.path.join(HERE, 'spot_power.json')
 LOG = '/tmp/spot_power.log'
 DEFAULTS = {'enabled': True, 'spot_idle_min': 10, 'warmup_s': 20, 'park_s': 6, 'node_lost_s': 30,
             'min_off_s': 60, 'manual_hold_min': 30, 'fan_reminder': True, 'voice': 'Moira',
-            'wake_acts': ['gobos', 'uv', 'burst']}
+            'wake_acts': ['gobos', 'uv', 'burst'],
+            'auto_on': True}       # Nov 18: False = the spots only come on when asked (Tap Dial hold 3 / a spot look)
 NAME_RE = re.compile(r'^\s*spot\s*([12])\s*$', re.I)
 NEVER_RE = re.compile(r'mac|scarlett|projector', re.I)      # AGENTS: never a plug on these
 SPOT_LOOKS = {'uvstars', 'movieuv', 'moviechill', 'showuv'}  # looks that hold the spots (UV stars)
-OFF_LOOKS = {'off', 'rest', 'night', 'nightlight', 'purplenight', 'heads_off'}
+OFF_LOOKS = {'off', 'rest', 'night', 'nightlight', 'purplenight'}   # Nov 17: heads_off no longer takes the spots (independent)
 FAN_LINE = 'Spot 2 is on -- ceiling fan off please.'
 
 STATE = {'plugs': {}, 'on': {}, 'node': None, 'dark_since': None, 'lost_since': None, 'warm_until': 0.0,
@@ -129,6 +130,18 @@ def spots_lit(st):
         if h.get('type') == 'focus17' and (int(h.get('master', 0) or 0) > 0 or int(h.get('uv', 0) or 0) > 0):
             return True
     return False
+
+
+def calibrating(st):
+    """Nov 16: Michael is calibrating -- a fixture steered from the node page, or calib.py running.
+    The plugs never switch off for 'dark' / 'quiet room' while that's going on."""
+    if any((h or {}).get('calibrating') for h in (st or {}).get('heads', []) or []):
+        return True
+    try:
+        import subprocess
+        return subprocess.run(['pgrep', '-f', r'[Pp]ython.*[ /]calib\.py( |$)'], capture_output=True, timeout=3).returncode == 0
+    except Exception:
+        return False
 
 
 def wanted(st, show, s):
@@ -262,7 +275,7 @@ def _tick():
     STATE['why_wanted'] = why
     if not any_on:
         STATE.update(dark_since=None, lost_since=None)
-        if why and now >= STATE['hold_until'] and now - STATE['off_at'] >= s['min_off_s']:
+        if s.get('auto_on', True) and why and now >= STATE['hold_until'] and now - STATE['off_at'] >= s['min_off_s']:
             with _lock:
                 _switch(True, plugs)
             STATE.update(warm_until=now + s['warmup_s'], why_on=why)
@@ -280,6 +293,9 @@ def _tick():
             _fan_note(STATE['on'], s)
         return
     STATE['lost_since'] = None
+    if calibrating(st):                               # never cut the power mid-calibration (Nov 16)
+        STATE['dark_since'] = None
+        return
     if why or now < STATE['warm_until']:
         STATE['dark_since'] = None
         return

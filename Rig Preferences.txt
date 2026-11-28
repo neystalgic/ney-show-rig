@@ -27,3 +27,56 @@ FILL SPEAKER (Nov 12): OFF while producing (weird stereo image). ON for movies (
 PHOTOSENSITIVE GUESTS (Nov 12): use look "showsafe" -- no strobe of any kind, no UV hold, calmer reaction.
 GUEST MODE (Nov 12): strobes blocked AT THE PI NODE (strobe unlock off, flash limit 2/s); strobe looks become the safe show.
   Toggle on the health page or tell Jarvis "guest mode" / "guests are gone". Siri strobe looks need "confirmed".
+RAINBOW SHOW FEEL (Nov 18, live with his own track): LOVES colour to colour, ONE FIXTURE AT A TIME on the transients
+  (Rainbow chase: "super professional", "generative"). Disliked: snapping for the sake of snapping (the 90-degree head
+  pivots -> off by default, setting pocket_pivots). Chase now plays every other groove phrase (setting rb_favourite).
+  Pocket feel default LOOSE (clean hits); "pocket tight" = every hit. Bands: sub -> lamps swell, low -> heads body,
+  mid -> spots body, high -> gobo sharpness. TD gets asub/alow/amid/ahigh (not wired in TD yet).
+HEAD MOVEMENT (Nov 18): "avoid unnecessary movement from the heads -- the snappiness adds noise". Default CALM:
+  heads hold one position per 8-bar phrase and glide (quiet) only on phrase changes; hits play through colour +
+  brightness, one fixture at a time. Setting pocket_moves = 'snap' brings the hit-driven jumps back (not default).
+THE NORTH STAR (Michael, Nov 18): "a demonstration of how colour, music, art and a living space can be transformed
+  into something otherworldly." The machines react to the GLITCHES in his music so they seem SENTIENT -- the feeling
+  of wonder, "how did he do that". Every feature is judged against this: generative and musical, never effects for
+  their own sake (calm heads, one fixture at a time on the transients, real contrast).
+TAP DIAL (Nov 18): HOLD 4 = VJ on / off (was the rainbow shortcut; he could never reach VJ). Rainbows: VJ dial.
+GLITCH REACTIONS DELETED (Nov 19, Michael): the lights never react to glitches (no dark / freeze / white flare /
+  cut). hub_glitch still detects them for the Unreal feed only (/ney/glitch). Drums stay AUDIO (no MIDI conversion).
+SCATTER (Nov 19): "each small transient affects a DIFFERENT light, including the heads and the spots". Every heard
+  transient lights ONE fixture (lamp zone / single head / single spot) from a shuffled deck, next ROY G BIV colour each
+  hit, flare + decay, dark between. The favourite (every other groove phrase) and VJ's first piece.
+THE ONE (Nov 19, Michael: "I have not liked anything nearly as much"): Rainbow CHASE on the music exactly as it ran
+  Nov 18 ~noon -- colour to colour, one zone at a time on the kicks, heads JUMPING to a new spot on the hits (fast, no
+  pivots), lit heads/spots with the low/mid body. Now the default for every groove (rb_favourite chase,
+  rb_fav_always true; pocket_moves default snap). Drops = all-out, breakdowns = breath. DON'T CHANGE IT WITHOUT
+  SHOWING HIM FIRST. Scatter stays as a VJ piece only.
+SPOTS (Nov 19, Michael: "I want all the rainbow dancing"): spots at FULL brightness in the show (spot_level 1.0,
+  not the heads' 0.42 dmx_level); movie nights unchanged.
+  + Nov 19: in the chase the two spots also answer every snare (taking turns), approved: 'all the light fixtures'.
+THE WAVE (Nov 19, Michael): the chase goes PRECISELY ONE FIXTURE AT A TIME, in his studio-frame order, there and back:
+  Head 1, Head 2, Play lamp, Spot 2, Head 3, Top Lamp, Hue color lamp 2 (the other 1A bulb), Floor Shade, Head 4, Spot 1.
+  Every lamp is its own fixture. Behind Desk + Hue color lamp 1 (out of frame) stay dark in the chase. Setting
+  chase_seq changes the order, chase_bounce false = loop instead of there-and-back. This is where he films promo from.
+SPOTS SCAN (Nov 19, Michael: "rainbow spotlights that scan the room"): in every rainbow piece but breath the two spots
+  sweep wide (+-120 deg round their tapestry headings, mirror image) and rise/fall 20-55 deg from straight up (beams
+  over heads), up to 120 deg/s; colour + gobo still from the show. Setting spot_scan false = old gentle spots.
+  NOTE: Spot 2 still has NO studio-chair no-go zone (backlog) -- the high beam limit is the only guard there.
+HOLD 4 = HIS SAVED SHOW (Nov 19 night): show_default.json in the Hue Rig folder = the Rainbow show exactly as he loves
+  it (wave in his order there-and-back, chase every other phrase, spots scanning at full, heads jumping, no glitch
+  reactions). Hold 4 plays it. VJ = tap 4 round to it (the last scene). Edit show_default.json to change the saved show.
+TAP DIAL SIMPLIFIED (Nov 20, Michael): HOLD 4 = THE SHOW ON / OFF -- on: heads + spots (+ lamps if off) power on and
+  his saved show starts; off: show stops, heads + spots power off, lamps purple. (His chosen exception to "only holds
+  1-3 switch power".) TAP 4 = just 4 scenes: Purple, Rainbow show, Movie, Night sky. Holds 1-3 / taps 1-3 / dial as before.
+NEXT BODY OF WORK (Nov 22, Michael): "THE DEWEY DECIMAL SYSTEM" -- a real library x the macOS interface, symbolising his
+  sound + music libraries. Visuals: Unreal on the Zephyrus drives the projector (Michael's pick). No sacred geometry.
+  The white wall as the canvas (paper / light mode). Concept: Finder colour tags = his ROY G BIV rainbow, call numbers
+  in the 780s (Dewey's Music class), catalog cards, 'CHECKED OUT' stamps, the Dock as the 10-fixture wave.
+  AR app parked until the visuals are done.
+
+Nov 22 night -- movie: 'movie' look (dreamy vibe, blue/violet/pink, breathing with the film) was NOT what Michael
+  wanted ('not purple, breathing way too much'). For movie nights he wants SOLID purple, at most a very slight
+  reaction. Use the 'purple' look (or build a 'purple, barely reactive' look) -- never the dreamy movie vibe.
+
+MAX SHOW (Nov 25): a SEPARATE show from the rainbow show. Michael wants cascades, strobes, max colour. Strobes only on
+  BUILDS + DROPS (never grooves / breakdowns). Palettes: neon pairs, fire / ice, mono + white, UV + purple (+ rainbow now
+  and then). Hold 4 stays his saved rainbow show until he says to swap or mix them. Preview before changing it.

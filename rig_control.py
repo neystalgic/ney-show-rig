@@ -33,9 +33,10 @@
 import hmac, json, os, re, secrets, subprocess, sys, threading, time, urllib.parse, urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import head_power                                  # Hue Smart Plugs on the moving heads (dormant until they exist)
+import spot_power                                  # Hue Smart Plugs on the two Focus Spots (Nov 17, dormant until they exist)
 import hub_watchdog                                # restarts a frozen hub on its own (Nov 9)
 import light_schedule                              # wind-down 21:30, night light 23:00, morning 8:40-9:00
-import tap_switch                                  # Hue Tap Switch Mini: 1 show, 2 movie, 3 cycle, 4 night (Nov 11)
+import tap_switch                                  # Hue Tap Dial: 1 Hue, 2 heads, 3 spots, 4 show, dial = brightness (Nov 17)
 import claude_bridge                               # Claude runs the rig through bridge/inbox, no TouchDesigner (Nov 12)
 import rig_health                                  # /health: green/red per part of the rig, for the phone (Nov 12)
 
@@ -251,9 +252,9 @@ SPOT_FX_FLAG = {"hold": {"az": 136, "lean": 76, "drift": 0}, "hold_when": "movie
                 "gobo_rot": 0, "focus": 135, "breathe": 110, "breathe_s": 8, "color": 186,
                 "per_head": {"5": {"hold": {"az": 180, "lean": 65, "drift": 8, "drift_s": 40}, "hold_head": 5, "gobo": 180,
                                    "gobo_rot": 210, "focus": 160, "breathe": 80, "breathe_s": 10, "color": None}}}
-SPOT_FX_UV_SKY = {"hold": {"az": 192, "lean": 46, "drift": 0}, "hold_when": "movie", "hold_head": 4, "level": 1.0,
+SPOT_FX_UV_SKY = {"hold": {"az": 197.0, "lean": 40.0, "drift": 0}, "hold_when": "movie", "hold_head": 4, "level": 1.0,
                   "uv": 1.0, "uv_only": True, "gobo": 0, "focus": 128,
-                  "per_head": {"5": {"hold": {"az": 180, "lean": 65, "drift": 0}, "hold_head": 5, "uv": 1.0, "uv_only": True}}}
+                  "per_head": {"5": {"hold": {"az": 191.2, "lean": 67.0, "drift": 0}, "hold_head": 5, "uv": 1.0, "uv_only": True}}}
 
 
 def _cc(num, val, label):
@@ -280,6 +281,25 @@ def fill_on(on):
     """Nov 12: fill speaker on/off -- CC 103 ch16 -> the fill track's Track Activator in Ableton (127 on, 0 off).
     Off while producing (the fill makes a weird stereo image); on for movies and shows."""
     _cc(103, 127 if on else 0, 'fill ON' if on else 'fill OFF (producing)')
+
+
+def pocket_feel(feel):
+    """Nov 18: how the rainbow music show snaps -- 'tight' = the heads + spots snap on every hit heard,
+    'loose' = only the big hits (the lamp-grade ones). Saved in the hub's settings (live if the hub is up)."""
+    feel = 'loose' if str(feel).lower().startswith('l') else 'tight'
+    try:
+        hub_api({'op': 'setting', 'key': 'pocket_feel', 'value': feel})
+        return 'pocket ' + feel
+    except Exception:
+        pass
+    p = os.path.join(HERE, 'hub_state.json')                 # hub not running: write it for the next start
+    st = json.load(open(p))
+    st.setdefault('settings', {})['pocket_feel'] = feel
+    tmp = p + '.tmp'
+    with open(tmp, 'w') as f:
+        json.dump(st, f, indent=1)
+    os.replace(tmp, p)
+    return 'pocket ' + feel + ' (saved for the next show)'
 
 
 def fill_boost(on):
@@ -473,6 +493,8 @@ LOOKS = {
     'filldown': ('Fill speaker back to normal', lambda: fill_boost(False)),
     'producing': ('Producing: fill speaker off (lights untouched)', lambda: (fill_boost(False), fill_on(False))),
     'fillon': ('Fill speaker back on', lambda: fill_on(True)),
+    'pockettight': ('Pocket tight: heads + spots snap on every hit (rainbow music show)', lambda: pocket_feel('tight')),
+    'pocketloose': ('Pocket loose: heads + spots snap only on the big hits', lambda: pocket_feel('loose')),
     'show': ('Light show: everything together to the music, strobe only in drops', lambda: show_full()),
     'night': ('Night mode: heads off, red night light', lambda: night_mode()),
     'hype': ('Hype: every lamp + head one bright colour, fast moves', lambda: (wake_zephyrus(), stop_ambient(),
@@ -505,6 +527,7 @@ def apply(look):
         STATE.update(busy=True, last_error=None)
         try:
             LOOKS[look][1]()
+            spot_power.after_look(look)             # spots power on/off with their looks (Nov 17)
             STATE.update(look=look, since=time.strftime('%H:%M'))
             try:                                    # remembered across rig_control restarts (Nov 12)
                 with open(os.path.join(HERE, 'rig_last_look.json'), 'w') as f:
@@ -634,7 +657,7 @@ class Handler(BaseHTTPRequestHandler):
                 data = json.loads(self.rfile.read(n) or b'{}')
             except ValueError:
                 return self.reply(400, 'Send JSON.')
-            ok_keys = {'dmx_pattern': ('normal', 'show', 'relay', 'modes'), 'show_lock': None, 'show_speed': None,
+            ok_keys = {'dmx_pattern': ('normal', 'show', 'relay', 'modes', 'rainbow'), 'show_lock': None, 'show_speed': None,
                        'show_bars': None, 'show_pool': None, 'show_zones': None, 'show_wave': ('bounce', 'forward', 'back', 'alternate'), 'show_loop_dir': ('alternate', 'ccw', 'cw'), 'show_acts': (True, False), 'show_gobos': None, 'show_audio': None, 'chase_lamps': None, 'chase_head_xy': None,
                        'chase_arc': None, 'energy': None}
             done = []
@@ -694,7 +717,7 @@ class Handler(BaseHTTPRequestHandler):
         look = path.lower()
         if look == 'status':
             s = dict(STATE, hub=running('hue_hub.py'), rainbow_fade=running('ambient_fade.py'),
-                     head_power=head_power.status(), watchdog=hub_watchdog.status(),
+                     head_power=head_power.status(), spot_power=spot_power.status(), watchdog=hub_watchdog.status(),
                      schedule=light_schedule.status(), tap_switch=tap_switch.status())
             return self.reply(200, json.dumps(s))
         if look not in LOOKS:
@@ -778,6 +801,7 @@ if __name__ == '__main__':
     except (OSError, ValueError):
         STATE['guest'] = False
     head_power.start()
+    spot_power.start()
 
     def _wd_stop():
         with LOCK:
@@ -803,7 +827,7 @@ if __name__ == '__main__':
     def _tap(look):                                 # a Tap Switch press = the same as asking for that look
         if look in LOOKS:
             threading.Thread(target=apply, args=(look,), daemon=True).start()
-    tap_switch.start(_tap)
+    tap_switch.start(_tap, sys.modules[__name__])   # Nov 17: Tap Dial layout (1 Hue, 2 heads, 3 spots, 4 show, dial)
     import health_weekly                            # Sunday 8 pm: Health Report Weekly.csv on the Desktop (Nov 14)
     health_weekly.start_sunday_writer()
 
@@ -827,7 +851,7 @@ if __name__ == '__main__':
 
     def _bridge_status():
         return dict(STATE, hub=running('hue_hub.py'), hub_live=_hub_summary(), beat_sender=running('beat_sender.py'),
-                    head_power=head_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
+                    head_power=head_power.status(), spot_power=spot_power.status(), watchdog=hub_watchdog.status(), schedule=light_schedule.status(),
                     tap_switch=tap_switch.status(), bridge=claude_bridge.status(), time=time.strftime('%H:%M:%S'),
                     jarvis_log=sh('tail -12 /tmp/jarvis.log 2>/dev/null').splitlines(), health=rig_health.snapshot(), rotate=STATE.get('rotate'), dock=STATE.get('dock'), couch=STATE.get('couch'), py_env=STATE.get('py_env'), jarvis_app=STATE.get('jarvis_app'), voices=STATE.get('voices'), jarvis_ears=STATE.get('jarvis_ears'),
                     listen_log=sh('tail -6 /tmp/jarvis_listen.log /tmp/jarvis_listen.out 2>/dev/null').splitlines(),
@@ -839,7 +863,7 @@ if __name__ == '__main__':
             pi_deploy.read_status()
             time.sleep(60)
     threading.Thread(target=_brain_poll, name='pi-brain-poll', daemon=True).start()
-    rig_health.start(lambda: dict(state=dict(STATE), head_power=head_power.status(), watchdog=hub_watchdog.status(),
+    rig_health.start(lambda: dict(state=dict(STATE), head_power=head_power.status(), spot_power=spot_power.status(), watchdog=hub_watchdog.status(),
                                   schedule=light_schedule.status(), bridge=claude_bridge.status(),
                                   tap_switch=tap_switch.status(), pi_brain=__import__('pi_deploy').STATUS.get('brain'),
                                   selftest=STATE.get('selftest')))
@@ -1068,7 +1092,8 @@ if __name__ == '__main__':
 
     def _calib(*args):                              # Nov 15: calibration helper (calib.py) -- no music needed
         stop_all()
-        lamp_only = bool(args) and args[0] == 'lamp'      # lamp checks don't need the heads (or their fans)
+        lamp_only = bool(args) and (args[0] in ('lamp', 'spot', 'aimspot', 'uvaim') or      # lamps / spots only:
+                                    (args[0] == 'nodeaim' and len(args) > 1 and str(args[1]) in ('5', '6')))  # never power the heads
         on = any((head_power.status().get('on') or {}).values())
         if not lamp_only:
             head_power.request_on(quiet=True)
@@ -1092,6 +1117,8 @@ if __name__ == '__main__':
                                     'build_jarvis_app': _build_jarvis_app, 'voices': _voices, 'chime_demo': _chime_demo,
                                     'jarvis_restart': lambda: sh('pkill -f "[j]arvis/listen.py" || true'),
                                     'procs': lambda: open(os.path.join(HERE, 'bridge', 'outbox', 'procs.txt'), 'w').write(sh('ps -axo pid,etime,command | grep -E "hue_hub|calib.py|ambient_fade|beat_sender|listen.py|front_door|ney_brain" | grep -v grep || true')),
+                                    'jarvis_logs': lambda: open(os.path.join(HERE, 'bridge', 'outbox', 'jarvis_logs.txt'), 'w').write(
+                                        sh('tail -n 80 /tmp/jarvis.log 2>/dev/null; echo "== listen"; tail -n 80 /tmp/jarvis_listen.log 2>/dev/null')),
                                     'selftest': _selftest, 'hub_dump': lambda: sh('pkill -USR1 -f hue_hub.py || true') or 'stack dump requested',
                                     'calib_zones': lambda: _calib('zones'), 'calib_stop': _calib_stop,
                                     'calib_sweep1': lambda: _calib('sweep', '1'), 'calib_sweep2': lambda: _calib('sweep', '2'),

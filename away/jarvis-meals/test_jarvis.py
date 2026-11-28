@@ -22,7 +22,7 @@ fake = lambda content: (lambda url, body, t: {'message': {'content': json.dumps(
 assert j.by_model('vibes for chilling', s, fake({'action': 'breathe'}))['action'] == 'breathe'
 assert j.by_model('delete files', s, fake({'action': 'rm -rf'})) is None
 assert j.by_model('x', s, lambda *a: (_ for _ in ()).throw(OSError('down'))) is None
-assert j.understand('qwerty', s, fake({'action': 'unknown'}))['action'] == 'unknown'
+assert j.understand('qwerty', s, fake({'action': 'unknown'}))['action'] in ('unknown', 'noise')   # Nov 20: gibberish may be silent noise
 # doing: rig calls + confirmation + weight
 calls = []
 rig = lambda p: (calls.append(p), json.dumps({'look': 'purple'}))[1]

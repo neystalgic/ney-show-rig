@@ -129,6 +129,9 @@ class Relay:
                              ('gear', str(st.get('trig_port', 'Scarlett')), self._from_gear)):
             if key in self.ins or not sub.strip():
                 continue
+            if key == 'gear' and not st.get('trig_on', True):
+                continue                                 # Nov 22: gear MIDI off -> never touch the Scarlett's MIDI port
+                                                         # (a wedged CoreMIDI port froze the whole hub on open)
             names = [n for n in ins if sub.lower() in n.lower() and 'push' not in n.lower()
                      and want not in n.lower()]
             if names:

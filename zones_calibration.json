@@ -52,10 +52,95 @@
     "UV tapestry": {
      "pan": 14094,
      "tilt": 13623
+    },
+    "Mountain tapestry": {
+     "pan": 16876,
+     "tilt": 10156,
+     "note": "Nov 17, Michael with the Tap Dial"
+    },
+    "Cloud 2 (Head 3)": {
+     "pan": 14585,
+     "tilt": 23296
+    },
+    "Red balloons": {
+     "pan": 13213,
+     "tilt": 8728,
+     "note": "Nov 17, Tap Dial"
+    },
+    "Yellow balloon (partly)": {
+     "pan": 14571,
+     "tilt": 10179,
+     "note": "same aim as the red balloons; kinda hits the yellow one"
     }
    },
    "plan": "Michael may move the speaker onto the table and Head 3 behind it on the speaker stand (fiber mesh) -- re-calibrate Head 3 after",
-   "moved": "2026-11-16 02:02 -- now behind the speaker on the stand; limits + aims need re-calibration; out of the show until then"
+   "moved": "2026-11-16 02:02 -- now behind the speaker on the stand; limits + aims need re-calibration; out of the show until then",
+   "raised": {
+    "when": "2026-11-17 07:31",
+    "sweet_tilt": 7168,
+    "sweet_lean_deg": 70.3,
+    "note": "Michael: tilt 7168 (~70 deg lean) is the sweet spot from the speaker stand -- a full 360 pan with very little in the way",
+    "studio_seat": {
+     "pan": 17600,
+     "az": 145.0,
+     "note": "pan 17600 at that tilt points at the studio chair -- no-go zone az 145 +/-12, lean <= 40 (added to the node)"
+    },
+    "mirror": {
+     "pan": [
+      33216,
+      40704
+     ],
+     "az": [
+      273.7,
+      335.4
+     ],
+     "zone": {
+      "az": 304.5,
+      "width": 67.7,
+      "lean": 35.0
+     },
+     "note": "Michael Nov 16: mirror from the speaker stand; projector screen is out of reach",
+     "lifted": "Nov 17 night: Michael lifted the mirror zone (wants more motion); chair zone kept"
+    }
+   },
+   "position": {
+    "when": "2026-11-17 23:16",
+    "from_gray_couch_wall_in": 15,
+    "from_mirror_closet_in": 58,
+    "base_height_in": 43,
+    "lens_pivot_height_in_est": 51,
+    "tilt_up": 31700,
+    "note": "Michael measured Nov 17 (iPhone Measure). Lens pivot = base + ~8 in (LM70S). Below standing eye level -> cap the working lean."
+   },
+   "reference_aims": {
+    "art wall": {
+     "pan": 28523,
+     "tilt": 15316,
+     "lean_deg": 45,
+     "note": "dot directly on the art wall (Michael)"
+    },
+    "toward painting wall / chair side": {
+     "pan": 17600,
+     "tilt": 15316,
+     "lean_deg": 45,
+     "note": "\"pointed up towards the painting wall kinda\""
+    },
+    "ceiling fan, toward kitchen": {
+     "pan": 6677,
+     "tilt": 15316,
+     "lean_deg": 45
+    },
+    "Mac Miller tapestry (middle)": {
+     "pan": 35134,
+     "tilt": 9435,
+     "lean_deg": 61.2,
+     "note": "aimed at the predicted mirror-wall/gray-couch-wall corner at 7 ft; Michael: lands right in the middle of the Mac Miller tapestry"
+    }
+   },
+   "model": {
+    "bearing_offset_deg": 34,
+    "note": "first estimate from 4 directions: room bearing = az - 34"
+   }
   },
   "4": {
    "confirmed": "2026-11-16 01:12",
@@ -65,6 +150,27 @@
     "UV tapestry": {
      "pan": 4409,
      "tilt": 14206
+    },
+    "Coexist flag": {
+     "pan": 22330,
+     "tilt": 9101
+    },
+    "Studio clouds": {
+     "pan": 21116,
+     "tilt": 9101
+    },
+    "Mountain tapestry": {
+     "pan": 43168,
+     "tilt": 12014
+    },
+    "Blue balloon": {
+     "pan": 6491,
+     "tilt": 4528
+    },
+    "Happiness Project flag": {
+     "pan": 16072,
+     "tilt": 5103,
+     "note": "kept off-centre: centred (15708) would spill onto the projector screen"
     }
    }
   },
@@ -73,7 +179,117 @@
    "zone": "2B",
    "where": "north/projector wall, white desk side table",
    "aims": {
-    "Coffee table": "existing target is good (Michael)"
+    "Coffee table": "existing target is good (Michael)",
+    "Ceiling by projector wall": {
+     "pan": 16401,
+     "tilt": 18204
+    },
+    "Ceiling by fireplace": {
+     "pan": 19073,
+     "tilt": 12823
+    },
+    "UV tapestry corner (barely)": {
+     "pan": 15311,
+     "tilt": 27306
+    },
+    "Ceiling sweep (Head 1)": {
+     "pan": 15311,
+     "tilt": 23301,
+     "note": "sweep start"
+    },
+    "UV tapestry": {
+     "pan": 5908,
+     "tilt": 16016,
+     "note": "Nov 18, Michael with the Tap Dial: perfectly on the UV tapestry"
+    },
+    "Above the keyboards": {
+     "pan": 12197,
+     "tilt": 9101
+    },
+    "UV tapestry sweep": {
+     "pan": 6592,
+     "tilt": 18611,
+     "note": "sweep along from here; static = UV tapestry centre"
+    },
+    "Blue balloon": {
+     "pan": 21033,
+     "tilt": 54842
+    },
+    "Above studio desk": {
+     "pan": 15102,
+     "tilt": 13830,
+     "note": "Nov 17, Michael with the Tap Dial"
+    },
+    "UV tapestry (before Nov 18)": {
+     "pan": 7908,
+     "tilt": 17477
+    }
+   },
+   "no_go": [
+    {
+     "az": 135.1,
+     "width": 50.0,
+     "lean": 15.0,
+     "why": "studio desk + studio chair (Michael Nov 17)"
+    },
+    {
+     "az": 176.2,
+     "width": 38.0,
+     "lean": 25.0,
+     "why": "projector screen (Michael Nov 17: floods the whole picture)"
+    },
+    {
+     "az": 100.5,
+     "width": 24.0,
+     "lean": 70.0,
+     "why": "projector lens (Michael Nov 17): 65 deg = above the keyboards is clear, the old 81.5 deg aim was at the lens"
+    }
+   ],
+   "aims_removed": {
+    "Happiness Project flag": "old aim (20287/12823) floods the projector screen -- Heads 1 + 2 likely cannot reach the flag"
+   }
+  },
+  "2": {
+   "no_go": [
+    {
+     "az": 113.0,
+     "width": 30.0,
+     "lean": 58.5,
+     "why": "gray couch eye level (Michael Nov 17: tilt up 20 deg pointed that way)"
+    },
+    {
+     "az": 143.6,
+     "width": 30.0,
+     "lean": 50.0,
+     "why": "studio chair (Nov 17: green balloon aim left out -- risks the chair)"
+    }
+   ],
+   "aims": {
+    "UV tapestry": {
+     "pan": 13714,
+     "tilt": 11468
+    },
+    "Mountain tapestry + yellow balloon": {
+     "pan": 11529,
+     "tilt": 6372,
+     "note": "lean 72.5 -- the old az 92 zone (lean 64) caps it in shows"
+    },
+    "Clouds by top lamp": {
+     "pan": 9679,
+     "tilt": 7272
+    },
+    "Blue balloon": {
+     "pan": 42355,
+     "tilt": 22210
+    },
+    "UV tapestry (alt)": {
+     "pan": 13606,
+     "tilt": 10236
+    }
+   },
+   "aims_removed": {
+    "Green balloon": "left out (Michael Nov 17)",
+    "Studio": "pointed at the studio chair"
    }
   }
  },
@@ -141,10 +357,146 @@
  },
  "spots": {
   "2": {
-   "moved": "2026-11-16 morning -- aims (UV stars) + limits need re-calibration"
+   "moved": "2026-11-16 morning -- aims (UV stars) + limits need re-calibration",
+   "aims": {
+    "UV tapestry centre": {
+     "pan": 23201,
+     "tilt": 51059,
+     "az": 191.2,
+     "lean": 67.0,
+     "note": "Nov 17, from the new spot: about centred, washes the tapestry in an oval (Michael likes the angle)"
+    },
+    "UV tapestry corner: kitchen": {
+     "pan": 26837,
+     "tilt": 49960,
+     "az": 221.1,
+     "lean": 63.0,
+     "note": "Nov 17: as close as Spot 2 gets to the kitchen corner"
+    },
+    "UV tapestry corner: mirror closet": {
+     "pan": 21342,
+     "tilt": 47228,
+     "az": 175.9,
+     "lean": 53.0,
+     "note": "Nov 17, Michael with the Tap Dial"
+    },
+    "UV tapestry corner: studio": {
+     "pan": 21341,
+     "tilt": 51594,
+     "az": 175.8,
+     "lean": 68.9,
+     "note": "Nov 17: best Spot 2 reaches toward the studio corner (beam spills onto the ceiling past the edge)"
+    },
+    "UV tapestry corner: art wall + front door": {
+     "pan": 24068,
+     "tilt": 51594,
+     "az": 198.3,
+     "lean": 68.9,
+     "note": "Nov 17, Michael with the Tap Dial"
+    }
+   },
+   "zones_lifted": "Nov 17 night: old zones (from before the move) removed at Michael's request -- mirror allowed"
   },
   "1": {
-   "todo": "re-calibrate aims, gobo values, UV star aim"
+   "todo": "re-calibrate aims, gobo values, UV star aim",
+   "aims": {
+    "UV tapestry centre": {
+     "pan": 23909,
+     "tilt": 43691,
+     "az": 197.0,
+     "lean": 40.0,
+     "note": "Nov 17 with Michael"
+    },
+    "UV tapestry corner: art wall + front door": {
+     "pan": 30780,
+     "tilt": 46966,
+     "az": 253.6,
+     "lean": 52.0,
+     "note": "Nov 17, Michael steered it with the Tap Dial"
+    },
+    "UV tapestry corner: front door + kitchen": {
+     "pan": 27132,
+     "tilt": 48056,
+     "az": 223.6,
+     "lean": 56.0,
+     "note": "Nov 17, Michael with the Tap Dial"
+    },
+    "UV tapestry corner: studio desk": {
+     "pan": 16162,
+     "tilt": 38217,
+     "az": 133.2,
+     "lean": 20.0,
+     "note": "Nov 17, Michael with the Tap Dial"
+    },
+    "UV tapestry corner: projector": {
+     "pan": 20729,
+     "tilt": 45857,
+     "az": 170.8,
+     "lean": 47.9,
+     "note": "Nov 17, Michael with the Tap Dial"
+    }
+   },
+   "directions": "steered by Michael with the Tap Dial; centre -> art-wall/door corner = pan +6871, tilt +3275"
   }
+ },
+ "clouds": {
+  "note": "every aim that lights a ceiling cloud -- for the night sky mode (Michael, Nov 17)",
+  "aims": [
+   {
+    "name": "Cloud above projector",
+    "fixture": "Head 4",
+    "pan": 21116,
+    "tilt": 9101,
+    "note": "Head 4, Nov 17: clouds above the projector (looks cool)"
+   },
+   {
+    "name": "Cloud by mountain tapestry",
+    "fixture": "Head 4",
+    "pan": 42197,
+    "tilt": 14200,
+    "note": "Head 4, Nov 17: the cloud in front of the mountain tapestry"
+   },
+   {
+    "name": "Cloud (Head 3 stand)",
+    "fixture": "Head 3",
+    "pan": 14094,
+    "tilt": 22573,
+    "note": "Head 3 from the speaker stand, Nov 16: \"pointed up at a cloud\""
+   },
+   {
+    "name": "Cloud above white shelf",
+    "fixture": "Head 4",
+    "pan": 6491,
+    "tilt": 4528,
+    "note": "with the blue balloon"
+   },
+   {
+    "name": "Cloud above Head 4",
+    "fixture": "Head 1",
+    "pan": 12197,
+    "tilt": 9101,
+    "note": "above the keyboards, just above IMAGINE"
+   },
+   {
+    "name": "Cloud by blue balloon",
+    "fixture": "Head 1",
+    "pan": 21033,
+    "tilt": 54842
+   },
+   {
+    "name": "Clouds by top lamp",
+    "fixture": "Head 2",
+    "pan": 9679,
+    "tilt": 7272,
+    "note": "Michael: could make for some sick effects"
+   },
+   {
+    "name": "Cloud 2 (Head 3)",
+    "fixture": "Head 3",
+    "pan": 14585,
+    "tilt": 23296,
+    "note": "Nov 17, Tap Dial"
+   }
+  ]
  }
 }

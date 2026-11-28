@@ -109,6 +109,20 @@ def node_status():
     return None
 
 
+KEEP_LIT = []                                         # Nov 17: callables -> True while something asked for a glow
+
+
+def _kept_lit():
+    """A glow someone picked on purpose (Tap Dial heads glow) is not a 'quiet room' -- keep the heads on."""
+    for f in KEEP_LIT:
+        try:
+            if f():
+                return True
+        except Exception:
+            pass
+    return False
+
+
 def hub_quiet():
     """True when nothing is playing: hub stopped, blacked out, or its audio under -60 dB.
     (Nov 6: the hub kept the heads glowing in a silent room, so 'dark' never came.)"""
@@ -124,6 +138,18 @@ def hub_quiet():
     if 'very quiet' in heard or 'PURE SILENCE' in heard or 'no sound arriving' in heard:
         return True
     return bool(m) and float(m.group(1)) < -60.0
+
+
+def calibrating(st):
+    """Nov 16: Michael is calibrating -- a fixture steered from the node page, or calib.py running.
+    The plugs never switch off for 'dark' / 'quiet room' while that's going on."""
+    if any((h or {}).get('calibrating') for h in (st or {}).get('heads', []) or []):
+        return True
+    try:
+        import subprocess
+        return subprocess.run(['pgrep', '-f', r'[Pp]ython.*[ /]calib\.py( |$)'], capture_output=True, timeout=3).returncode == 0
+    except Exception:
+        return False
 
 
 def node_ok(st):
@@ -205,8 +231,11 @@ def _tick():
             STATE.update(lost_since=None, dark_since=None)
         return
     STATE['lost_since'] = None
+    if calibrating(st):                               # never cut the power mid-calibration
+        STATE.update(dark_since=None, idle_why='calibrating')
+        return
     dark = all(int(h.get('master', 0)) == 0 for h in st.get('heads', []))
-    quiet = False if dark else hub_quiet()
+    quiet = False if dark else (hub_quiet() and not _kept_lit())
     STATE['idle_why'] = 'dark' if dark else ('quiet room' if quiet else None)
     dark = dark or quiet
     if not dark or now < STATE['warm_until']:

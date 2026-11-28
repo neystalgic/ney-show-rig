@@ -1,0 +1,6 @@
+{
+  "_note": "Nov 28: the CHRISTMAS SHOW (for content + showing friends/family) -- the Max show engine with max_theme 'xmas': red + green, candy cane cascades, snowfall, twinkle breakdowns, gold / candy cane drops. Separate from every other show. Start: bridge/tap_cmd.json {\"mode\": \"xmasshow\"}. Hold 4 = off.",
+  "max_theme": "xmas",
+  "max_calm": false,
+  "max_lock": ""
+}

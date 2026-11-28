@@ -1,0 +1,6 @@
+{
+  "_note": "Nov 28: the CALM CHRISTMAS LOOK -- slow twinkle on the lamps, no music needed, no strobes, heads + spots stay off. Start: bridge/tap_cmd.json {\"mode\": \"xmascalm\"}. Any other look ends it.",
+  "max_theme": "xmas",
+  "max_calm": true,
+  "max_calm_level": 0.6
+}

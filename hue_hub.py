@@ -1223,6 +1223,13 @@ class Hub:
             time.sleep(max(0.0, period - (time.time() - t0)))
 
     # -- what the desk sees --
+    def _fix_snap(self):
+        """[[r, g, b, level], ...] for the wave fixtures in Michael's order. Never raises."""
+        try:
+            return [[round(float(x), 3) for x in f['rgb'][:3]] + [f['level']] for f in self.dmx.chase.fixture_states()]
+        except Exception:
+            return []
+
     def snapshot(self):
         with self.lock:
             b, tempo, src = getattr(self, 'clock', (0.0, 120.0, ''))
@@ -1251,6 +1258,7 @@ class Hub:
                         picture_on=bool(self.state['settings'].get('movie')),
                         level=round(float(getattr(self.palette, 'music_env', 0.0) or 0.0), 3),
                         audio=self.audioshow.snapshot(),
+                        fix=self._fix_snap(),               # Nov 21: the 10 wave fixtures, for Unreal + the AR app
                         audio_blocks=(int(getattr(self.audio, 'blocks', 0) or 0)
                                       if getattr(self, 'audio', None) is not None else None),
                         live_key=(self.livekey.status if getattr(self, 'livekey', None) is not None else 'off'),
@@ -1454,7 +1462,9 @@ class Hub:
                              dmx_unison=float, dmx_pattern=str, show_lock=str, show_bars=float, show_speed=float, show_pool=str, show_zones=dict, show_wave=str, show_loop_dir=str, show_loop=str, show_acts=bool, show_gobos=list, show_audio=float, chase_arc=float, chase_dip=float, chase_dim=float, chase_spots=bool, chase_fast_energy=float, chase_fade_beats=float, chase_head_xy=dict, chase_lamps=dict, dmx_kick_lock=bool, dmx_sweep=float, dmx_sweep_deg=float, strobe_max_hz=float, strobe_test=bool,
                              head_targets=dict, dmx_cue=dict, show_scenes_on=bool, show_scenes=list, show_scene_every=int,
                              dmx_turns=bool, dmx_turn_deg=float, dmx_turn_bars=int, dmx_pan_amp=float, dmx_walls=bool,
-                             dmx_lean_cap=float, spot_fx=dict, movie_floor=float, dmx_floor_db=float, dmx_top_db=float)
+                             dmx_lean_cap=float, spot_fx=dict, movie_floor=float, dmx_floor_db=float, dmx_top_db=float,
+                             max_palettes=list, max_lock=str, max_drop_bars=float, max_cascade_speed=float, max_build_s=float,
+                             max_theme=str, max_calm=bool, max_calm_level=float)   # Nov 28: Christmas theme + calm look   # Nov 25: the MAX show
                 if k not in kinds or (k == 'iac_map' and v not in ('pads', 'wheel', 'degree')) or (
                         k == 'deg_scale' and not str(v).strip()) or (
                         k == 'deg_effect' and v not in ('wash', 'glow', 'hit', 'pulse', 'chase', 'sparkle', 'sweep')) or (
@@ -1802,7 +1812,7 @@ def lan_ip():
 CODE_FILES = ['hue_hub.py', 'hue_stream.py', 'hub_pads.py', 'hub_push2.py', 'hub_visuals.py', 'hub_geometry.py',
               'hub_livemidi.py', 'hub_audio.py', 'hub_audioshow.py', 'hub_brain.py', 'hub_liveosc.py', 'hub_fx.py',
               'hub_palette.py', 'hub_gradlamp.py', 'hub_relay.py', 'hub_dmx.py', 'hub_vibes.py', 'hub_chase.py',
-              'hub_modes.py']
+              'hub_modes.py', 'hub_glitch.py', 'hub_max.py']
 
 
 class Reload(Exception):
@@ -1860,6 +1870,21 @@ def main():
     ap.add_argument('--feed-port', type=int, default=FEED_PORT)
     args = ap.parse_args()
 
+    # Nov 18: ONE hub at a time, even mid-start. A code reload's fresh process and a launch from rig_control
+    # (watchdog / a Tap Dial scene) used to start together -> both grabbed the Hue stream, one died on the desk
+    # port and the other never answered. The first to take this lock runs; any other waits 10 s, then stands down.
+    import fcntl
+    global _HUB_LOCK
+    _HUB_LOCK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.hub.lock'), 'w')
+    for _ in range(20):
+        try:
+            fcntl.flock(_HUB_LOCK, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except OSError:
+            time.sleep(0.5)
+    else:
+        say('Another Hue Hub is starting or running -- this one stands down (no second hub).')
+        sys.exit(0)
     host = '0.0.0.0'                           # other devices need the desk key (rig_control.token) -- see _allowed
     running = False
     for _ in range(5):                         # is another hub answering? (a just-stopped one may need a moment)
@@ -1911,7 +1936,15 @@ def main():
     except ImportError as e:
         say('Zephyrus relay: off (%s)' % e)
     threading.Thread(target=feed_listener, args=(hub, args.feed_port), daemon=True).start()
-    httpd = ThreadingHTTPServer((host, args.desk_port), make_handler(hub))
+    try:
+        httpd = ThreadingHTTPServer((host, args.desk_port), make_handler(hub))
+    except OSError as e:                       # Nov 18: never linger as a hub nobody can reach (a 'zombie')
+        say('The desk port %d is taken (%s) -- this hub stops instead of running unreachable.' % (args.desk_port, e))
+        try:
+            hub.disconnect()
+        except Exception:
+            pass
+        os._exit(1)
     httpd.daemon_threads = True
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     say('Light Desk:  http://localhost:%d' % args.desk_port)

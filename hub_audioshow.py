@@ -669,4 +669,16 @@ class AudioShow:
                     low=round(f['level']['kick'], 3) if f else 0, high=round(f['level']['hats'], 3) if f else 0,
                     bright=round(f['bright'], 3) if f else 0.5, gate=round(self.gate, 2), counts=self.counts,
                     section=self.section, pattern=self.pattern('kick'), spattern=self.pattern('snare'),
-                    style=('programmed' if self.prog_on else 'reactive'), cue=self.cue_now, brk=round(self.brk, 3), drop=round(self.drop, 3), drops=self.drops)
+                    style=('programmed' if self.prog_on else 'reactive'), cue=self.cue_now, brk=round(self.brk, 3), drop=round(self.drop, 3), drops=self.drops,
+                    bands={k: round(float((f['level'] if f else {}).get(k, 0.0)), 3) for k in ('sub', 'low', 'mid', 'high')},   # Nov 18
+                    glitch=self._glitch_snap(a))
+
+    def _glitch_snap(self, a):
+        """Nov 18: the glitch state for the stream (Unreal): live gap / stutter + the newest events."""
+        try:
+            g = getattr(getattr(a, 'an', None), 'glitch', None)
+            evs = list(getattr(a, 'glitch_events', None) or [])[-5:]
+            return dict(gap=bool(g and g.gap), stutter=bool(g and g.stutter),
+                        events=[[round(t, 3), k, round(s_, 3), round(d_, 3)] for t, k, s_, d_ in evs])
+        except Exception:
+            return dict(gap=False, stutter=False, events=[])

@@ -458,5 +458,376 @@ lit2 = [(k, sum(max(c) for c in lam) / len(lam)) for b, k, z, lam in fr2 if z['a
 check('drummer + audio together still follow the kick', corr([k for k, _ in lit2], [v for _, v in lit2]) >= 0.5)
 check('status reports the audio mix', dq2.status()['audio_mix'] == 0.6)
 
+# ---------------------------------------------------------------- RAINBOW MUSIC SHOW (Nov 18)
+ZR = {'order': ['1A', '1B', '2A', '2B', '3A'],
+      'zones': {'1A': {'heads': [3], 'lamps': ['Top Lamp', 'Hue color lamp 2'], 'spots': [2]}, '1B': {'heads': [2], 'lamps': ['Play']},
+                '2A': {'heads': [4], 'lamps': ['Floor Shade'], 'spots': [1]}, '2B': {'heads': [1], 'lamps': []},
+                '3A': {'heads': [], 'lamps': ['Hue color lamp 1', 'Behind Desk']}}}
+def rb_hub(**kw):
+    kw.setdefault('pocket_moves', 'snap')                  # the movement tests below; CALM (the default) is tested on its own
+    h = Hub(show_zones=ZR, dmx_pattern='rainbow', show_audio=0.6, **kw)
+    d_ = hm.Director(h, L2)
+    d_.rng = _r.Random(3)
+    return h, d_
+hr, dr = rb_hub(rb_fav_always=False)
+zl_ = (dr.step(50000.0, 0.0, 'music', HEADS), dr.zone_list())[1]
+check('rainbow: zones carry their spots (Spot 2 = node 5 in 1A, Spot 1 = node 4 in 2A)', zl_[0]['spots'] == [5] and zl_[2]['spots'] == [4])
+fr_ = run_track(hr, dr, 64, t0=50000.0)
+check('rainbow: the director runs it (act rainbow)', all(z['act'] == 'rainbow' for _, _, z, _ in fr_))
+subs = [z['rb'] for _, _, z, _ in fr_]
+ch_ = [(i, subs[i - 1], subs[i]) for i in range(1, len(subs)) if subs[i] != subs[i - 1]]
+check('rainbow grooves (rb_fav_always off): steps, chase and ripple all play, never the same twice in a row',
+      {'steps', 'chase', 'ripple'} <= set(subs) and all(a != b for _, a, b in ch_))
+import colorsys as _cs2
+def pinkish(rgb):
+    h_, s_, v_ = _cs2.rgb_to_hsv(*rgb); return s_ > 0.3 and v_ > 0.05 and 290 < h_ * 360 < 345
+hcv, dcv = rb_hub()
+frcv = run_track(hcv, dcv, 64, t0=50500.0)
+gcv = [z['rb'] for _, _, z, _ in frcv]
+gcv = [gcv[i] for i in range(len(gcv)) if i == 0 or gcv[i] != gcv[i - 1]]
+check('rainbow grooves (default): chase every other phrase, the other pieces in between (all of them get shown)',
+      gcv.count('chase') >= len(gcv) // 2 and len(set(gcv)) >= 3 and all('chase' in gcv[i:i + 2] for i in range(len(gcv) - 1)))
+hca, dca = rb_hub(rb_fav_always=True)
+frca = run_track(hca, dca, 32, t0=50700.0)
+check('rb_fav_always = true: chase in every groove', {z['rb'] for _, _, z, _ in frca} == {'chase'})
+hx2, dx2 = rb_hub(rb_fav_always=False)
+fr2_ = run_track(hx2, dx2, 64, t0=51000.0)
+sb2 = [z['rb'] for _, _, z, _ in fr2_]
+g2 = [sb2[i] for i in range(len(sb2)) if i == 0 or sb2[i] != sb2[i - 1]]
+check('rb_fav_always = false: chase every other phrase, the others in between, never the same twice in a row',
+      'chase' in g2 and len(set(g2)) >= 3 and all(a != b for a, b in zip(g2, g2[1:])))
+check('rainbow: no pink anywhere (lamps, heads)', not any(pinkish(zo['rgb']) for _, _, z, _ in fr_ for zo in z['zones'])
+      and not any(pinkish(cv['rgb']) for _, _, z, _ in fr_ for cv in z['heads'].values()))
+check('rainbow: every lamp in a zone shares one colour in steps (group in sync)', all(len({zo['rgb'] for zo in z['zones']}) == 1
+      for _, _, z, _ in fr_ if z['rb'] == 'steps'))
+st_ = [(b, z['zones'][0]['rgb']) for b, _, z, _ in fr_ if z['rb'] == 'steps']
+chg = [st_[i][0] for i in range(1, len(st_)) if st_[i][1] != st_[i - 1][1]]
+check('steps: the colour snaps ON a kick (every 2nd kick)', chg and all(b - math.floor(b) < 0.05 for b in chg))
+lit_ = [(k, sum(max(c) for c in lam) / len(lam)) for b, k, z, lam in fr_ if z['rb'] in ('steps', 'ripple')]
+check('rainbow: the room punches with the kick', corr([k for k, _ in lit_], [v for _, v in lit_]) >= 0.5)
+cz_ = [z for _, _, z, _ in fr_ if z['rb'] == 'chase']
+def lit_fixtures(z):
+    out = [('l', zo['id'][2:]) for zo in z['zones'] if zo['level'] > 0.01]
+    out += [('h', h) for h, cv in z['heads'].items() if cv['level'] > 0.01]
+    out += [('s', i) for i, sp in z['spots'].items() if sp['level'] > 0.01]
+    return out
+check('chase: precisely ONE fixture lit at a time (lamps, heads, spots), the rest dark', cz_ and all(len(lit_fixtures(z)) == 1 for z in cz_))
+rp_ = [z for _, _, z, _ in fr_ if z['rb'] == 'ripple']
+check('ripple: the colour rolls out from the studio desk (3A leads the door side)', rp_ and any(len({zo['rgb'] for zo in z['zones']}) >= 3 for z in rp_))
+# drop -> all-out, breakdown -> breath
+hd_, dd_ = rb_hub()
+frd = run_track(hd_, dd_, 16, t0=60000.0, section='drop')
+check('drop -> All-out rainbow', all(z['rb'] == 'allout' for _, _, z, _ in frd))
+cc = [(b, z['zones'][0]['rgb'], z['heads'][0]['rgb'], z['heads'][0]['u']) for b, _, z, _ in frd]
+chd = [cc[i][0] for i in range(1, len(cc)) if cc[i][1] != cc[i - 1][1]]
+check('all-out: colour snaps on EVERY beat', len(chd) >= 60 and all(abs(b - round(b)) < 0.05 for b in chd))
+check('all-out: heads one colour step along (neighbours, never clashing)', all(hm.RB.index(h) == (hm.RB.index(l) + 1) % 7 for _, l, h, _ in cc))
+check('all-out: heads jump position every beat', len({u for *_, u in cc}) == 2)
+check('all-out: a new gobo every beat', len({z['spots'][4]['fx']['gobo'] for _, _, z, _ in frd}) == 6)
+fl_ = [(k, sum(max(c) for c in lam) / len(lam)) for b, k, z, lam in frd]
+check('all-out: flashes with the kick (real darkness between)', corr([k for k, _ in fl_], [v for _, v in fl_]) >= 0.5 and min(v for _, v in fl_) < 0.3)
+hb_, db_ = rb_hub()
+frb = run_track(hb_, db_, 16, t0=70000.0, section='breakdown')
+check('breakdown -> Rainbow breath, spots UV on the tapestry', all(z['rb'] == 'breath' and z['spots'][4]['fx']['uv_only'] for _, _, z, _ in frb))
+br_l = [z['zones'][0]['level'] for _, _, z, _ in frb]
+check('breath: the room breathes (15% .. 100%)', min(br_l) < 0.2 and max(br_l) > 0.95)
+check('rainbow: no strobe asked for (spot fx have no strobe/shutter keys)', not any('strobe' in k or 'shutter' in k
+      for _, _, z, _ in fr_ + frd for sp in z['spots'].values() for k in sp['fx']))
+check('rainbow: status names the piece', dr.status()['name'] in hm.RB_NAMES.values() and dr.describe().split(' (')[0] in hm.RB_NAMES.values())
+hn_, dn_ = rb_hub(show_lock='chase')
+frn = run_track(hn_, dn_, 32, t0=80000.0)
+check('show_lock = chase holds the chase', all(z['rb'] == 'chase' for _, _, z, _ in frn))
+
+# ---------------------------------------------------------------- POCKET: snaps follow HIS hits, not the grid
+def run_hits(hub_, d_, secs, kicks, snares, t0, gain=lambda t: 1.0, fps=60.0, bpm=124.0, section='groove'):
+    """A pattern by hit TIMES (seconds) -- off the grid on purpose."""
+    hub_.audioshow.section = section
+    spb = 60.0 / bpm
+    frames = []
+    t = 0.0
+    while t < secs:
+        k = max([shape(t - x) for x in kicks if x <= t + 1e-9] or [0.0]) * 0.8 * gain(t)
+        sn = max([shape(t - x) for x in snares if x <= t + 1e-9] or [0.0]) * 0.7 * gain(t)
+        hub_.audioshow.env = dict(kick=k, snare=sn, hats=0.0)
+        z = d_.step(t0 + t, t / spb + 0.001, 'music', HEADS)
+        lam = d_.lamps([(0.3, 0.1, 0.5)] * 6, [0, 1, 2, 3, 4, 5], t0 + t, t / spb + 0.001, 'music')
+        frames.append((t, z, lam))
+        t += 1.0 / fps
+    return frames
+spb_ = 60.0 / 124.0
+# a syncopated pocket: kicks on 1, the "a" of 2, the "&" of 3; snares on the "e" of 2 and late on 4 -- none on the grid
+pat_k = [0.0, 1.75, 2.5]; pat_s = [1.25, 3.62]
+K_, S_ = [], []
+for bar_ in range(16):
+    K_ += [(bar_ * 4 + x) * spb_ for x in pat_k]; S_ += [(bar_ * 4 + x) * spb_ for x in pat_s]
+hp_, dp_ = rb_hub(show_lock='steps')
+frp = run_hits(hp_, dp_, 16 * 4 * spb_, K_, S_, t0=90000.0)
+sp_ = [(t, z) for t, z, _ in frp if z['rb'] == 'steps']
+check('pocket: live while the music plays', all(z.get('pocket') for t, z in sp_ if t > 0.2))
+cc_ = [sp_[i][0] for i in range(1, len(sp_)) if sp_[i][1]['zones'][0]['rgb'] != sp_[i - 1][1]['zones'][0]['rgb'] and sp_[i][0] > 0.2]
+check('pocket: colour snaps land on HIS kicks (within one frame), off the grid', len(cc_) >= 15
+      and all(min(abs(t - x) for x in K_) < 0.035 for t in cc_))
+hj_ = [sp_[i][0] for i in range(1, len(sp_)) if sp_[i][1]['heads'][0]['u'] != sp_[i - 1][1]['heads'][0]['u'] and sp_[i][0] > 0.2]
+check('pocket: the heads jump on HIS snares, never on a kick-only moment', len(hj_) >= 20
+      and all(min(abs(t - x) for x in S_) < 0.035 for t in hj_))
+check('pocket: those snare jumps are off the beat grid (the syncopation survives)',
+      any(abs((t / spb_) - round(t / spb_)) > 0.2 for t in hj_))
+# dynamics: 8 loud bars, then 8 bars at 35% -- the quiet section stays quiet AND still snaps
+loud = 8 * 4 * spb_
+hd2, dd2 = rb_hub(show_lock='steps')
+frq = run_hits(hd2, dd2, 16 * 4 * spb_, K_, S_, t0=95000.0, gain=lambda t: 1.0 if t < loud else 0.35)
+def avg_peak(fs):
+    return sum(max(sum(max(c) for c in lam) / len(lam), 0) for t, z, lam in fs) / max(1, len(fs))
+pk_l = max(sum(max(c) for c in lam) / len(lam) for t, z, lam in frq if 2.0 < t < loud)
+pk_q = max(sum(max(c) for c in lam) / len(lam) for t, z, lam in frq if t > loud + 0.5)
+check('pocket: a quiet section after a loud one stays clearly dimmer (dynamics kept)', pk_q < 0.75 * pk_l)
+cq_ = [frq[i][0] for i in range(1, len(frq)) if frq[i][0] > loud + 0.3 and frq[i][1]['heads'][0]['u'] != frq[i - 1][1]['heads'][0]['u']]
+check('pocket: ...and the quiet hits still snap the heads', len(cq_) >= 10)
+# real-world: the hit detector is scale-free (every hit looks big) -- the raw loudness (feat db) keeps the dynamics
+hf_, df_ = rb_hub(show_lock='steps')
+class _Feat(dict): pass
+def gain_db(t): return 1.0 if t < loud else 1.0
+hf_.audioshow.feat = dict(db=-12.0)
+fa_ = run_hits(hf_, df_, loud, K_, S_, t0=97000.0)
+hf_.audioshow.feat = dict(db=-28.0)                        # the verse: 16 dB down, but the hits look just as big
+fb_ = run_hits(hf_, df_, 8.0, K_, S_, t0=97000.0 + loud)
+pa_ = max(sum(max(c) for c in lam) / len(lam) for t, z, lam in fa_ if t > 2.0)
+pb_ = max(sum(max(c) for c in lam) / len(lam) for t, z, lam in fb_ if t > 0.5)
+check('pocket: 16 dB quieter verse -> clearly dimmer even when the hits look full size', pb_ < 0.7 * pa_)
+check('pocket: ...and still snapping', len({z['zones'][0]['rgb'] for t, z, lam in fb_}) >= 3)
+# PIVOTS (Michael: "up to 90 degree turns and pivots with the 808, kick and clap"): round each head's tapestry aim
+TGT_ = {'UV tapestry': {str(i): {'pan': 20000 + 1000 * i, 'tilt': 15000} for i in range(4)}}
+hx_, dx_ = rb_hub(show_lock='steps', head_targets=TGT_, pocket_moves='calm')
+frx = run_hits(hx_, dx_, 2 * 4 * spb_, K_, S_, t0=98500.0)
+check('pivots are OFF by default (Michael, live: too snappy)', not any('pan16' in z['heads'][0] for _, z, _ in frx))
+hv_, dv_ = rb_hub(show_lock='steps', head_targets=TGT_, pocket_pivots=True)
+frv = run_hits(hv_, dv_, 8 * 4 * spb_, K_, S_, t0=98000.0)
+pv_ = [z['heads'][0] for t, z, _ in frv if z.get('pocket') and t > 0.3]
+d45 = 45.0 / 540.0 * 65535.0
+check('pivot: the heads turn 90 degrees (45 either side of the tapestry aim), snapping', pv_ and
+      {round(h['pan16']) for h in pv_} == {round(20000 + d45), round(20000 - d45)} and all(h.get('snap') for h in pv_))
+pt_ = [frv[i][0] for i in range(1, len(frv)) if frv[i][0] > 0.3 and frv[i][1].get('pocket') and frv[i][1]['heads'][0].get('pan16') != frv[i - 1][1]['heads'][0].get('pan16')]
+check('pivot: each turn lands on a clap / snare', len(pt_) >= 15 and all(min(abs(t - x) for x in S_) < 0.035 for t in pt_))
+lt_ = [frv[i][0] for i in range(1, len(frv)) if frv[i][0] > 0.3 and frv[i][1].get('pocket') and abs(frv[i][1]['heads'][0]['lean'] - frv[i - 1][1]['heads'][0]['lean']) > 0.2]
+check('pivot: the tilt nods on the kick', len(lt_) >= 15 and all(min(abs(t - x) for x in K_) < 0.035 for t in lt_))
+check('pivot: every head moves as one body (same turn, same nod)', all(len({round(z['heads'][h]['pan16'] - 1000 * h) for h in range(4)}) == 1
+      and len({z['heads'][h]['lean'] for h in range(4)}) == 1 for t, z, _ in frv if z.get('pocket') and t > 0.3))
+hv_.audioshow.feat = dict(level=dict(kick=1.0))
+z8 = dv_.step(98000.0 + 8 * 4 * spb_ + 0.01, 32.01, 'music', HEADS)
+check('pivot: the 808 ringing sinks the heads further', z8['heads'][0]['lean'] >= 0.5 - 1e-9 and z8['heads'][0]['lean'] in (0.5, 0.95))
+# CALM (the default, Michael Nov 18: "avoid unnecessary movement from the heads"): hits play through colour +
+# brightness; the heads hold a position per phrase and glide only when the phrase changes
+hc_ = Hub(show_zones=ZR, dmx_pattern='rainbow', show_audio=0.6, show_lock='chase', head_targets=TGT_, pocket_pivots=True, pocket_moves='calm')
+dc_ = hm.Director(hc_, L2); dc_.rng = _r.Random(3)
+frc = run_hits(hc_, dc_, 16 * 4 * spb_, K_, S_, t0=99500.0)
+mv_ = [(t, z['turn'], tuple((z['heads'][h]['u'], z['heads'][h]['lean']) for h in range(4))) for t, z, _ in frc if z.get('pocket')]
+by_ph = {}
+for t, ph, p_ in mv_:
+    by_ph.setdefault(ph, set()).add(p_)
+check('calm: the heads hold ONE position per phrase (no jumps on the hits)', by_ph and all(len(v) == 1 for v in by_ph.values()))
+check('calm: they move when the phrase changes', len({next(iter(v)) for v in by_ph.values()}) >= 2 or len(by_ph) == 1)
+check('calm: no fast / snap / pivot moves at all', not any(k in z['heads'][h] for t, z, _ in frc for h in range(4) for k in ('fast', 'snap', 'pan16')))
+cz2 = [z for t, z, _ in frc if z.get('pocket')]
+check('calm: the hits still play -- chase walks the zones on the kicks', len({next(zo['id'] for zo in z['zones'] if zo['level'] > 0.01)
+      for z in cz2 if any(zo['level'] > 0.01 for zo in z['zones'])}) >= 4)
+# GLITCHES: reactions deleted (Michael, Nov 19) -- a dropout / stutter / noise burst changes nothing in the lights
+import collections as _co, types as _ty
+class _G:
+    gap = True
+    stutter = True
+hg_, dg_ = rb_hub(show_lock='steps')
+hg_.audio = _ty.SimpleNamespace(an=_ty.SimpleNamespace(glitch=_G()), glitch_events=_co.deque([(1e12, 'crush', 1.0, 0.0)], maxlen=20))
+T0 = 120000.0
+frg = run_hits(hg_, dg_, 2 * 4 * spb_, K_, S_, t0=T0)
+check('glitches: no reaction at all (no dark, no freeze, no white flare)', all(z.get('glitch') is None for _, z, _ in frg)
+      and any(zo['level'] > 0 for _, z, _ in frg for zo in z['zones'])
+      and not any(zo['rgb'] == (1.0, 1.0, 1.0) for _, z, _ in frg for zo in z['zones'])
+      and len({z['zones'][0]['rgb'] for _, z, _ in frg}) >= 3)
+# the loved chase, exactly: heads JUMP on the hits, punch with the lows
+hl_, dl_ = Hub(show_zones=ZR, dmx_pattern='rainbow', show_audio=0.6, show_lock='chase'), None
+dl_ = hm.Director(hl_, L2); dl_.rng = _r.Random(3)
+frl = run_hits(hl_, dl_, 4 * 4 * spb_, K_, S_, t0=52000.0)
+cl_ = [z for t, z, _ in frl if z.get('pocket') and t > 0.3]
+check('the loved chase (defaults): chase, heads jump position on the hits (fast), no pivots',
+      all(z['rb'] == 'chase' for z in cl_) and len({z['heads'][2]['u'] for z in cl_}) >= 3 and
+      all(z['heads'][2].get('fast') and 'pan16' not in z['heads'][2] for z in cl_))
+# THE REAL HUB ORDER (Nov 19 bug): lamps() calls step() first each frame without the fixtures, then the DMX
+# calls step() with them at the same instant -- the spots must still get their cues
+hro, dro = rb_hub(show_lock='chase')
+spots_seen = []
+for k in range(400):
+    t = 54000.0 + k / 50.0
+    b = t / spb_
+    hro.audioshow.env = dict(kick=0.9 if k % 25 < 2 else 0.1, snare=0.8 if k % 25 in (12, 13) else 0.0, hats=0.0)
+    dro.lamps([(0.3, 0.1, 0.5)] * 6, [0, 1, 2, 3, 4, 5], t, b, 'music')      # the lamps first (no fixture list)
+    z = dro.step(t, b, 'music', HEADS)                                          # then the DMX, same instant
+    spots_seen.append(z and z.get('spots') or {})
+check('real hub order: the spots get cues (4 and 5), and they light', all(set(s_) == {4, 5} for s_ in spots_seen[50:])
+      and any(s_[4]['level'] > 0.3 for s_ in spots_seen[50:]) and any(s_[5]['level'] > 0.3 for s_ in spots_seen[50:]))
+# chase: the spots answer the snares too (Nov 19, "all the light fixtures")
+hsp, dsp = rb_hub(show_lock='chase')
+frsp = run_hits(hsp, dsp, 4 * 4 * spb_, K_, S_, t0=53000.0)
+sp_on = [(t, i) for t, z, _ in frsp if z.get('pocket') and t > 0.3 and z['rb'] == 'chase' for i in (4, 5)
+         if z['spots'][i]['level'] > 0.5 and not any(zo['level'] > 0 and i in zz.get('spots', []) for zo, zz in zip(z['zones'], dsp.zone_list()))]
+seq_ = []
+for t, z, _ in frsp:
+    if z.get('pocket') and t > 0.3 and z['rb'] == 'chase':
+        lf = lit_fixtures(z)
+        if lf and (not seq_ or seq_[-1] != lf[0]):
+            seq_.append(lf[0])
+WANT = [('h', 0), ('h', 1), ('l', 'Play'), ('s', 5), ('h', 2), ('l', 'Top Lamp'), ('l', 'Hue color lamp 2'), ('l', 'Floor Shade'),
+        ('h', 3), ('s', 4)]
+bounce_ = WANT + WANT[-2:0:-1]
+k0 = next((k for k in range(len(bounce_)) if [bounce_[(k + m) % len(bounce_)] for m in range(len(seq_))] == seq_), None)
+check('chase: Michael\'s order, one by one, there and back: Head 1, Head 2, Play, Spot 2, Head 3, Top Lamp, the other 1A bulb, '
+      'Shade, Head 4, Spot 1 (then back)', len(seq_) >= 12 and k0 is not None, seq_[:14])
+check('chase: Top Lamp and the other 1A bulb are separate fixtures', ('l', 'Top Lamp') in seq_ and ('l', 'Hue color lamp 2') in seq_)
+check('chase: the lamps outside the frame (Behind Desk, lamp 1) stay dark', not any(f[1] in ('Behind Desk', 'Hue color lamp 1') for f in seq_))
+def step_colours(frames):
+    """[(fixture, colour or None for a spot)] one entry per step of the wave"""
+    out = []
+    for t, z, _ in frames:
+        if not (z.get('pocket') and t > 0.3 and z['rb'] == 'chase'):
+            continue
+        lf = lit_fixtures(z)
+        if not lf:
+            continue
+        f = lf[0]
+        c = (next(zo['rgb'] for zo in z['zones'] if zo['level'] > 0.01) if f[0] == 'l' else z['heads'][f[1]]['rgb'] if f[0] == 'h' else None)
+        if not out or out[-1][0] != f:
+            out.append((f, c))
+    return out
+def rainbow_steps_ok(sc):
+    known = [(k, c) for k, (_, c) in enumerate(sc) if c is not None]
+    return len(known) >= 5 and all((hm.RB.index(c2) - hm.RB.index(c1)) % 7 == (k2 - k1) % 7 for (k1, c1), (k2, c2) in zip(known, known[1:]))
+check('chase: each step (whichever fixture) is the next ROY G BIV colour', rainbow_steps_ok(step_colours(frsp)))
+check('spots scan the room in the rainbow pieces (not in breath: UV on the tapestry)',
+      all(sp['fx'].get('scan') for t, z, _ in frsp if z['rb'] == 'chase' for sp in z['spots'].values())
+      and all(not sp['fx'].get('scan') for _, _, z, _ in frb for sp in z['spots'].values()))
+fs_ = dsp.fixture_states(frsp[-1][1])
+check('the screen gets the room: the 10 wave fixtures in his order, one lit with its colour',
+      [f['name'] for f in fs_] == ['Head 1', 'Head 2', 'Play', 'Spot 2', 'Head 3', 'Top Lamp', 'Hue color lamp 2', 'Floor Shade', 'Head 4', 'Spot 1'])
+lit_counts = [sum(1 for f in dsp.fixture_states(z) if f['level'] > 0.01) for t, z, _ in frsp if z.get('pocket') and t > 0.3 and z['rb'] == 'chase']
+check('the screen: exactly one fixture lit at a time in the wave', lit_counts and all(c == 1 for c in lit_counts))
+# UNISON (Nov 22): one whole GROUP per kick -- all lamps, then all heads, then both spots -- in ROY G BIV
+hun, dun = rb_hub(show_lock='unison')
+fru = run_hits(hun, dun, 4 * 4 * spb_, K_, S_, t0=56000.0)
+def lit_groups(z):
+    g = []
+    if any(zo['level'] > 0.01 for zo in z['zones']): g.append('lamps')
+    if any(cv['level'] > 0.01 for cv in z['heads'].values()): g.append('heads')
+    if any(sp['level'] > 0.01 for sp in z['spots'].values()): g.append('spots')
+    return g
+uz = [z for t, z, _ in fru if z.get('pocket') and t > 0.3 and z['rb'] == 'unison']
+check('unison: exactly one group lit at a time', uz and all(len(lit_groups(z)) == 1 for z in uz))
+check('unison: the whole group together (every lamp / every head / both spots)', all(
+      (g != ['lamps'] or all(zo['level'] > 0.01 for zo in z['zones'])) and
+      (g != ['heads'] or all(cv['level'] > 0.01 for cv in z['heads'].values())) and
+      (g != ['spots'] or all(sp['level'] > 0.01 for sp in z['spots'].values())) for z in uz for g in [lit_groups(z)]))
+seqg = []
+for z in uz:
+    g = lit_groups(z)[0]
+    if not seqg or seqg[-1][0] != g:
+        seqg.append((g, z['zones'][0]['rgb'] if g == 'lamps' else z['heads'][0]['rgb'] if g == 'heads' else None))
+check('unison: lamps -> heads -> spots -> round again', len(seqg) >= 6 and all(
+      ['lamps', 'heads', 'spots'][(['lamps', 'heads', 'spots'].index(a[0]) + 1) % 3] == b[0] for a, b in zip(seqg, seqg[1:])))
+kn_c = [(k, c) for k, (_, c) in enumerate(seqg) if c is not None]
+check('unison: each step the next ROY G BIV colour', all((hm.RB.index(c2) - hm.RB.index(c1)) % 7 == (k2 - k1) % 7 for (k1, c1), (k2, c2) in zip(kn_c, kn_c[1:])))
+check('unison: in the show rotation and named', 'unison' in hm.RB_GROOVE and hm.RB_NAMES['unison'] == 'Rainbow unison')
+# SCATTER (Nov 19, Michael: "each small transient affects a DIFFERENT light, including the heads and the spots")
+hsx, dsx = rb_hub(show_lock='scatter')
+frs = run_hits(hsx, dsx, 8 * 4 * spb_, K_, S_, t0=150000.0)
+def fixtures(z):
+    out = {('z', zo['id']): (zo['level'], zo['rgb']) for zo in z['zones']}
+    out.update({('h', h): (cv['level'], cv['rgb']) for h, cv in z['heads'].items()})
+    out.update({('s', i): (sp['level'], hm.RB[hm.RB_SLOT.index(sp['fx']['color'])] if sp['fx']['color'] in hm.RB_SLOT else None)
+                for i, sp in z['spots'].items()})
+    return out
+flares = []                                                  # (time, fixture, colour) each time a fixture jumps up
+prev = None
+for t, z, _ in frs:
+    if not z.get('pocket') or t < 0.3:
+        prev = fixtures(z); continue
+    cur = fixtures(z)
+    for f, (lv, c) in cur.items():
+        if prev and lv > prev.get(f, (0, None))[0] + 0.25:
+            flares.append((t, f, c))
+    prev = cur
+hits_ = sorted([x for x in K_ + S_ if 0.3 < x < 8 * 4 * spb_ - 0.1])
+check('scatter: one flare per transient (kicks AND snares)', abs(len(flares) - len(hits_)) <= 2, (len(flares), len(hits_)))
+check('scatter: every flare lands on his hits', all(min(abs(t - x) for x in K_ + S_) < 0.035 for t, _, _ in flares))
+check('scatter: the next hit is always a DIFFERENT light', all(a[1] != b[1] for a, b in zip(flares, flares[1:])))
+kinds = {f[0] for _, f, _ in flares}
+check('scatter: lamps, heads AND spots all take hits', kinds == {'z', 'h', 's'}, kinds)
+zone_flares = [(f, c) for _, f, c in flares if f[0] in ('z', 'h')]
+order_ = [(hm.RB.index(b[2]) - hm.RB.index(a[2])) % 7 for a, b in zip(flares, flares[1:]) if a[1][0] != 's' and b[1][0] != 's']
+check('scatter: every hit is the NEXT colour in ROY G BIV', order_ and all(x in (1, 2) for x in order_) and order_.count(1) >= len(order_) * 0.6, order_[:12])
+check('scatter: real darkness between hits (the rest stay dark)', min(sum(1 for lv, _ in fixtures(z).values() if lv > 0.3) for t, z, _ in frs
+      if z.get('pocket') and t > 0.3) <= 1)
+# ROY G BIV ORDER (Michael, Nov 18 eve: "regardless of what bulb is triggered, the pattern maintains ROY G BIV")
+check('ROY G BIV order in chase (the wave, any fixture): every step is the NEXT colour',
+      rainbow_steps_ok(step_colours(run_hits(*rb_hub(show_lock='chase', pocket_moves='calm'), 4 * 4 * spb_, K_, S_, t0=139000.0))))
+for piece in ('allout', 'steps'):
+    ho_, do_ = rb_hub(show_lock=piece if piece != 'allout' else '', pocket_moves='calm')
+    if piece == 'allout':
+        ho_.state['settings']['rb_vj'] = {'piece': 'allout'}
+    fo_ = run_hits(ho_, do_, 4 * 4 * spb_, K_, S_, t0=140000.0)
+    seq = []
+    for t, z, _ in fo_:
+        c = next((zo['rgb'] for zo in z['zones'] if zo['level'] > 0.01), None)
+        if c is not None and (not seq or seq[-1] != c):
+            seq.append(c)
+    steps_ = [(hm.RB.index(b) - hm.RB.index(a)) % 7 for a, b in zip(seq, seq[1:])]
+    check('ROY G BIV order in %s: every colour change is the NEXT colour, whichever bulb lights' % piece, len(steps_) >= 6 and all(x == 1 for x in steps_), steps_[:12])
+# VJ ON THE MUSIC (Nov 18): the dial picks the piece, taps add moments, the music still drives the hits
+hj_, dj_ = rb_hub(pocket_moves='calm')
+SJ = hj_.state['settings']
+T1 = 130000.0
+SJ['rb_vj'] = {'piece': 'allout'}
+frj = run_hits(hj_, dj_, 2 * 4 * spb_, K_, S_, t0=T1)
+check('VJ: the dial\'s piece plays whatever the section (all-out in a groove)', all(z['rb'] == 'allout' for _, z, _ in frj))
+cj_ = [frj[i][0] for i in range(1, len(frj)) if frj[i][1].get('pocket') and frj[i][1]['zones'][0]['rgb'] != frj[i - 1][1]['zones'][0]['rgb']]
+check('VJ: still audio reactive (colour changes land on his kicks)', len(cj_) >= 5 and all(min(abs(t - x) for x in K_) < 0.035 for t in cj_ if t > 0.3))
+tj = T1 + 2 * 4 * spb_
+SJ['rb_vj'] = {'piece': 'chase'}
+hj_.audioshow.env = dict(kick=0.5, snare=0.0, hats=0.0)
+zj = dj_.step(tj + 0.01, (tj + 0.01) / spb_, 'music', HEADS)
+check('VJ: turning the dial switches the piece right away (not at the next phrase)', zj['rb'] == 'chase')
+SJ['rb_vj'] = {'piece': 'chase', 'hit': {'kind': 'colour', 't': tj + 0.02, 'n': 4}}
+zh = dj_.step(tj + 0.3, (tj + 0.3) / spb_, 'music', HEADS)
+cf_ = zh['zones'][0]['rgb']
+check('VJ tap 1: a full flash on everything, in the colour of the moment (keeps the order)', cf_ in hm.RB and
+      all(zo['rgb'] == cf_ and zo['level'] == 1.0 for zo in zh['zones']) and all(h['rgb'] == cf_ for h in zh['heads'].values()))
+zh2 = dj_.step(tj + 1.3, (tj + 1.3) / spb_, 'music', HEADS)
+check('VJ tap 1: over after a second', not all(zo['level'] == 1.0 for zo in zh2['zones']))
+SJ['rb_vj'] = {'piece': 'chase', 'hit': {'kind': 'cut', 't': tj + 1.4}}
+zc_ = dj_.step(tj + 1.5, (tj + 1.5) / spb_, 'music', HEADS)
+check('VJ tap 2: a cut to black (half a second)', all(zo['level'] == 0 for zo in zc_['zones']) and all(h['level'] == 0 for h in zc_['heads'].values()))
+SJ['rb_vj'] = {'piece': 'steps', 'freeze': True}
+zf1 = dj_.step(tj + 2.0, (tj + 2.0) / spb_, 'music', HEADS)
+hj_.audioshow.env = dict(kick=0.0, snare=0.8, hats=0.0)
+zf2 = dj_.step(tj + 2.6, (tj + 2.6) / spb_, 'music', HEADS)
+check('VJ tap 4: freeze holds the frame', zf1['zones'] == zf2['zones'] and zf1['heads'] == zf2['heads'])
+SJ['rb_vj'] = {'piece': 'steps'}
+zs0 = dj_.step(tj + 2.7, (tj + 2.7) / spb_, 'music', HEADS)
+SJ['rb_vj'] = {'piece': 'steps', 'hit': {'kind': 'skip', 't': tj + 2.71}}
+zs1 = dj_.step(tj + 2.72, (tj + 2.72) / spb_, 'music', HEADS)
+zs2 = dj_.step(tj + 2.74, (tj + 2.74) / spb_, 'music', HEADS)
+check('VJ tap 3: one step on in ROY G BIV (a manual hit), once per tap', hm.RB.index(zs1['zones'][0]['rgb']) == (hm.RB.index(zs0['zones'][0]['rgb']) + 1) % 7
+      and zs2['zones'][0]['rgb'] == zs1['zones'][0]['rgb'])
+SJ['rb_vj'] = None
+zn = dj_.step(tj + 2.8, (tj + 2.8) / spb_, 'music', HEADS)
+check('VJ off: back to the normal show', zn['rb'] in hm.RB_NAMES)
+# silence -> the beat clock carries on (room never dies), pocket off
+hs2, ds2 = rb_hub(show_lock='steps')
+run_hits(hs2, ds2, 4 * 4 * spb_, K_, S_, t0=99000.0)
+hs2.audioshow.env = dict(kick=0.0, snare=0.0, hats=0.0)
+fsl = []
+for i in range(300):
+    t = 4 * 4 * spb_ + i / 60.0
+    fsl.append(ds2.step(99000.0 + t, t / spb_ + 0.001, 'music', HEADS))
+check('pocket: 2 s of silence hands over to the beat clock', not fsl[-1].get('pocket') and fsl[30].get('pocket'))
+check('pocket: ...which keeps the colour stepping', len({z['zones'][0]['rgb'] for z in fsl[150:]}) >= 2)
+
 print('hub_modes tests: %d passed, %d failed' % (PASSES[0], len(FAILS)))
 sys.exit(1 if FAILS else 0)

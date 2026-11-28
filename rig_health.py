@@ -102,6 +102,11 @@ def check_all(extra):
     on = [k for k, v in (hp.get('on') or {}).items() if v]
     out.append(row('Moving heads', 'ok' if on else 'idle', ('%d of %d on' % (len(on), len(hp.get('on') or {})))
                    if hp.get('on') else str(hp.get('last') or 'no plugs found')))
+    # spots power (Nov 17)
+    sp = extra.get('spot_power') or {}
+    son = [k for k, v in (sp.get('on') or {}).items() if v]
+    out.append(row('Spots', 'ok' if son else 'idle', ('%d of %d on' % (len(son), len(sp.get('on') or {})))
+                   if sp.get('on') else str(sp.get('last') or 'no plugs found')))
     # beat sender
     out.append(row('Beat sender', 'ok' if _running('beat_sender.py') else 'down',
                    'sending the beat to Unreal' if _running('beat_sender.py') else 'not running (restarts within a minute)'))

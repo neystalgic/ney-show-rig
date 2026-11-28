@@ -28,6 +28,7 @@
 import colorsys
 import json
 import math
+import os
 import socket
 import struct
 import threading
@@ -40,6 +41,9 @@ SEND_HZ = 40.0
 SWEEP_DEG_S = 150.0
 MUSIC_SWEEP_DEG_S = 240.0
 TURN_DEG_S = 200.0               # phrase turns: every head travels the same angle at the same speed -> they land together        # music sweeps: as quick as the motors go              # movie sweeps only: a quick swing out and back on a loud moment
+SNAP_DEG_S = 2000.0              # Nov 18 (Michael: "up to 90 degree turns and pivots with the 808, kick and clap"):
+                                 # a SNAP move goes as fast as the head's motors can -- the director asks for it per hit
+SCAN_CENTRE = {4: 197.0, 5: 191.2}   # Nov 19: the spots' scans swing round their UV-tapestry headings (az, deg)
 MAX_DEG_S = 35.0                 # fastest a beam may swing (degrees a second): quiet motors, no whip pans
 MASTER_MIN, MASTER_MAX = 8, 134  # LM70S master: dimming range (135-239 = the head's own strobe, used by 'flash')
 # MULTICOLOUR FLASH (Nov 11, Michael's favourite from the full-power test): dmx_strobe = 'flash'
@@ -394,6 +398,17 @@ class Heads:
         if cz:                                      # the relay owns the heads: no strobe, turns, sweeps or scene rotation
             fire, turn_deg, turning, sweep_e, cue, cue_f = False, 0.0, False, 0.0, None, 0.0
             self.flash_mode, self.auto_cue, self.wall_t = False, None, -10.0
+        # Nov 25 THE MAX SHOW (hub_max.py): the director asks for strobes itself -- a 2 s burst on the heads' OWN strobe
+        # when a drop lands, single hits on builds + drops. Every existing guard still applies: never in guest mode,
+        # movie or blackout; hits only inside the strobe cone, at most strobe_max_hz a second per head; the Pi
+        # node's flash guard has the last word (guest mode blocks the strobe channel there too).
+        mx_ok = bool(cz and cz.get('act') == 'max' and not dark and not movie and not self._guest())   # (no music: its built-in song decides)
+        if mx_ok and cz.get('burst') and cz.get('burst_rgbw'):
+            sp_ = clamp(float(s.get('flash_speed', FLASH_SPEED['drop'])))
+            self.flash_mode = self.flash_strobe = True
+            self.flash_master = int(135 + sp_ * (239 - 135))
+            self.flash_shutter = int(16 + sp_ * (131 - 16))
+            self.flash_rgbw = tuple(clamp(float(x)) for x in cz['burst_rgbw'])
         for i, hd in enumerate(hs):
             st = self.st[i]
             # colour: a lamp spread across the room for each head
@@ -513,7 +528,9 @@ class Heads:
                         cue_p = None
             fast = spot_p is not None and sweep_e > 0.0
             mfast = ((not movie) and sweep_e > 0.0) or bool(cv is not None and cv.get('fast'))   # music sweep / HEAD MOMENT
-            step = (MUSIC_SWEEP_DEG_S if (mfast or 0.0 <= now - self.wall_t < 2.6) else SWEEP_DEG_S if fast else MAX_DEG_S) * dt
+            snap = bool(cv is not None and cv.get('snap') and not movie)
+            step = (SNAP_DEG_S if snap else MUSIC_SWEEP_DEG_S if (mfast or 0.0 <= now - self.wall_t < 2.6) else
+                    SWEEP_DEG_S if fast else MAX_DEG_S) * dt
             st['theta'] += clamp(th_t - st['theta'], -step, step)
             pmin, pmax = int(hd.get('pan_min', 0)), int(hd.get('pan_max', 65535))
             if movie:
@@ -539,9 +556,11 @@ class Heads:
                 p_t = clamp(p_t + sd / 540.0 * 65535.0, pmin, pmax)
             if cv is not None:                      # HEAD RELAY: the sweep (inside the head's pan window)
                 p_t = ch.pan(cv, pmin, pmax)
+                if cv.get('pan16') is not None:     # an exact pan (the pocket's turns round a saved aim)
+                    p_t = clamp(float(cv['pan16']), pmin, pmax)
             if st['pan'] is None:
                 st['pan'] = p_t
-            pstep = (MUSIC_SWEEP_DEG_S if mfast else TURN_DEG_S if ((turning or wall_p is not None) and not movie) else
+            pstep = (SNAP_DEG_S if snap else MUSIC_SWEEP_DEG_S if mfast else TURN_DEG_S if ((turning or wall_p is not None) and not movie) else
                      SWEEP_DEG_S if fast else MAX_DEG_S) / 540.0 * 65535.0 * dt
             if not dark:
                 st['pan'] += clamp(p_t - st['pan'], -pstep, pstep)
@@ -561,12 +580,26 @@ class Heads:
                         ss = max(ss, 0.55)          # never white
                         r, g, b = self.match(colorsys.hsv_to_rgb(hh, ss, 1.0), s)
                         w = (1.0 - ss) * 0.35
+                        if cv.get('wbody') and cz.get('act') == 'max':   # Nov 28 (Christmas): candy cane / snow white
+                            r = g = b = 0.55
+                            w = 1.0
             if fire and abs(st['theta']) <= cone:
                 st['flash'] = now + 0.05
+                st['white'] = False
+            if mx_ok:                                            # MAX SHOW: the director's own hits (one per id)
+                src_ = cv if cv is not None else (self.act_fx.get(i) if isinstance(self.act_fx, dict) else None)
+                fid = src_.get('flash') if isinstance(src_, dict) else None
+                if fid is not None and fid != st.get('flash_id'):
+                    st['flash_id'] = fid
+                    if abs(st['theta']) <= cone and now - st.get('flash_t', -10.0) >= 1.0 / max_hz + 0.01:
+                        st['flash'], st['flash_t'] = now + 0.05, now
+                        st['white'] = bool(src_.get('white'))
             if now < st['flash']:
                 lv = 1.0                                         # the hit: full, in the head's colour
                 r, g, b = self.match(colorsys.hsv_to_rgb(hh, max(ss, 0.7), 1.0), s)
                 w = 0.0
+                if st.get('white'):                              # MAX SHOW mono + white: a white hit
+                    r = g = b = w = 1.0
             if hd.get('upright_level') is None:              # node too old to dim upright heads itself: do it here
                 upc = (s.get('dmx_upright') or {'0': [0.2, 20.0]}).get(str(i))   # Head 1 floods the image upright
                 if upc:
@@ -575,6 +608,11 @@ class Heads:
             master = 0 if lv < 0.004 else int(round(MASTER_MIN + clamp(lv) * (MASTER_MAX - MASTER_MIN)))
             a = int(hd.get('addr', 1)) - 1
             if hd.get('type') == 'focus17':                  # Focus Spot: its own 17-channel layout
+                # Nov 19 (Michael: "I want all the rainbow dancing"): the spots aren't capped by the heads' dmx_level
+                # (0.42, there for the bright LM70S beams) -- their own spot_level (default full) instead
+                dl_ = clamp(float(s.get('dmx_level', 0.8)))
+                if dl_ > 0.01 and not movie:                 # (movie nights keep their gentle UV stars)
+                    lv = clamp(lv / dl_ * clamp(float(s.get('spot_level', 1.0))))
                 if 0 <= a and a + 17 <= 512:
                     self.focus_out(data, a, i, hd, pan, st['theta'], lv, hh, ss, s, now, dt, movie, dark)
                 continue
@@ -637,9 +675,27 @@ class Heads:
                 t_lean = float(hold.get('lean', 30.0))
             except (KeyError, TypeError, ValueError):
                 pass
-        step16 = MAX_DEG_S / 540.0 * 65535.0 * dt                # glide, never snap (quiet, no whip pans)
+        spd = MAX_DEG_S
+        sc = fx.get('scan')
+        if sc and not movie and not dark and hd.get('calibrated'):
+            # Nov 19 (Michael: "the spots feel confined -- I'd love them to act as RAINBOW SPOTLIGHTS THAT SCAN THE
+            # ROOM"): each spot sweeps wide round its tapestry heading and rises / falls, the two in mirror image;
+            # beams stay high (20-55 deg from straight up: walls + ceiling, over people's heads). The node still
+            # enforces every no-go zone on top.
+            sc = sc if isinstance(sc, dict) else {}
+            first = i == min(SCAN_CENTRE) if i in SCAN_CENTRE else True
+            ph = 0.0 if first else 0.5
+            c_az = float(sc.get('az', SCAN_CENTRE.get(i, 190.0)))
+            amp = clamp(float(sc.get('deg', 120.0)), 0.0, 200.0)
+            t_az = c_az + amp * math.sin(2 * math.pi * (now / max(4.0, float(sc.get('period', 12.0))) + ph))
+            t_pan = clamp(t_az, 0.0, 540.0) / 540.0 * 65535.0
+            lo_, hi_ = float(sc.get('lean_lo', 20.0)), min(55.0, float(sc.get('lean_hi', 55.0)))
+            t_lean = lo_ + (hi_ - lo_) * (0.5 + 0.5 * math.sin(2 * math.pi * (now / 7.3 + ph)))
+            spd = clamp(float(sc.get('deg_s', 120.0)), 10.0, 200.0)
+            f['scan_az'] = t_az
+        step16 = spd / 540.0 * 65535.0 * dt                      # glide, never snap (quiet, no whip pans)
         f['pan'] += clamp(t_pan - f['pan'], -step16, step16)
-        f['lean'] += clamp(t_lean - f['lean'], -MAX_DEG_S * dt, MAX_DEG_S * dt)
+        f['lean'] += clamp(t_lean - f['lean'], -spd * dt, spd * dt)
         p16 = int(clamp(f['pan'], 0, 65535))
         tilt = int(clamp(int(hd.get('tilt_up', 32768)) + int(hd.get('tilt_dir', 1)) * f['lean'] / 240.0 * 65535.0, 0, 65535))
         deg = (hh * 360.0) % 360.0                               # nearest colour-wheel slot to the lamps' hue
@@ -694,6 +750,25 @@ class Heads:
         data[a + 10] = 12 if uv > 0 else 0                       # UV shutter open (never strobe)
         data[a + 11] = uv
         data[a + 15] = int(clamp(int(hd.get('motor_speed', 0)), 0, 255))
+
+    def _guest(self):
+        """Guest mode (rig_control's guest_mode.json): no strobe of any kind. Read every 5 s; unreadable = guest
+        (safe side) only if the file exists."""
+        t = time.time()
+        c = getattr(self, '_guest_c', None)
+        if c and t - c[0] < 5.0:
+            return c[1]
+        g = False
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'guest_mode.json')
+        try:
+            with open(p) as f:
+                g = bool(json.load(f).get('guest'))
+        except FileNotFoundError:
+            g = False
+        except (OSError, ValueError):
+            g = True
+        self._guest_c = (t, g)
+        return g
 
     def describe(self):
         return self.status

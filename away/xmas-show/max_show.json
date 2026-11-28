@@ -1,0 +1,20 @@
+{
+  "_note": "Nov 25: the MAX show (hub_max.py) -- Michael's saved show + these on top. Cascades through his wave order, palettes neon / fire / ice / mono + white / UV + purple (+ rainbow now and then), strobes on builds + drops only. Start: bridge/tap_cmd.json {\"mode\": \"maxshow\"}. Hold 4 = off.",
+  "dmx_pattern": "max",
+  "dmx_strobe": "off",
+  "dmx_level": 0.75,
+  "max_palettes": [
+    "neon",
+    "fire",
+    "ice",
+    "mono",
+    "uv",
+    "rainbow"
+  ],
+  "max_lock": "",
+  "max_drop_bars": 8,
+  "max_cascade_speed": 1.0,
+  "max_build_s": 8,
+  "max_theme": "",
+  "max_calm": false
+}
